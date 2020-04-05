@@ -7,6 +7,9 @@ Use the package with composer install
 
 ```bash
 composer require daycry/doctrine
+
+php vendor/daycry/doctrine/install.php
+
 ```
 
 ## Usage
@@ -42,5 +45,20 @@ class Doctrine extends BaseConfig
 //app/config/Doctrine
 $config = new \Config\Doctrine();
 $doctrine = new \Daycry\Doctrine\Doctrine( $config );
+
+```
+
+## Cli Commands
+
+```php
+
+//Mapping de database to entities classes
+vendor/bin/doctrine orm:convert-mapping --namespace="App\\Models\\Entity\\" --force --from-database annotation .
+
+//Generate getters & setters
+vendor/bin/doctrine orm:generate-entities .
+
+//Generate proxy classes
+vendor/bin/doctrine orm:generate-proxies app/Models/Proxies
 
 ```
