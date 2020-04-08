@@ -22,7 +22,7 @@ class Doctrine
     {
         if( empty( $configuration ) )
         {
-            $configuration = new \Daycry\Doctrine\Config\Doctrine();
+            $configuration = config( 'Doctrine' );
         }
 
         $db = \Config\Database::connect();
