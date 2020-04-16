@@ -74,7 +74,7 @@ var_dump( $data );
 ```php
 
 //Mapping de database to entities classes
-vendor/bin/doctrine orm:convert-mapping --namespace="App\\Models\\Entity\\" --force --from-database annotation .
+vendor/bin/doctrine orm:convert-mapping --namespace="App\Models\Entity\" --force --from-database annotation .
 
 //Generate getters & setters
 vendor/bin/doctrine orm:generate-entities .
