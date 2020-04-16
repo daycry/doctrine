@@ -35,10 +35,31 @@ class Doctrine
 
         $dev_mode = ( ENVIRONMENT == "development" ) ? true : false;
 
+        if( $configuration->debug == "redis" )
+        {
+            $redis = new \Redis();
+            $redis->connect( $configuration->hostCache, $configuration->portCache );
+            $redis->select( 1 );
+            $cache = new \Doctrine\Common\Cache\RedisCache();
+            $cache->setRedis( $redis );
+            $cache->setNamespace( $configuration->namespaceCache );
+        }else if( $configuration->debug == "memcached" )
+        {
+            $memcached = new \Memcached();
+            $memcached->addServer( $configuration->namespaceCache, $configuration->portCache );
+            $cache = new \Doctrine\Common\Cache\MemcachedCache();
+            $cache->setMemcached( $memcached );
+            //$cache->save( 'cache_id', 'my_data' );
+        }else{
+            $cache = new \Doctrine\Common\Cache\ArrayCache();
+        }
+
         $reader = new AnnotationReader();
         $driver = new \Doctrine\ORM\Mapping\Driver\AnnotationDriver( $reader, array( APPPATH . 'Models/Entity' ) );
         
         $config = Setup::createAnnotationMetadataConfiguration( array( APPPATH . 'Models/Entity' ), $dev_mode, APPPATH . 'Models/Proxies' );
+        $config->setMetadataCacheImpl( $cache );
+        $config->setQueryCacheImpl( $cache );
         $config->setMetadataDriverImpl( $driver );
 
 
