@@ -35,7 +35,7 @@ class Doctrine
 
         $dev_mode = ( ENVIRONMENT == "development" ) ? true : false;
 
-        if( $configuration->debug == "redis" )
+        if( $configuration->cache == "redis" )
         {
             $redis = new \Redis();
             $redis->connect( $configuration->hostCache, $configuration->portCache );
