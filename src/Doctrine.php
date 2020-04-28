@@ -112,7 +112,7 @@ class Doctrine
                 'charset'  => $db->charset,
             ];
         } else {
-            throw new Exception('Your Database Configuration is not confirmed by CodeIgniter Doctrine');
+            throw new \Exception('Your Database Configuration is not confirmed by CodeIgniter Doctrine');
         }
 
         return $connectionOptions;
