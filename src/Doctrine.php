@@ -39,7 +39,7 @@ class Doctrine
         {
             $redis = new \Redis();
             $redis->connect( $configuration->hostCache, $configuration->portCache );
-            $redis->select( 1 );
+            $redis->select( $configuration->databaseRedis );
             $cache = new \Doctrine\Common\Cache\RedisCache();
             $cache->setRedis( $redis );
             $cache->setNamespace( $configuration->namespaceCache );
