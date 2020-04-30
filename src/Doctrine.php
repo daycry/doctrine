@@ -43,13 +43,16 @@ class Doctrine
             $cache = new \Doctrine\Common\Cache\RedisCache();
             $cache->setRedis( $redis );
             $cache->setNamespace( $configuration->namespaceCache );
-        }else if( $configuration->debug == "memcached" )
+            //$cache->save( 'cache_id', 'my_data' );
+
+        }else if( $configuration->cache == "memcached" )
         {
             $memcached = new \Memcached();
             $memcached->addServer( $configuration->namespaceCache, $configuration->portCache );
             $cache = new \Doctrine\Common\Cache\MemcachedCache();
             $cache->setMemcached( $memcached );
             //$cache->save( 'cache_id', 'my_data' );
+
         }else{
             $cache = new \Doctrine\Common\Cache\ArrayCache();
         }
