@@ -60,7 +60,7 @@ class Doctrine
         $reader = new AnnotationReader();
         $driver = new \Doctrine\ORM\Mapping\Driver\AnnotationDriver( $reader, array( APPPATH . 'Models/Entity' ) );
         
-        $config = Setup::createAnnotationMetadataConfiguration( array( APPPATH . 'Models/Entity' ), $dev_mode, APPPATH . 'Models/Proxies' );
+        $config = Setup::createAnnotationMetadataConfiguration( array( APPPATH . 'Models/Entity' ), $dev_mode, APPPATH . 'Models/Proxies', $cache, true );
         $config->setMetadataCacheImpl( $cache );
         $config->setQueryCacheImpl( $cache );
         $config->setMetadataDriverImpl( $driver );
