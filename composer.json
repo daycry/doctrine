@@ -20,7 +20,7 @@
         "doctrine/orm": "~2.5",
         "beberlei/doctrineextensions": "^1.0",
         "jms/serializer": "^1.11",
-        "indigophp/doctrine-annotation-autoload": "^0.1.0"
+        "yogarine/doctrine-annotation-autoload": "^0.3.0"
     },
     "autoload": {
         "psr-4": {
