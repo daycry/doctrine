@@ -19,7 +19,7 @@
       "php": ">=7.2",
         "doctrine/orm": "~2.5",
         "beberlei/doctrineextensions": "^1.0",
-        "jms/serializer": "^1.11",
+        "jms/serializer-bundle": "^3.8",
         "yogarine/doctrine-annotation-autoload": "^0.3.0"
     },
     "autoload": {
