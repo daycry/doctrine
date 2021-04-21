@@ -39,28 +39,29 @@ class Doctrine
 
         if( $cacheConf->handler == 'redis' )
         {
-            $redis = new \Daycry\Doctrine\Libraries\Redis( $cacheConf );
+            /*$redis = new \Daycry\Doctrine\Libraries\Redis( $cacheConf );
             $cache = new \Doctrine\Common\Cache\RedisCache();
             $cache->setRedis( $redis->getClass() );
-            $cache->setNamespace( $cacheConf->prefix );
+            $cache->setNamespace( $cacheConf->prefix );*/
 
-            /*$redis = new \Redis();
+            $redis = new \Redis();
             $redis->connect( $cacheConf->redis->host, $cacheConf->redis->port );
             $redis->select( $cacheConf->redis->database );
             $cache = new \Doctrine\Common\Cache\RedisCache();
             $cache->setRedis( $redis );
-            $cache->setNamespace( $cacheConf->prefix );*/
+            $cache->setNamespace( $cacheConf->prefix );
             //$cache->save( 'cache_id', 'my_data' );
 
         }else if( $cacheConf->handler == 'memcached' )
         {
-            $memcached = new \Daycry\Doctrine\Libraries\Memcached( $cacheConf );
+            /*$memcached = new \Daycry\Doctrine\Libraries\Memcached( $cacheConf );
             $cache = new \Doctrine\Common\Cache\MemcachedCache();
-            $cache->setMemcached( $memcached->getClass() );
-            /*$memcached = new \Memcached();
+            $cache->setMemcached( $memcached->getClass() );*/
+            
+            $memcached = new \Memcached();
             $memcached->addServer( $cacheConf->memcached->host, $cacheConf->memcached->port, $cacheConf->memcached->weight );
             $cache = new \Doctrine\Common\Cache\MemcachedCache();
-            $cache->setMemcached( $memcached );*/
+            $cache->setMemcached( $memcached );
             //$cache->save( 'cache_id', 'my_data' );
 
         }else{
