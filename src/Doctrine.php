@@ -41,7 +41,7 @@ class Doctrine
         {
             $redis = new \Daycry\Doctrine\Libraries\Redis( $cacheConf );
             $cache = new \Doctrine\Common\Cache\RedisCache();
-            $cache->setRedis( $redis->getInstance() );
+            $cache->setRedis( $redis->getClass() );
             $cache->setNamespace( $cacheConf->prefix );
 
             /*$redis = new \Redis();
@@ -56,7 +56,7 @@ class Doctrine
         {
             $memcached = new \Daycry\Doctrine\Libraries\Memcached( $cacheConf );
             $cache = new \Doctrine\Common\Cache\MemcachedCache();
-            $cache->setMemcached( $memcached->getInstance() );
+            $cache->setMemcached( $memcached->getClass() );
             /*$memcached = new \Memcached();
             $memcached->addServer( $cacheConf->memcached->host, $cacheConf->memcached->port, $cacheConf->memcached->weight );
             $cache = new \Doctrine\Common\Cache\MemcachedCache();
