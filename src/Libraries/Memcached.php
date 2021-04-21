@@ -8,6 +8,7 @@ class Memcached extends MemcachedHandler
     public function __construct(Cache $config)
     {
         parent::__construct( $config );
+        $this->initialize();
     }
 
     public function getInstance()
