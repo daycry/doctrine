@@ -45,8 +45,8 @@ class Doctrine
             $cache->setNamespace( $cacheConf->prefix );*/
 
             $redis = new \Redis();
-            $redis->connect( $cacheConf->redis->host, $cacheConf->redis->port );
-            $redis->select( $cacheConf->redis->database );
+            $redis->connect( $cacheConf->redis[ 'host' ], $cacheConf->redis[ 'port' ] );
+            $redis->select( $cacheConf->redis[ 'database' ] );
             $cache = new \Doctrine\Common\Cache\RedisCache();
             $cache->setRedis( $redis );
             $cache->setNamespace( $cacheConf->prefix );
@@ -59,7 +59,7 @@ class Doctrine
             $cache->setMemcached( $memcached->getClass() );*/
             
             $memcached = new \Memcached();
-            $memcached->addServer( $cacheConf->memcached->host, $cacheConf->memcached->port, $cacheConf->memcached->weight );
+            $memcached->addServer( $cacheConf->memcached[ 'host' ], $cacheConf->memcached[ 'port' ], $cacheConf->memcached[ 'weight' ] );
             $cache = new \Doctrine\Common\Cache\MemcachedCache();
             $cache->setMemcached( $memcached );
             //$cache->save( 'cache_id', 'my_data' );
