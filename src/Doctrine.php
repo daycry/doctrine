@@ -35,22 +35,32 @@ class Doctrine
 
         $dev_mode = ( ENVIRONMENT == "development" ) ? true : false;
 
-        if( $configuration->cache == "redis" )
+        $cacheConf = config( 'Cache' );
+
+        if( $cacheConf->handler == 'redis' )
         {
-            $redis = new \Redis();
-            $redis->connect( $configuration->hostCache, $configuration->portCache );
-            $redis->select( $configuration->databaseRedis );
+            $redis = new \Daycry\Doctrine\Libraries\Redis( $cacheConf );
+            $cache = new \Doctrine\Common\Cache\RedisCache();
+            $cache->setRedis( $redis->getInstance() );
+            $cache->setNamespace( $cacheConf->prefix );
+
+            /*$redis = new \Redis();
+            $redis->connect( $cacheConf->redis->host, $cacheConf->redis->port );
+            $redis->select( $cacheConf->redis->database );
             $cache = new \Doctrine\Common\Cache\RedisCache();
             $cache->setRedis( $redis );
-            $cache->setNamespace( $configuration->namespaceCache );
+            $cache->setNamespace( $cacheConf->prefix );*/
             //$cache->save( 'cache_id', 'my_data' );
 
-        }else if( $configuration->cache == "memcached" )
+        }else if( $cacheConf->handler == 'memcached' )
         {
-            $memcached = new \Memcached();
-            $memcached->addServer( $configuration->namespaceCache, $configuration->portCache );
+            $memcached = new \Daycry\Doctrine\Libraries\Memcached( $cacheConf );
             $cache = new \Doctrine\Common\Cache\MemcachedCache();
-            $cache->setMemcached( $memcached );
+            $cache->setMemcached( $memcached->getInstance() );
+            /*$memcached = new \Memcached();
+            $memcached->addServer( $cacheConf->memcached->host, $cacheConf->memcached->port, $cacheConf->memcached->weight );
+            $cache = new \Doctrine\Common\Cache\MemcachedCache();
+            $cache->setMemcached( $memcached );*/
             //$cache->save( 'cache_id', 'my_data' );
 
         }else{
