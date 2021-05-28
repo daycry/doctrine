@@ -65,7 +65,7 @@ class Doctrine
             //$cache->save( 'cache_id', 'my_data' );
 
         } else if ($cacheConf->handler == 'file') {
-            $cache = new \Doctrine\Common\Cache\PhpFileCache($cache->storePath . 'doctrine');
+            $cache = new \Doctrine\Common\Cache\PhpFileCache($cacheConf->storePath . 'doctrine');
         }else{
             $cache = new \Doctrine\Common\Cache\ArrayCache();
         }
