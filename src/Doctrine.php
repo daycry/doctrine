@@ -17,7 +17,7 @@ use Doctrine\DBAL\Logging\EchoSQLLogger;
 class Doctrine
 {
     public $em = null;
-    
+
     public function __construct( BaseConfig $configuration = null )
     {
         if( empty( $configuration ) )
@@ -57,7 +57,7 @@ class Doctrine
             /*$memcached = new \Daycry\Doctrine\Libraries\Memcached( $cacheConf );
             $cache = new \Doctrine\Common\Cache\MemcachedCache();
             $cache->setMemcached( $memcached->getClass() );*/
-            
+
             $memcached = new \Memcached();
             $memcached->addServer( $cacheConf->memcached[ 'host' ], $cacheConf->memcached[ 'port' ], $cacheConf->memcached[ 'weight' ] );
             $cache = new \Doctrine\Common\Cache\MemcachedCache();
@@ -70,7 +70,7 @@ class Doctrine
 
         $reader = new AnnotationReader();
         $driver = new \Doctrine\ORM\Mapping\Driver\AnnotationDriver( $reader, array( APPPATH . 'Models/Entity' ) );
-        
+
         $config = Setup::createAnnotationMetadataConfiguration( array( APPPATH . 'Models/Entity' ), $dev_mode, APPPATH . 'Models/Proxies', $cache, true );
         $config->setMetadataCacheImpl( $cache );
         $config->setQueryCacheImpl( $cache );
@@ -93,17 +93,17 @@ class Doctrine
 
         // Create EntityManager
         $this->em = EntityManager::create( $connectionOptions, $config );
-        
+
         $this->em->getConnection()->getDatabasePlatform()->registerDoctrineTypeMapping('set', 'string');
         $this->em->getConnection()->getDatabasePlatform()->registerDoctrineTypeMapping('enum', 'string');
     }
 
     /**
      * Convert CodeIgniter database config array to Doctrine's
-     * 
+     *
      * See http://www.codeigniter.com/user_guide/database/configuration.html
      * See http://docs.doctrine-project.org/projects/doctrine-dbal/en/latest/reference/configuration.html
-     * 
+     *
      * @param array $db
      * @return array
      * @throws Exception
@@ -112,7 +112,7 @@ class Doctrine
     {
         $connectionOptions = [];
 
-        if ( $db->DBDriver === 'pdo' ) 
+        if ( $db->DBDriver === 'pdo' )
         {
             return $this->convertDbConfigPdo( $db );
         } elseif( $db->DBDriver === 'MySQLi' )
@@ -124,6 +124,7 @@ class Doctrine
                 'host'     => $db->hostname,
                 'dbname'   => $db->database,
                 'charset'  => $db->charset,
+                'port'     => $db->port
             ];
         } else {
             throw new \Exception('Your Database Configuration is not confirmed by CodeIgniter Doctrine');
@@ -161,6 +162,7 @@ class Doctrine
                 'host'     => $db->hostname,
                 'dbname'   => $db->database,
                 'charset'  => $db->charset,
+                'port'     => $db->port
             ];
         } else {
             throw new Exception('Your Database Configuration is not confirmed by CodeIgniter Doctrine');
