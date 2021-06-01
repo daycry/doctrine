@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 namespace Daycry\Doctrine\Config;
 
@@ -8,7 +8,8 @@ class Doctrine extends BaseConfig
 {
     public $debug = false;
 
-    public $setAutoGenerateProxyClasses = true;
+    // see doc https://www.doctrine-project.org/projects/doctrine-orm/en/2.8/reference/advanced-configuration.html#auto-generating-proxy-classes-optional
+    public $setAutoGenerateProxyClasses = ENVIRONMENT === 'development' ? true : false;
 
     /*
      * Methods "Redis, Memcached" or "null"
