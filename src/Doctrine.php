@@ -126,6 +126,7 @@ class Doctrine
                 'host'     => $db->hostname,
                 'dbname'   => $db->database,
                 'charset'  => $db->charset,
+                'port'     => $db->port
             ];
         } else {
             throw new \Exception('Your Database Configuration is not confirmed by CodeIgniter Doctrine');
@@ -163,6 +164,7 @@ class Doctrine
                 'host'     => $db->hostname,
                 'dbname'   => $db->database,
                 'charset'  => $db->charset,
+                'port'     => $db->port
             ];
         } else {
             throw new Exception('Your Database Configuration is not confirmed by CodeIgniter Doctrine');
