@@ -1,6 +1,6 @@
 <?php
 
-namespace Doctrine\Daycry\DataTables;
+namespace Daycry\Doctrine\DataTables;
 
 use Doctrine\DBAL\Query\QueryBuilder;
 use Doctrine\ORM\QueryBuilder as ORMQueryBuilder;
