@@ -3,7 +3,7 @@
     "description": "Doctrine for Codeigniter 4",
     "keywords":
     [
-        "doctrine", "ORM", "codeigniter", "codeigniter4", "mysql"
+        "doctrine", "ORM", "codeigniter", "codeigniter4", "mysql", "dataTables"
     ],
     "homepage": "https://github.com/daycry/doctrine",
     "authors":
