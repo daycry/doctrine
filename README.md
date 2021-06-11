@@ -83,3 +83,32 @@ vendor/bin/doctrine orm:generate-entities .
 vendor/bin/doctrine orm:generate-proxies app/Models/Proxies
 
 ```
+
+## Use DataTables
+
+Usage with [doctrine/orm](https://github.com/doctrine/doctrine2):
+-----
+```php
+
+$datatables = ( new \Daycry\Doctrine\DataTables\Builder() )
+            ->withColumnAliases(
+                [
+                    'id' => 'qlu.id'
+                ]
+            )
+            ->withIndexColumn( 'qlu.id' )
+            ->withQueryBuilder(
+                $this->doctrine->em->createQueryBuilder()
+                    ->select( 'qlu.param, q.param, q.param, qs.id as param, qlu.param, qlu.param' )
+                    ->from( \App\Models\Entity\Class::class, 'qlu' )
+                    ->innerJoin( \App\Models\Entity\Class::class, 'qs', \Doctrine\ORM\Query\Expr\Join::WITH, 'qs.id = qlu.*' )
+                    ->innerJoin( \App\Models\Entity\Class::class, 'ql', \Doctrine\ORM\Query\Expr\Join::WITH, 'ql.id = qlu.*' )
+                    ->innerJoin( \App\Models\Entity\Class::class, 'q', \Doctrine\ORM\Query\Expr\Join::WITH, 'q.id = ql.*' )
+            )
+            ->withRequestParams( $this->request->getGet( null ) );
+        
+        $response = $datatables->getResponse();
+
+        echo \json_encode( $response );
+
+```
