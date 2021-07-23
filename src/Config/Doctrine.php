@@ -34,5 +34,17 @@ class Doctrine extends BaseConfig
      * Namespace of Redis database or name of Memcached server
      */
     public $namespaceCache = "name";
+    
+    /*
+     * Namespace and folder of models
+     */
+    public $namespaceModel = 'App/Models';
+    public $folderModel = APPPATH . 'Models';
+
+    /*
+     * Namespace and folder of proxies
+     */
+    public $namespaceProxy = 'App/Models/Proxies';
+    public $folderProxy = APPPATH . 'Models/Proxies';
 
 }
