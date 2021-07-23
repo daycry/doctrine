@@ -27,10 +27,10 @@ class Doctrine
 
         $db = \Config\Database::connect();
 
-        $entitiesClassLoader = new ClassLoader( 'App/Models', rtrim( APPPATH, "Models" ) );
+        $entitiesClassLoader = new ClassLoader( $configuration->namespaceModel, $configuration->folderModel );
         $entitiesClassLoader->register();
 
-        $proxiesClassLoader = new ClassLoader( 'App/Models/Proxies', APPPATH . 'Models/Proxies' );
+        $proxiesClassLoader = new ClassLoader( $configuration->namespaceProxy, $configuration->folderProxy );
         $proxiesClassLoader->register();
 
         $dev_mode = ( ENVIRONMENT == "development" ) ? true : false;
