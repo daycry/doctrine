@@ -84,7 +84,7 @@ vendor/bin/doctrine orm:generate-proxies app/Models/Proxies
 
 ```
 
-## Use DataTables
+## Using DataTables
 
 Usage with [doctrine/orm](https://github.com/doctrine/doctrine2):
 -----
