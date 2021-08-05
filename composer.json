@@ -17,7 +17,7 @@
     "license": "MIT",
     "require": {
       "php": ">=7.2",
-        "doctrine/orm": "2.9.1",
+        "doctrine/orm": "^2.9",
         "doctrine/cache": "1.11.3",
         "beberlei/doctrineextensions": "^1.0",
         "jms/serializer-bundle": "^3.8",
