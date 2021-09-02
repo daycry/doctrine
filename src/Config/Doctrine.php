@@ -47,4 +47,9 @@ class Doctrine extends BaseConfig
     public $namespaceProxy = 'App/Models/Proxies';
     public $folderProxy = APPPATH . 'Models/Proxies';
 
+        /*
+     * Folder for entities
+     */
+    public $folderEntity = APPPATH . 'Models/Entity';
+
 }

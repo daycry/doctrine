@@ -64,16 +64,17 @@ class Doctrine
             $cache->setMemcached( $memcached );
             //$cache->save( 'cache_id', 'my_data' );
 
-        } else if ($cacheConf->handler == 'file') {
+        } else if( $cacheConf->handler == 'file' )
+        {
             $cache = new \Doctrine\Common\Cache\PhpFileCache($cacheConf->storePath . 'doctrine');
         }else{
             $cache = new \Doctrine\Common\Cache\ArrayCache();
         }
 
         $reader = new AnnotationReader();
-        $driver = new \Doctrine\ORM\Mapping\Driver\AnnotationDriver( $reader, array( APPPATH . 'Models/Entity' ) );
+        $driver = new \Doctrine\ORM\Mapping\Driver\AnnotationDriver( $reader, array( $configuration->folderEntity ) );
 
-        $config = Setup::createAnnotationMetadataConfiguration( array( APPPATH . 'Models/Entity' ), $dev_mode, APPPATH . 'Models/Proxies', $cache, true );
+        $config = Setup::createAnnotationMetadataConfiguration( array( $configuration->folderEntity ), $dev_mode, $configuration->folderProxy, $cache, true );
         $config->setMetadataCacheImpl( $cache );
         $config->setQueryCacheImpl( $cache );
         $config->setMetadataDriverImpl( $driver );
