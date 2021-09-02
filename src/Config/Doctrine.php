@@ -51,5 +51,4 @@ class Doctrine extends BaseConfig
      * Folder for entities
      */
     public $folderEntity = APPPATH . 'Models/Entity';
-
 }
