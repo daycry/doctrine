@@ -39,18 +39,12 @@ class Doctrine
 
         if( $cacheConf->handler == 'redis' )
         {
-            /*$redis = new \Daycry\Doctrine\Libraries\Redis( $cacheConf );
-            $cache = new \Doctrine\Common\Cache\RedisCache();
-            $cache->setRedis( $redis->getClass() );
-            $cache->setNamespace( $cacheConf->prefix );*/
-
-            $redis = new \Redis();
-            $redis->connect( $cacheConf->redis[ 'host' ], $cacheConf->redis[ 'port' ] );
+            $redis = new \Daycry\Doctrine\Libraries\Redis( $cacheConf );
+            $redis = $redis->getClass();
             $redis->select( $cacheConf->redis[ 'database' ] );
             $cache = new \Doctrine\Common\Cache\RedisCache();
             $cache->setRedis( $redis );
             $cache->setNamespace( $cacheConf->prefix );
-            //$cache->save( 'cache_id', 'my_data' );
 
         }else if( $cacheConf->handler == 'memcached' )
         {
