@@ -48,15 +48,14 @@ class Doctrine
 
         }else if( $cacheConf->handler == 'memcached' )
         {
-            /*$memcached = new \Daycry\Doctrine\Libraries\Memcached( $cacheConf );
+            $memcached = new \Daycry\Doctrine\Libraries\Memcached( $cacheConf );
             $cache = new \Doctrine\Common\Cache\MemcachedCache();
-            $cache->setMemcached( $memcached->getClass() );*/
+            $cache->setMemcached( $memcached->getClass() );
 
-            $memcached = new \Memcached();
+            /*$memcached = new \Memcached();
             $memcached->addServer( $cacheConf->memcached[ 'host' ], $cacheConf->memcached[ 'port' ], $cacheConf->memcached[ 'weight' ] );
             $cache = new \Doctrine\Common\Cache\MemcachedCache();
-            $cache->setMemcached( $memcached );
-            //$cache->save( 'cache_id', 'my_data' );
+            $cache->setMemcached( $memcached );*/
 
         } else if( $cacheConf->handler == 'file' )
         {
