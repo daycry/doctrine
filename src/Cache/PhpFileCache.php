@@ -1,6 +1,6 @@
 <?php
 
-namespace Doctrine\Common\Cache;
+namespace Daycry\Doctrine\Cache;
 
 use function is_object;
 use function method_exists;
