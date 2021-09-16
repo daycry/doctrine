@@ -42,14 +42,14 @@ class Doctrine
             $redis = new \Daycry\Doctrine\Libraries\Redis( $cacheConf );
             $redis = $redis->getClass();
             $redis->select( $cacheConf->redis[ 'database' ] );
-            $cache = new \Doctrine\Common\Cache\RedisCache();
+            $cache = new \Daycry\Doctrine\Cache\RedisCache();
             $cache->setRedis( $redis );
             $cache->setNamespace( $cacheConf->prefix );
 
         }else if( $cacheConf->handler == 'memcached' )
         {
             $memcached = new \Daycry\Doctrine\Libraries\Memcached( $cacheConf );
-            $cache = new \Doctrine\Common\Cache\MemcachedCache();
+            $cache = new \Daycry\Doctrine\Cache\MemcachedCache();
             $cache->setMemcached( $memcached->getClass() );
 
             /*$memcached = new \Memcached();
@@ -59,9 +59,9 @@ class Doctrine
 
         } else if( $cacheConf->handler == 'file' )
         {
-            $cache = new \Doctrine\Common\Cache\PhpFileCache($cacheConf->storePath . 'doctrine');
+            $cache = new \Daycry\Doctrine\Cache\FileCache($cacheConf->storePath . 'doctrine');
         }else{
-            $cache = new \Doctrine\Common\Cache\ArrayCache();
+            $cache = new \Daycry\Doctrine\Cache\ArrayCache();
         }
 
         $reader = new AnnotationReader();
