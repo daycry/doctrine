@@ -2,6 +2,8 @@
 
 namespace Daycry\Doctrine\Cache;
 
+use Doctrine\Common\Cache\CacheProvider;
+
 use FilesystemIterator;
 use InvalidArgumentException;
 use Iterator;
