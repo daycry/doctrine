@@ -59,7 +59,7 @@ class Doctrine
 
         } else if( $cacheConf->handler == 'file' )
         {
-            $cache = new \Daycry\Doctrine\Cache\FileCache($cacheConf->storePath . 'doctrine');
+            $cache = new \Daycry\Doctrine\Cache\PhpFileCache($cacheConf->storePath . 'doctrine');
         }else{
             $cache = new \Daycry\Doctrine\Cache\ArrayCache();
         }
