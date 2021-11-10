@@ -2,6 +2,8 @@
 
 Doctrine for Codeigniter 4
 
+[![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](daycry9@gmail.com)
+
 ## Installation via composer
 
 Use the package with composer install
