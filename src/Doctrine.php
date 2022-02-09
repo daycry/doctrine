@@ -100,7 +100,7 @@ class Doctrine
      * See http://www.codeigniter.com/user_guide/database/configuration.html
      * See http://docs.doctrine-project.org/projects/doctrine-dbal/en/latest/reference/configuration.html
      *
-     * @param array $db
+     * @param object $db
      * @return array
      * @throws Exception
      */
@@ -111,7 +111,7 @@ class Doctrine
         if ( $db->DBDriver === 'pdo' )
         {
             return $this->convertDbConfigPdo( $db );
-        } elseif( $db->DBDriver === 'MySQLi' )
+        } else
         {
             $connectionOptions = [
                 'driver'   => strtolower( $db->DBDriver ),
@@ -122,8 +122,6 @@ class Doctrine
                 'charset'  => $db->charset,
                 'port'     => $db->port
             ];
-        } else {
-            throw new \Exception('Your Database Configuration is not confirmed by CodeIgniter Doctrine');
         }
 
         return $connectionOptions;
