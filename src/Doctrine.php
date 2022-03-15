@@ -42,34 +42,29 @@ class Doctrine
             $redis = new \Daycry\Doctrine\Libraries\Redis( $cacheConf );
             $redis = $redis->getClass();
             $redis->select( $cacheConf->redis[ 'database' ] );
-            $cache = new \Daycry\Doctrine\Cache\RedisCache();
-            $cache->setRedis( $redis );
-            $cache->setNamespace( $cacheConf->prefix );
+            $this->cache = new \Daycry\Doctrine\Cache\RedisCache();
+            $this->cache->setRedis( $redis );
+            $this->cache->setNamespace( $cacheConf->prefix );
 
         }else if( $cacheConf->handler == 'memcached' )
         {
             $memcached = new \Daycry\Doctrine\Libraries\Memcached( $cacheConf );
-            $cache = new \Daycry\Doctrine\Cache\MemcachedCache();
-            $cache->setMemcached( $memcached->getClass() );
-
-            /*$memcached = new \Memcached();
-            $memcached->addServer( $cacheConf->memcached[ 'host' ], $cacheConf->memcached[ 'port' ], $cacheConf->memcached[ 'weight' ] );
-            $cache = new \Doctrine\Common\Cache\MemcachedCache();
-            $cache->setMemcached( $memcached );*/
+            $this->cache = new \Daycry\Doctrine\Cache\MemcachedCache();
+            $this->cache->setMemcached( $memcached->getClass() );
 
         } else if( $cacheConf->handler == 'file' )
         {
-            $cache = new \Daycry\Doctrine\Cache\PhpFileCache($cacheConf->storePath . 'doctrine');
+            $this->cache = new \Daycry\Doctrine\Cache\PhpFileCache($cacheConf->storePath . 'doctrine');
         }else{
-            $cache = new \Daycry\Doctrine\Cache\ArrayCache();
+            $this->cache = new \Daycry\Doctrine\Cache\ArrayCache();
         }
 
         $reader = new AnnotationReader();
         $driver = new \Doctrine\ORM\Mapping\Driver\AnnotationDriver( $reader, array( $configuration->folderEntity ) );
 
-        $config = Setup::createAnnotationMetadataConfiguration( array( $configuration->folderEntity ), $dev_mode, $configuration->folderProxy, $cache, true );
-        $config->setMetadataCacheImpl( $cache );
-        $config->setQueryCacheImpl( $cache );
+        $config = Setup::createAnnotationMetadataConfiguration( array( $configuration->folderEntity ), $dev_mode, $configuration->folderProxy, $this->cache, true );
+        $config->setMetadataCacheImpl( $this->cache );
+        $config->setQueryCacheImpl( $this->cache );
         $config->setMetadataDriverImpl( $driver );
 
 
@@ -92,6 +87,11 @@ class Doctrine
 
         $this->em->getConnection()->getDatabasePlatform()->registerDoctrineTypeMapping('set', 'string');
         $this->em->getConnection()->getDatabasePlatform()->registerDoctrineTypeMapping('enum', 'string');
+    }
+
+    public function reOpen()
+    {
+        $this->em = EntityManager::create( $this->em->getConnection(), $this->em->getConfiguration(), $this->em->getEventManager() );
     }
 
     /**
