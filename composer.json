@@ -33,5 +33,10 @@
         [
             "@composer dump-autoload"
         ]
+    },
+    "config": {
+        "allow-plugins": {
+            "yogarine/doctrine-annotation-autoload": true
+        }
     }
 }

@@ -75,8 +75,8 @@ class Doctrine
         // Set up logger
         if( $configuration->debug )
         {
-            $logger = new EchoSQLLogger;
-            $config->setSQLLogger( $logger );
+            //$logger = new EchoSQLLogger;
+            //$config->setSQLLogger( $logger );
         }
 
         // Database connection information
