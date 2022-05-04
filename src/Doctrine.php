@@ -4,11 +4,11 @@ namespace Daycry\Doctrine;
 
 use CodeIgniter\Config\BaseConfig;
 use Doctrine\Common\ClassLoader;
-use Doctrine\ORM\Configuration;
+//use Doctrine\ORM\Configuration;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\Tools\Setup;
 use Doctrine\Common\Annotations\AnnotationReader;
-use Doctrine\DBAL\Logging\EchoSQLLogger;
+//use Doctrine\DBAL\Logging\EchoSQLLogger;
 
 /**
  * Class General
