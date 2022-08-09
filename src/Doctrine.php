@@ -97,7 +97,9 @@ class Doctrine
      * @param object $db
      * @return array
      * @throws Exception
+     * 
      */
+
     public function convertDbConfig($db)
     {
         $connectionOptions = [];
@@ -119,6 +121,9 @@ class Doctrine
         return $connectionOptions;
     }
 
+    /**
+     * @codeCoverageIgnore
+     */
     protected function convertDbConfigPdo($db)
     {
         $connectionOptions = [];
