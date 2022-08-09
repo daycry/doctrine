@@ -16,15 +16,34 @@
     ],
     "license": "MIT",
     "require": {
-      "php": "^7.2 || ^8.0",
+      "php": "^7.4 || ^8.0",
         "doctrine/orm": "^2.9",
         "beberlei/doctrineextensions": "^1.0",
         "jms/serializer-bundle": "^4",
         "yogarine/doctrine-annotation-autoload": "^0.3.0"
     },
+    "require-dev":
+    {
+        "phpunit/phpunit": "^9.1",
+        "codeigniter4/framework": "4.1.2",
+        "friendsofphp/php-cs-fixer": "3.6.*",
+        "mikey179/vfsstream": "^1.6",
+        "nexusphp/cs-config": "^3.3",
+        "nexusphp/tachycardia": "^1.0",
+        "phpstan/phpstan": "^1.7.1",
+        "rector/rector": "0.13.9"
+    },
     "autoload": {
         "psr-4": {
             "Daycry\\Doctrine\\": "src/"
+        }
+    },
+    "autoload-dev":
+    {
+        "psr-4":
+        {
+            "Tests\\": "tests/",
+            "Tests\\Support\\": "tests/_support"
         }
     },
     "scripts":
@@ -32,7 +51,10 @@
         "post-update-cmd":
         [
             "@composer dump-autoload"
-        ]
+        ],
+        "test": "vendor/bin/phpunit",
+        "cs-fixer": "vendor/bin/php-cs-fixer fix src",
+        "cs-fixer-tests": "vendor/bin/php-cs-fixer fix tests"
     },
     "config": {
         "allow-plugins": {

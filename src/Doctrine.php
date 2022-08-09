@@ -18,11 +18,16 @@ class Doctrine
 {
     public $em = null;
 
-    public function __construct( BaseConfig $configuration = null )
+    public function __construct( BaseConfig $configuration = null, BaseConfig $cacheConf = null )
     {
-        if( empty( $configuration ) )
+        if( $configuration === null )
         {
             $configuration = config( 'Doctrine' );
+        }
+
+        if( $cacheConf === null )
+        {
+            $cacheConf = config( 'cache' );
         }
 
         $db = \Config\Database::connect();
@@ -34,8 +39,6 @@ class Doctrine
         $proxiesClassLoader->register();
 
         $dev_mode = ( ENVIRONMENT == "development" ) ? true : false;
-
-        $cacheConf = config( 'Cache' );
 
         if( $cacheConf->handler == 'redis' )
         {

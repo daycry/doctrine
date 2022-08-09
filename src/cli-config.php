@@ -4,22 +4,15 @@
  *
  * @author     Daycry <https://github.com/daycry>
  * @license    MIT License
- * @copyright  2015 Kenji Suzuki
- * @link       https://github.com/kenjis/codeigniter-doctrine
+ * @copyright  2022 Daycry
+ * @link       https://github.com/daycry/doctrine
  */
 
 error_reporting( E_ALL );
 
-// Path to the front controller (this file)
-if( !defined( 'FCPATH' ) )
-{
-    define( 'FCPATH', __DIR__ . DIRECTORY_SEPARATOR );
-}
-
-// Location of the Paths config file.
+// Load our paths config file
 // This is the line that might need to be changed, depending on your folder structure.
-$pathsPath = FCPATH . 'app/Config/Paths.php';
-// ^^^ Change this if you move your application folder
+defined('FCPATH') || define('FCPATH', __DIR__ . DIRECTORY_SEPARATOR);
 
 /*
  *---------------------------------------------------------------
@@ -31,14 +24,20 @@ $pathsPath = FCPATH . 'app/Config/Paths.php';
  */
 
 // Ensure the current directory is pointing to the front controller's directory
-chdir( __DIR__ );
+chdir(__DIR__);
 
 // Load our paths config file
-require $pathsPath;
+// This is the line that might need to be changed, depending on your folder structure.
+
+if(!class_exists('Config\Paths')) {
+    require realpath(FCPATH . '../app/Config/Paths.php') ?: FCPATH . '../app/Config/Paths.php';
+}
+
 $paths = new Config\Paths();
 
 // Location of the framework bootstrap file.
-$app = require rtrim( $paths->systemDirectory, '/ ' ) . '/bootstrap.php';
+$bootstrap = rtrim($paths->systemDirectory, '\\/ ') . DIRECTORY_SEPARATOR . 'bootstrap.php';
+$app       = require realpath($bootstrap) ?: $bootstrap;
 
 use Doctrine\ORM\Tools\Console\ConsoleRunner;
 

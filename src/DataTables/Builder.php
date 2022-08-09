@@ -59,6 +59,7 @@ class Builder
     {
         $query = $this->getFilteredQuery();
         $columns = &$this->requestParams['columns'];
+        
         // Order
         if (array_key_exists('order', $this->requestParams)) {
             $order = &$this->requestParams['order'];
@@ -70,10 +71,12 @@ class Builder
                 $query->addOrderBy($column[$this->columnField], $sort['dir']);
             }
         }
+
         // Offset
         if (array_key_exists('start', $this->requestParams)) {
             $query->setFirstResult(intval($this->requestParams['start']));
         }
+
         // Limit
         if (array_key_exists('length', $this->requestParams)) {
             $length = intval($this->requestParams['length']);
@@ -81,12 +84,14 @@ class Builder
                 $query->setMaxResults($length);
             }
         }
+        
         // Fetch
         if ($query instanceof ORMQueryBuilder) {
-            if ($this->returnCollection)
+            if ($this->returnCollection){
                 return $query->getQuery()->getResult();
-            else
+            }else{
                 return $query->getQuery()->getScalarResult();
+            }
         } else {
             return $query->execute()->fetchAll();
         }
