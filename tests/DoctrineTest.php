@@ -70,7 +70,7 @@ class DoctrineTest extends CIUnitTestCase
         }
     }
 
-    /*public function testInstanceDoctrineMemcached()
+    public function testInstanceDoctrineMemcached()
     {
         $cacheConf = config( 'cache' );
         $cacheConf->handler = 'memcached';
@@ -82,7 +82,7 @@ class DoctrineTest extends CIUnitTestCase
 
             $this->assertInstanceOf(\Daycry\Doctrine\Doctrine::class, $doctrine);
         }
-    }*/
+    }
 
     public function testDoctrineReOpen()
     {
