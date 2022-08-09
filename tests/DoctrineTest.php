@@ -57,7 +57,7 @@ class DoctrineTest extends CIUnitTestCase
 
     public function testInstanceDoctrineRedis()
     {
-        $cacheConf = config( 'cache' );
+        $cacheConf = config( 'Cache' );
         $cacheConf->handler = 'redis';
 
         $cache = \Config\Services::cache($cacheConf);
@@ -72,7 +72,7 @@ class DoctrineTest extends CIUnitTestCase
 
     public function testInstanceDoctrineMemcached()
     {
-        $cacheConf = config( 'cache' );
+        $cacheConf = config( 'Cache' );
         $cacheConf->handler = 'memcached';
 
         $cache = \Config\Services::cache($cacheConf);

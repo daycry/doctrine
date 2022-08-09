@@ -8,7 +8,6 @@ use Doctrine\Common\ClassLoader;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\Tools\Setup;
 use Doctrine\Common\Annotations\AnnotationReader;
-//use Doctrine\DBAL\Logging\EchoSQLLogger;
 
 /**
  * Class General
@@ -27,7 +26,7 @@ class Doctrine
 
         if( $cacheConf === null )
         {
-            $cacheConf = config( 'cache' );
+            $cacheConf = config( 'Cache' );
         }
 
         $db = \Config\Database::connect();
