@@ -8,7 +8,7 @@
  * @link       https://github.com/daycry/doctrine
  */
 
-error_reporting( E_ALL );
+error_reporting(E_ALL);
 
 // Load our paths config file
 // This is the line that might need to be changed, depending on your folder structure.
@@ -29,7 +29,7 @@ chdir(__DIR__);
 // Load our paths config file
 // This is the line that might need to be changed, depending on your folder structure.
 
-if(!class_exists('Config\Paths')) {
+if (!class_exists('Config\Paths')) {
     require realpath(FCPATH . '../app/Config/Paths.php') ?: FCPATH . '../app/Config/Paths.php';
 }
 
@@ -43,4 +43,4 @@ use Doctrine\ORM\Tools\Console\ConsoleRunner;
 
 $doctrine = new \Daycry\Doctrine\Doctrine();
 
-return ConsoleRunner::createHelperSet( $doctrine->em );
+return ConsoleRunner::createHelperSet($doctrine->em);

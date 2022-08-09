@@ -28,7 +28,7 @@ class DoctrineTest extends CIUnitTestCase
         $this->config->folderProxy = SUPPORTPATH . 'Models/Proxies';
         $this->config->folderEntity = SUPPORTPATH . 'Models/Entities';
     }
-    
+
     public function testInstanceDoctrine()
     {
         $doctrine = new \Daycry\Doctrine\Doctrine();
@@ -57,12 +57,12 @@ class DoctrineTest extends CIUnitTestCase
 
     public function testInstanceDoctrineRedis()
     {
-        $cacheConf = config( 'Cache' );
+        $cacheConf = config('Cache');
         $cacheConf->handler = 'redis';
 
         $cache = \Config\Services::cache($cacheConf);
 
-        if( $cache->isSupported() ) {
+        if ($cache->isSupported()) {
             $doctrine = new \Daycry\Doctrine\Doctrine($this->config, $cacheConf);
 
             $this->assertInstanceOf(\Daycry\Doctrine\Doctrine::class, $doctrine);
@@ -72,12 +72,12 @@ class DoctrineTest extends CIUnitTestCase
 
     public function testInstanceDoctrineMemcached()
     {
-        $cacheConf = config( 'Cache' );
+        $cacheConf = config('Cache');
         $cacheConf->handler = 'memcached';
 
         $cache = \Config\Services::cache($cacheConf);
 
-        if( $cache->isSupported() ) {
+        if ($cache->isSupported()) {
             $doctrine = new \Daycry\Doctrine\Doctrine($this->config, $cacheConf);
 
             $this->assertInstanceOf(\Daycry\Doctrine\Doctrine::class, $doctrine);

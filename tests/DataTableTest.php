@@ -8,7 +8,8 @@ use CodeIgniter\Test\FeatureTestTrait;
 
 class DataTableTest extends CIUnitTestCase
 {
-    use DatabaseTestTrait, FeatureTestTrait;
+    use DatabaseTestTrait;
+    use FeatureTestTrait;
 
     protected $migrate     = true;
     protected $migrateOnce = false;
@@ -29,7 +30,7 @@ class DataTableTest extends CIUnitTestCase
         $this->config->folderProxy = SUPPORTPATH . 'Models/Proxies';
         $this->config->folderEntity = SUPPORTPATH . 'Models/Entities';
     }
-    
+
     public function testDataTable()
     {
         $doctrine = new \Daycry\Doctrine\Doctrine($this->config);
@@ -42,17 +43,17 @@ class DataTableTest extends CIUnitTestCase
                     'name' => 't.name'
                 ]
             )
-            ->withIndexColumn( 'qlu.id' )
-            ->setUseOutputWalkers( false )
-            ->withCaseInsensitive( true )
+            ->withIndexColumn('qlu.id')
+            ->setUseOutputWalkers(false)
+            ->withCaseInsensitive(true)
             ->withColumnField('name')
-            ->withReturnCollection( false )
+            ->withReturnCollection(false)
             ->withQueryBuilder(
                 $doctrine->em->createQueryBuilder()
-                    ->select( 't.id, t.name' )
-                    ->from( \Test\Support\Models\Entities\Test::class, 't' )
+                    ->select('t.id, t.name')
+                    ->from(\Test\Support\Models\Entities\Test::class, 't')
             )
-            ->withRequestParams( 
+            ->withRequestParams(
                 array(
                     'draw' => 1,
                     'start' => 0,
@@ -75,13 +76,13 @@ class DataTableTest extends CIUnitTestCase
                         )
                     ),
                     'order' => array( array( 'column' => 0, 'dir' => 'asc') )
-                ) 
+                )
             );
-        
+
         $response = $datatables->getResponse();
 
         $this->assertArrayHasKey('data', $response);
-        $this->assertCount( 2, $response['data'] );
+        $this->assertCount(2, $response['data']);
     }
 
     public function testDataTableWithReturnCollection()
@@ -96,17 +97,17 @@ class DataTableTest extends CIUnitTestCase
                     'name' => 't.name'
                 ]
             )
-            ->withIndexColumn( 'qlu.id' )
-            ->setUseOutputWalkers( false )
-            ->withCaseInsensitive( true )
+            ->withIndexColumn('qlu.id')
+            ->setUseOutputWalkers(false)
+            ->withCaseInsensitive(true)
             ->withColumnField('name')
-            ->withReturnCollection( true )
+            ->withReturnCollection(true)
             ->withQueryBuilder(
                 $doctrine->em->createQueryBuilder()
-                    ->select( 't.id, t.name' )
-                    ->from( \Test\Support\Models\Entities\Test::class, 't' )
+                    ->select('t.id, t.name')
+                    ->from(\Test\Support\Models\Entities\Test::class, 't')
             )
-            ->withRequestParams( 
+            ->withRequestParams(
                 array(
                     'draw' => 1,
                     'start' => 0,
@@ -129,13 +130,13 @@ class DataTableTest extends CIUnitTestCase
                         )
                     ),
                     'order' => array( array( 'column' => 0, 'dir' => 'asc') )
-                ) 
+                )
             );
-        
+
         $response = $datatables->getResponse();
 
         $this->assertArrayHasKey('data', $response);
-        $this->assertCount( 2, $response['data'] );
+        $this->assertCount(2, $response['data']);
     }
 
     public function testDataTableSearchColumn()
@@ -150,17 +151,17 @@ class DataTableTest extends CIUnitTestCase
                     'name' => 't.name'
                 ]
             )
-            ->withIndexColumn( 'qlu.id' )
-            ->setUseOutputWalkers( false )
-            ->withCaseInsensitive( true )
+            ->withIndexColumn('qlu.id')
+            ->setUseOutputWalkers(false)
+            ->withCaseInsensitive(true)
             ->withColumnField('name')
-            ->withReturnCollection( false )
+            ->withReturnCollection(false)
             ->withQueryBuilder(
                 $doctrine->em->createQueryBuilder()
-                    ->select( 't.id, t.name' )
-                    ->from( \Test\Support\Models\Entities\Test::class, 't' )
+                    ->select('t.id, t.name')
+                    ->from(\Test\Support\Models\Entities\Test::class, 't')
             )
-            ->withRequestParams( 
+            ->withRequestParams(
                 array(
                     'draw' => 1,
                     'start' => 0,
@@ -183,13 +184,13 @@ class DataTableTest extends CIUnitTestCase
                         )
                     ),
                     'order' => array( array( 'column' => 0, 'dir' => 'asc') )
-                ) 
+                )
             );
-        
+
         $response = $datatables->getResponse();
 
         $this->assertArrayHasKey('data', $response);
-        $this->assertCount( 1, $response['data'] );
+        $this->assertCount(1, $response['data']);
     }
 
     protected function tearDown(): void

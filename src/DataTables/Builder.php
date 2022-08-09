@@ -59,7 +59,7 @@ class Builder
     {
         $query = $this->getFilteredQuery();
         $columns = &$this->requestParams['columns'];
-        
+
         // Order
         if (array_key_exists('order', $this->requestParams)) {
             $order = &$this->requestParams['order'];
@@ -84,12 +84,12 @@ class Builder
                 $query->setMaxResults($length);
             }
         }
-        
+
         // Fetch
         if ($query instanceof ORMQueryBuilder) {
-            if ($this->returnCollection){
+            if ($this->returnCollection) {
                 return $query->getQuery()->getResult();
-            }else{
+            } else {
                 return $query->getQuery()->getScalarResult();
             }
         } else {
@@ -181,7 +181,7 @@ class Builder
     {
         $query = $this->getFilteredQuery();
         $paginator = new Paginator($query, $fetchJoinCollection = true);
-        $paginator->setUseOutputWalkers( $this->useOutputWalkers );
+        $paginator->setUseOutputWalkers($this->useOutputWalkers);
         return $paginator->count();
     }
 
@@ -192,7 +192,7 @@ class Builder
     {
         $query = clone $this->queryBuilder;
         $paginator = new Paginator($query, $fetchJoinCollection = true);
-        $paginator->setUseOutputWalkers( $this->useOutputWalkers );
+        $paginator->setUseOutputWalkers($this->useOutputWalkers);
         return $paginator->count();
     }
 
@@ -223,7 +223,7 @@ class Builder
      * @param string|null $useOutputWalkers
      * return static
      */
-    public function setUseOutputWalkers( $useOutputWalkers )
+    public function setUseOutputWalkers($useOutputWalkers)
     {
         $this->useOutputWalkers = $useOutputWalkers;
         return $this;

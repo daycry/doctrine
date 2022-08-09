@@ -1,4 +1,6 @@
-<?php namespace Daycry\Doctrine\Commands;
+<?php
+
+namespace Daycry\Doctrine\Commands;
 
 use Config\Autoload;
 use CodeIgniter\CLI\CLI;
@@ -26,7 +28,7 @@ class DoctrinePublish extends BaseCommand
         $this->determineSourcePath();
         $this->publishCliConfig();
         $this->publishConfig();
-        CLI::write('Config file was successfully generated.', 'green');       
+        CLI::write('Config file was successfully generated.', 'green');
     }
     //--------------------------------------------------------------------
     /**
@@ -35,8 +37,7 @@ class DoctrinePublish extends BaseCommand
     protected function determineSourcePath()
     {
         $this->sourcePath = realpath(__DIR__ . '/../');
-        if ($this->sourcePath == '/' || empty($this->sourcePath))
-        {
+        if ($this->sourcePath == '/' || empty($this->sourcePath)) {
             CLI::error('Unable to determine the correct source directory. Bailing.');
             exit();
         }
@@ -49,7 +50,7 @@ class DoctrinePublish extends BaseCommand
     {
         $path = "{$this->sourcePath}/cli-config.php";
         $content = file_get_contents($path);
-        $this->writeFile( '../cli-config.php', $content );
+        $this->writeFile('../cli-config.php', $content);
     }
     //--------------------------------------------------------------------
     /**
@@ -78,21 +79,16 @@ class DoctrinePublish extends BaseCommand
 
         $appPath = $config->psr4[APP_NAMESPACE];
         $directory = dirname($appPath . $path);
-        if (! is_dir($directory))
-        {
+        if (! is_dir($directory)) {
             mkdir($directory, 0777, true);
         }
-        if (file_exists($appPath . $path) && CLI::prompt('Config file already exists, do you want to replace it?', ['y', 'n']) == 'n')
-        {
+        if (file_exists($appPath . $path) && CLI::prompt('Config file already exists, do you want to replace it?', ['y', 'n']) == 'n') {
             CLI::error('Cancelled');
             exit();
         }
-        try
-        {
+        try {
             write_file($appPath . $path, $content);
-        }
-        catch (\Exception $e)
-        {
+        } catch (\Exception $e) {
             $this->showError($e);
             exit();
         }

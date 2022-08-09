@@ -17,75 +17,67 @@ class Doctrine
 {
     public $em = null;
 
-    public function __construct( BaseConfig $configuration = null, BaseConfig $cacheConf = null )
+    public function __construct(BaseConfig $configuration = null, BaseConfig $cacheConf = null)
     {
-        if( $configuration === null )
-        {
-            $configuration = config( 'Doctrine' );
+        if ($configuration === null) {
+            $configuration = config('Doctrine');
         }
 
-        if( $cacheConf === null )
-        {
-            $cacheConf = config( 'Cache' );
+        if ($cacheConf === null) {
+            $cacheConf = config('Cache');
         }
 
         $db = \Config\Database::connect();
 
-        $entitiesClassLoader = new ClassLoader( $configuration->namespaceModel, $configuration->folderModel );
+        $entitiesClassLoader = new ClassLoader($configuration->namespaceModel, $configuration->folderModel);
         $entitiesClassLoader->register();
 
-        $proxiesClassLoader = new ClassLoader( $configuration->namespaceProxy, $configuration->folderProxy );
+        $proxiesClassLoader = new ClassLoader($configuration->namespaceProxy, $configuration->folderProxy);
         $proxiesClassLoader->register();
 
-        $dev_mode = ( ENVIRONMENT == "development" ) ? true : false;
+        $dev_mode = (ENVIRONMENT == "development") ? true : false;
 
-        if( $cacheConf->handler == 'redis' )
-        {
-            $redis = new \Daycry\Doctrine\Libraries\Redis( $cacheConf );
+        if ($cacheConf->handler == 'redis') {
+            $redis = new \Daycry\Doctrine\Libraries\Redis($cacheConf);
             $redis = $redis->getClass();
-            $redis->select( $cacheConf->redis[ 'database' ] );
+            $redis->select($cacheConf->redis[ 'database' ]);
             $this->cache = new \Daycry\Doctrine\Cache\RedisCache();
-            $this->cache->setRedis( $redis );
-            $this->cache->setNamespace( $cacheConf->prefix );
-
-        }else if( $cacheConf->handler == 'memcached' )
-        {
-            $memcached = new \Daycry\Doctrine\Libraries\Memcached( $cacheConf );
+            $this->cache->setRedis($redis);
+            $this->cache->setNamespace($cacheConf->prefix);
+        } elseif ($cacheConf->handler == 'memcached') {
+            $memcached = new \Daycry\Doctrine\Libraries\Memcached($cacheConf);
             $this->cache = new \Daycry\Doctrine\Cache\MemcachedCache();
-            $this->cache->setMemcached( $memcached->getClass() );
-
-        } else if( $cacheConf->handler == 'file' )
-        {
+            $this->cache->setMemcached($memcached->getClass());
+        } elseif ($cacheConf->handler == 'file') {
             $this->cache = new \Daycry\Doctrine\Cache\PhpFileCache($cacheConf->storePath . 'doctrine');
-        }else{
+        } else {
             $this->cache = new \Daycry\Doctrine\Cache\ArrayCache();
         }
 
         $reader = new AnnotationReader();
-        $driver = new \Doctrine\ORM\Mapping\Driver\AnnotationDriver( $reader, array( $configuration->folderEntity ) );
+        $driver = new \Doctrine\ORM\Mapping\Driver\AnnotationDriver($reader, array( $configuration->folderEntity ));
 
-        $config = Setup::createAnnotationMetadataConfiguration( array( $configuration->folderEntity ), $dev_mode, $configuration->folderProxy, $this->cache, true );
-        $config->setMetadataCacheImpl( $this->cache );
-        $config->setQueryCacheImpl( $this->cache );
-        $config->setMetadataDriverImpl( $driver );
+        $config = Setup::createAnnotationMetadataConfiguration(array( $configuration->folderEntity ), $dev_mode, $configuration->folderProxy, $this->cache, true);
+        $config->setMetadataCacheImpl($this->cache);
+        $config->setQueryCacheImpl($this->cache);
+        $config->setMetadataDriverImpl($driver);
 
 
         //Force generate proxy classes
         // comand: vendor/bin/doctrine orm:generate-proxies app/Models/Proxies
-        $config->setAutoGenerateProxyClasses( $configuration->setAutoGenerateProxyClasses );
+        $config->setAutoGenerateProxyClasses($configuration->setAutoGenerateProxyClasses);
 
         // Set up logger
-        if( $configuration->debug )
-        {
+        if ($configuration->debug) {
             //$logger = new EchoSQLLogger;
             //$config->setSQLLogger( $logger );
         }
 
         // Database connection information
-        $connectionOptions = $this->convertDbConfig( $db );
+        $connectionOptions = $this->convertDbConfig($db);
 
         // Create EntityManager
-        $this->em = EntityManager::create( $connectionOptions, $config );
+        $this->em = EntityManager::create($connectionOptions, $config);
 
         $this->em->getConnection()->getDatabasePlatform()->registerDoctrineTypeMapping('set', 'string');
         $this->em->getConnection()->getDatabasePlatform()->registerDoctrineTypeMapping('enum', 'string');
@@ -93,7 +85,7 @@ class Doctrine
 
     public function reOpen()
     {
-        $this->em = EntityManager::create( $this->em->getConnection(), $this->em->getConfiguration(), $this->em->getEventManager() );
+        $this->em = EntityManager::create($this->em->getConnection(), $this->em->getConfiguration(), $this->em->getEventManager());
     }
 
     /**
@@ -106,17 +98,15 @@ class Doctrine
      * @return array
      * @throws Exception
      */
-    public function convertDbConfig( $db )
+    public function convertDbConfig($db)
     {
         $connectionOptions = [];
 
-        if ( $db->DBDriver === 'pdo' )
-        {
-            return $this->convertDbConfigPdo( $db );
-        } else
-        {
+        if ($db->DBDriver === 'pdo') {
+            return $this->convertDbConfigPdo($db);
+        } else {
             $connectionOptions = [
-                'driver'   => strtolower( $db->DBDriver ),
+                'driver'   => strtolower($db->DBDriver),
                 'user'     => $db->username,
                 'password' => $db->password,
                 'host'     => $db->hostname,
@@ -133,24 +123,21 @@ class Doctrine
     {
         $connectionOptions = [];
 
-        if ( substr($db->hostname, 0, 7) === 'sqlite:' )
-        {
+        if (substr($db->hostname, 0, 7) === 'sqlite:') {
             $connectionOptions = [
                 'driver'   => 'pdo_sqlite',
                 'user'     => $db->username,
                 'password' => $db->password,
-                'path'     => preg_replace( '/\Asqlite:/', '', $db->hostname ),
+                'path'     => preg_replace('/\Asqlite:/', '', $db->hostname),
             ];
-        } elseif( substr($db->dsn, 0, 7) === 'sqlite:' )
-        {
+        } elseif (substr($db->dsn, 0, 7) === 'sqlite:') {
             $connectionOptions = [
                 'driver'   => 'pdo_sqlite',
                 'user'     => $db->username,
                 'password' => $db->password,
-                'path'     => preg_replace( '/\Asqlite:/', '', $db->dsn ),
+                'path'     => preg_replace('/\Asqlite:/', '', $db->dsn),
             ];
-        } elseif( substr($db->dsn, 0, 6) === 'mysql:' )
-        {
+        } elseif (substr($db->dsn, 0, 6) === 'mysql:') {
             $connectionOptions = [
                 'driver'   => 'pdo_mysql',
                 'user'     => $db->username,
