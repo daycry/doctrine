@@ -50,7 +50,8 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php-versions }}
-          tools: composer
+          tools: composer, pecl
+          extensions: redis, memcached
           coverage: xdebug
         env:
           update: true
@@ -67,8 +68,12 @@ jobs:
           restore-keys: ${{ runner.os }}-composer-
 
       - name: Install dependencies
-        run: composer install --ansi --no-interaction
-
+        run: |
+          composer update --ansi --no-interaction
+          composer remove --ansi --dev --unused -W -- rector/rector phpstan/phpstan friendsofphp/php-cs-fixer nexusphp/cs-config codeigniter/coding-standard
+        env:
+          COMPOSER_AUTH: ${{ secrets.COMPOSER_AUTH }}
+          
       - name: Compute coverage option
         uses: actions/github-script@v6
         id: phpunit-coverage-option
@@ -78,6 +83,9 @@ jobs:
       
       - name: Test with PHPUnit
         run: script -e -c "vendor/bin/phpunit --color=always --exclude-group=auto-review ${{ steps.phpunit-coverage-option.outputs.result }}"
+        env:
+          DB: ${{ matrix.db-platforms }}
+          TERM: xterm-256color
         
       - name: Run Coveralls
         if: matrix.php-versions == '8.0'
@@ -88,6 +96,7 @@ jobs:
           COVERALLS_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           COVERALLS_PARALLEL: true
           COVERALLS_FLAG_NAME: PHP ${{ matrix.php-versions }} - ${{ matrix.db-platforms }}
+          
   coveralls-finish:
     runs-on: ubuntu-latest
     needs: [tests]
