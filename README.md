@@ -86,6 +86,15 @@ vendor/bin/doctrine orm:generate-entities .
 vendor/bin/doctrine orm:generate-proxies app/Models/Proxies
 
 ```
+If you receive the followrin error:
+**[Semantical Error] The annotation "@JMS\Serializer\Annotation\ExclusionPolicy" in class App\Models\Entity\Secret was never imported. Did you maybe forget to add a "use" statement for this annotation?**
+
+
+You must execute the following command
+
+```php
+    composer dump-autoload
+```
 
 ## Using DataTables
 
