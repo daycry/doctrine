@@ -149,3 +149,77 @@ $datatables = ( new \Daycry\Doctrine\DataTables\Builder() )
         echo \json_encode( $response );
 
 ```
+
+## Search
+
+To search from datatables there are nine different search modes
+
+Mode | Pattern | Desctiption
+-------- | ------------- | -----------
+LIKE '…%' | [*%]searchTerm | This performs a LIKE '…%' search where the start of the search term must match a value in the given column. This can be archived with only providing the search term (because it's default) or by prefixing the search term with "[*%]" ([*%]searchTerm).
+LIKE '%…%'| [%%]searchTerm | This performs a LIKE '%…%' search where any part the search term must match a value in the given column. This can be archived by prefixing the search term with "[%%]" ([%%]searchTerm).
+Equality | [=]searchTerm | This performs a = … search. The search term must exactly match a value in the given column. This can be archived by prefixing the search term with "[=]" ([=]searchTerm).
+!= (No Equality) | [!=]searchTerm | This performs a != … search. The search term must not exactly match a value in the given column. This can be archived by prefixing the search term with "[!=]" ([!=]searchTerm).
+> (Greater Than) | [>]searchTerm | This performs a > … search. The search term must be smaller than a value in the given column. This can be archived by prefixing the search term with "[>]" ([>]searchTerm).
+< (Smaller Than) | [<]searchTerm | This performs a < … search. The search term must be greater than a value in the given column. This can be archived by prefixing the search term with "[<]" ([<]searchTerm).
+< (IN) | [IN]searchTerm,searchTerm,… | This performs an IN(…) search. One of the provided comma-separated search terms must exactly match a value in the given column. This can be archived by prefixing the search terms with "[IN]" ([IN]searchTerm,searchTerm,…).
+< (OR) | [OR]searchTerm,searchTerm,… | This performs multiple OR-connected LIKE('%…%') searches. One of the provided comma-separated search terms must match a fragment of a value in the given column. This can be archived by prefixing the search terms with "[OR]" ([OR]searchTerm,searchTerm,…).
+>< (Between) | [><]searchTerm,searchTerm | This performs a BETWEEN … AND … search. Both search terms must be separated with a comma. This operation can be archived by prefixing the comma-separated search terms with "[><]" ([><]searchTerm,searchTerm).
+
+Prefixes are case-insenstive (IN, in, OR, or). Provided search terms were trimmed.
+
+## Example
+
+```php
+
+public function testDataTableSearchColumnWithOr()
+    {
+        $doctrine = new \Daycry\Doctrine\Doctrine($this->config);
+        $request = \Config\Services::request();
+
+        $datatables = ( new \Daycry\Doctrine\DataTables\Builder() )
+            ->withColumnAliases(
+                [
+                    'id' => 't.id',
+                    'name' => 't.name'
+                ]
+            )
+            ->withIndexColumn('qlu.id')
+            ->setUseOutputWalkers(false)
+            ->withCaseInsensitive(false)
+            ->withColumnField('name')
+            ->withQueryBuilder(
+                $doctrine->em->createQueryBuilder()
+                    ->select('t.id, t.name')
+                    ->from(\Tests\Support\Models\Entities\Test::class, 't')
+            )
+            ->withRequestParams(
+                array(
+                    'draw' => 1,
+                    'start' => 0,
+                    'length' => 10,
+                    'search' => array('value' => '', 'regex' => true ),
+                    'columns' => array(
+                        array(
+                            'data' => 'id',
+                            'name' => 'id',
+                            'searchable' => true,
+                            'orderable' => true,
+                            'search' => array('value' => '[OR]1,3', 'regex' => false)
+                        ),
+                        array(
+                            'data' => 'name',
+                            'name' => 'name',
+                            'searchable' => true,
+                            'orderable' => true,
+                            'search' => array('value' => '', 'regex' => false)
+                        )
+                    ),
+                    'order' => array( array( 'column' => 0, 'dir' => 'asc') )
+                )
+            );
+
+        echo $response = json_encode($datatables->getResponse());
+
+    }
+```

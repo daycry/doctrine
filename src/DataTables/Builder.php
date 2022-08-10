@@ -30,7 +30,7 @@ class Builder
     /**
      * @var bool
      */
-    protected $returnCollection = false;
+    //protected $returnCollection = false;
 
     /**
      * @var bool
@@ -86,7 +86,16 @@ class Builder
         }
 
         // Fetch
-        if ($query instanceof ORMQueryBuilder) {
+        $paginator = new Paginator($query, $fetchJoinCollection = true);
+        $paginator->setUseOutputWalkers($this->useOutputWalkers);
+        $result = array();
+
+        foreach($paginator as $obj) {
+            $result[] = $obj;
+        }
+
+        return $result;
+        /*if ($query instanceof ORMQueryBuilder) {
             if ($this->returnCollection) {
                 return $query->getQuery()->getResult();
             } else {
@@ -94,7 +103,7 @@ class Builder
             }
         } else {
             return $query->execute()->fetchAll();
-        }
+        }*/
     }
 
     /**
@@ -105,6 +114,7 @@ class Builder
         $query = clone $this->queryBuilder;
         $columns = &$this->requestParams['columns'];
         $c = count($columns);
+
         // Search
         if (array_key_exists('search', $this->requestParams)) {
             if ($value = trim($this->requestParams['search']['value'])) {
@@ -137,7 +147,10 @@ class Builder
                 if (array_key_exists($column[$this->columnField], $this->columnAliases)) {
                     $column[$this->columnField] = $this->columnAliases[$column[$this->columnField]];
                 }
-                $operator = preg_match('~^\[(?<operator>[=!%<>]+)\].*$~', $value, $matches) ? $matches['operator'] : '=';
+
+                //$operator = preg_match('~^\[(?<operator>[=!%<>]+)\].*$~', $value, $matches) ? $matches['operator'] : '=';
+                $operator = preg_match('~^\[(?<operator>[INOR=!%<>•]+)\].*$~i', $value, $matches) ? strtoupper($matches['operator']) : '%•';
+                $value    = preg_match('~^\[(?<operator>[INOR=!%<>•]+)\](?<term>.*)$~i', $value, $matches) ? $matches['term'] : $value;
                 if ($this->caseInsensitive) {
                     $searchColumn = "lower(" . $column[$this->columnField] . ")";
                     $filter = "lower(:filter_{$i})";
@@ -145,26 +158,70 @@ class Builder
                     $searchColumn = $column[$this->columnField];
                     $filter = ":filter_{$i}";
                 }
+
                 switch ($operator) {
                     case '!=': // Not equals; usage: [!=]search_term
                         $andX->add($query->expr()->neq($searchColumn, $filter));
+                        $query->setParameter("filter_{$i}", $value);
                         break;
-                    case '%': // Like; usage: [%]search_term
+                    case '%%': // Like; usage: [%%]search_term
                         $andX->add($query->expr()->like($searchColumn, $filter));
                         $value = "%{$value}%";
+                        $query->setParameter("filter_{$i}", $value);
                         break;
                     case '<': // Less than; usage: [>]search_term
                         $andX->add($query->expr()->lt($searchColumn, $filter));
+                        $query->setParameter("filter_{$i}", $value);
                         break;
                     case '>': // Greater than; usage: [<]search_term
                         $andX->add($query->expr()->gt($searchColumn, $filter));
+                        $query->setParameter("filter_{$i}", $value);
                         break;
-                    case '=': // Equals (default); usage: [=]search_term
-                    default:
-                        $andX->add($query->expr()->eq($searchColumn, $filter));
+                    case 'IN': // IN; usage: [IN]search_term,search_term  -> This equals OR with complete terms
+                        $value = explode(',', $value);
+                        $params = array();
+                        for ($j = 0; $j < count($value); $j++) {
+                            $params[] = ":filter_{$i}_{$j}";
+                        }
+                        $andX->add($query->expr()->in($column[$this->columnField], implode(',', $params)));
+                        for ($j = 0; $j < count($value); $j++) {
+                            $query->setParameter("filter_{$i}_{$j}", trim($value[$j]));
+                        }
                         break;
+                    case 'OR': // OR; usage: [IN]search_term,search_term  -> This equals OR with complete terms
+                        $value = explode(',', $value);
+                        $params = array();
+                        $orX = $query->expr()->orX();
+                        for ($j = 0; $j < count($value); $j++) {
+                            $orX->add($query->expr()->like($column[$this->columnField], ":filter_{$i}_{$j}"));
+                        }
+                        $andX->add($orX);
+                        for ($j = 0; $j < count($value); $j++) {
+                            $query->setParameter("filter_{$i}_{$j}", "%".trim($value[$j])."%");
+                        }
+                        break;
+                    case '><': // Between than; usage: [><]search_term,search_term
+                        $value = explode(',', $value);
+                        $params = array();
+                        for ($j = 0; $j < count($value); $j++) {
+                            $params[] = ":filter_{$i}_{$j}";
+                        }
+                        $andX->add($query->expr()->between($column[$this->columnField], trim($params[0]), trim($params[1])));
+                        for ($j = 0; $j < count($value); $j++) {
+                            $query->setParameter("filter_{$i}_{$j}", $value[$j]);
+                        }
+                        break;
+                    case '=': // Equals; usage: [=]search_term
+                        $andX->add($query->expr()->eq($column[$this->columnField], ":filter_{$i}"));
+                        $query->setParameter("filter_{$i}", $value);
+                        break;
+                    case '%': // Like(default); usage: [%]search_term
+                        default:
+                            $andX->add($query->expr()->like($column[$this->columnField], ":filter_{$i}"));
+                            $value = "{$value}%";
+                            $query->setParameter("filter_{$i}", $value);
+                            break;
                 }
-                $query->setParameter("filter_{$i}", $value);
             }
             if ($andX->count() >= 1) {
                 $query->andWhere($andX);
@@ -236,16 +293,6 @@ class Builder
     public function withColumnAliases($columnAliases)
     {
         $this->columnAliases = $columnAliases;
-        return $this;
-    }
-
-    /**
-     * @param bool $returnObjectCollection
-     * @return static
-     */
-    public function withReturnCollection($returnCollection)
-    {
-        $this->returnCollection = $returnCollection;
         return $this;
     }
 

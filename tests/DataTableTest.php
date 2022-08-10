@@ -31,7 +31,7 @@ class DataTableTest extends CIUnitTestCase
         $this->config->folderEntity = SUPPORTPATH . 'Models/Entities';
     }
 
-    public function testDataTable()
+    public function testDataTableDefault()
     {
         $doctrine = new \Daycry\Doctrine\Doctrine($this->config);
         $request = \Config\Services::request();
@@ -46,19 +46,18 @@ class DataTableTest extends CIUnitTestCase
             ->withIndexColumn('qlu.id')
             ->setUseOutputWalkers(false)
             ->withCaseInsensitive(true)
-            ->withColumnField('name')
-            ->withReturnCollection(false)
+            ->withColumnField('data')
             ->withQueryBuilder(
                 $doctrine->em->createQueryBuilder()
                     ->select('t.id, t.name')
-                    ->from(\Test\Support\Models\Entities\Test::class, 't')
+                    ->from(\Tests\Support\Models\Entities\Test::class, 't')
             )
             ->withRequestParams(
                 array(
                     'draw' => 1,
                     'start' => 0,
                     'length' => 10,
-                    'search' => array('value' => 'name', 'regex' => true ),
+                    'search' => array('value' => '', 'regex' => false ),
                     'columns' => array(
                         array(
                             'data' => 'id',
@@ -85,59 +84,6 @@ class DataTableTest extends CIUnitTestCase
         $this->assertCount(2, $response['data']);
     }
 
-    public function testDataTableWithReturnCollection()
-    {
-        $doctrine = new \Daycry\Doctrine\Doctrine($this->config);
-        $request = \Config\Services::request();
-
-        $datatables = ( new \Daycry\Doctrine\DataTables\Builder() )
-            ->withColumnAliases(
-                [
-                    'id' => 't.id',
-                    'name' => 't.name'
-                ]
-            )
-            ->withIndexColumn('qlu.id')
-            ->setUseOutputWalkers(false)
-            ->withCaseInsensitive(true)
-            ->withColumnField('name')
-            ->withReturnCollection(true)
-            ->withQueryBuilder(
-                $doctrine->em->createQueryBuilder()
-                    ->select('t.id, t.name')
-                    ->from(\Test\Support\Models\Entities\Test::class, 't')
-            )
-            ->withRequestParams(
-                array(
-                    'draw' => 1,
-                    'start' => 0,
-                    'length' => 10,
-                    'search' => array('value' => 'name', 'regex' => true ),
-                    'columns' => array(
-                        array(
-                            'data' => 'id',
-                            'name' => 'id',
-                            'searchable' => true,
-                            'orderable' => true,
-                            'search' => array('value' => '', 'regex' => false)
-                        ),
-                        array(
-                            'data' => 'name',
-                            'name' => 'name',
-                            'searchable' => true,
-                            'orderable' => true,
-                            'search' => array('value' => '', 'regex' => false)
-                        )
-                    ),
-                    'order' => array( array( 'column' => 0, 'dir' => 'asc') )
-                )
-            );
-
-        $response = $datatables->getResponse();
-
-        $this->assertArrayHasKey('data', $response);
-        $this->assertCount(2, $response['data']);
-    }
 
     public function testDataTableSearchColumn()
     {
@@ -153,13 +99,12 @@ class DataTableTest extends CIUnitTestCase
             )
             ->withIndexColumn('qlu.id')
             ->setUseOutputWalkers(false)
-            ->withCaseInsensitive(true)
+            ->withCaseInsensitive(false)
             ->withColumnField('name')
-            ->withReturnCollection(false)
             ->withQueryBuilder(
                 $doctrine->em->createQueryBuilder()
                     ->select('t.id, t.name')
-                    ->from(\Test\Support\Models\Entities\Test::class, 't')
+                    ->from(\Tests\Support\Models\Entities\Test::class, 't')
             )
             ->withRequestParams(
                 array(
@@ -181,6 +126,430 @@ class DataTableTest extends CIUnitTestCase
                             'searchable' => true,
                             'orderable' => true,
                             'search' => array('value' => 'name1', 'regex' => true)
+                        )
+                    ),
+                    'order' => array( array( 'column' => 0, 'dir' => 'asc') )
+                )
+            );
+
+        $response = $datatables->getResponse();
+
+        $this->assertArrayHasKey('data', $response);
+        $this->assertCount(1, $response['data']);
+    }
+
+    public function testDataTableSearchColumnWithPercent()
+    {
+        $doctrine = new \Daycry\Doctrine\Doctrine($this->config);
+        $request = \Config\Services::request();
+
+        $datatables = ( new \Daycry\Doctrine\DataTables\Builder() )
+            ->withColumnAliases(
+                [
+                    'id' => 't.id',
+                    'name' => 't.name'
+                ]
+            )
+            ->withIndexColumn('qlu.id')
+            ->setUseOutputWalkers(false)
+            ->withCaseInsensitive(false)
+            ->withColumnField('name')
+            ->withQueryBuilder(
+                $doctrine->em->createQueryBuilder()
+                    ->select('t.id, t.name')
+                    ->from(\Tests\Support\Models\Entities\Test::class, 't')
+            )
+            ->withRequestParams(
+                array(
+                    'draw' => 1,
+                    'start' => 0,
+                    'length' => 10,
+                    'search' => array('value' => '', 'regex' => true ),
+                    'columns' => array(
+                        array(
+                            'data' => 'id',
+                            'name' => 'id',
+                            'searchable' => true,
+                            'orderable' => true,
+                            'search' => array('value' => '', 'regex' => false)
+                        ),
+                        array(
+                            'data' => 'name',
+                            'name' => 'name',
+                            'searchable' => true,
+                            'orderable' => true,
+                            'search' => array('value' => '[%%]am', 'regex' => false)
+                        )
+                    ),
+                    'order' => array( array( 'column' => 0, 'dir' => 'asc') )
+                )
+            );
+
+        $response = $datatables->getResponse();
+
+        $this->assertArrayHasKey('data', $response);
+        $this->assertCount(2, $response['data']);
+    }
+
+    public function testDataTableSearchColumnWithDifferent()
+    {
+        $doctrine = new \Daycry\Doctrine\Doctrine($this->config);
+        $request = \Config\Services::request();
+
+        $datatables = ( new \Daycry\Doctrine\DataTables\Builder() )
+            ->withColumnAliases(
+                [
+                    'id' => 't.id',
+                    'name' => 't.name'
+                ]
+            )
+            ->withIndexColumn('qlu.id')
+            ->setUseOutputWalkers(false)
+            ->withCaseInsensitive(false)
+            ->withColumnField('name')
+            ->withQueryBuilder(
+                $doctrine->em->createQueryBuilder()
+                    ->select('t.id, t.name')
+                    ->from(\Tests\Support\Models\Entities\Test::class, 't')
+            )
+            ->withRequestParams(
+                array(
+                    'draw' => 1,
+                    'start' => 0,
+                    'length' => 10,
+                    'search' => array('value' => '', 'regex' => true ),
+                    'columns' => array(
+                        array(
+                            'data' => 'id',
+                            'name' => 'id',
+                            'searchable' => true,
+                            'orderable' => true,
+                            'search' => array('value' => '', 'regex' => false)
+                        ),
+                        array(
+                            'data' => 'name',
+                            'name' => 'name',
+                            'searchable' => true,
+                            'orderable' => true,
+                            'search' => array('value' => '[!=]name1', 'regex' => false)
+                        )
+                    ),
+                    'order' => array( array( 'column' => 0, 'dir' => 'asc') )
+                )
+            );
+
+        $response = $datatables->getResponse();
+
+        $this->assertArrayHasKey('data', $response);
+        $this->assertCount(1, $response['data']);
+    }
+
+    public function testDataTableSearchColumnWithLessThan()
+    {
+        $doctrine = new \Daycry\Doctrine\Doctrine($this->config);
+        $request = \Config\Services::request();
+
+        $datatables = ( new \Daycry\Doctrine\DataTables\Builder() )
+            ->withColumnAliases(
+                [
+                    'id' => 't.id',
+                    'name' => 't.name'
+                ]
+            )
+            ->withIndexColumn('qlu.id')
+            ->setUseOutputWalkers(false)
+            ->withCaseInsensitive(false)
+            ->withColumnField('name')
+            ->withQueryBuilder(
+                $doctrine->em->createQueryBuilder()
+                    ->select('t.id, t.name')
+                    ->from(\Tests\Support\Models\Entities\Test::class, 't')
+            )
+            ->withRequestParams(
+                array(
+                    'draw' => 1,
+                    'start' => 0,
+                    'length' => 10,
+                    'search' => array('value' => '', 'regex' => true ),
+                    'columns' => array(
+                        array(
+                            'data' => 'id',
+                            'name' => 'id',
+                            'searchable' => true,
+                            'orderable' => true,
+                            'search' => array('value' => '[<]2', 'regex' => false)
+                        ),
+                        array(
+                            'data' => 'name',
+                            'name' => 'name',
+                            'searchable' => true,
+                            'orderable' => true,
+                            'search' => array('value' => '', 'regex' => false)
+                        )
+                    ),
+                    'order' => array( array( 'column' => 0, 'dir' => 'asc') )
+                )
+            );
+
+        $response = $datatables->getResponse();
+
+        $this->assertArrayHasKey('data', $response);
+        $this->assertCount(1, $response['data']);
+    }
+
+    public function testDataTableSearchColumnWithMoreThan()
+    {
+        $doctrine = new \Daycry\Doctrine\Doctrine($this->config);
+        $request = \Config\Services::request();
+
+        $datatables = ( new \Daycry\Doctrine\DataTables\Builder() )
+            ->withColumnAliases(
+                [
+                    'id' => 't.id',
+                    'name' => 't.name'
+                ]
+            )
+            ->withIndexColumn('qlu.id')
+            ->setUseOutputWalkers(false)
+            ->withCaseInsensitive(false)
+            ->withColumnField('name')
+            ->withQueryBuilder(
+                $doctrine->em->createQueryBuilder()
+                    ->select('t.id, t.name')
+                    ->from(\Tests\Support\Models\Entities\Test::class, 't')
+            )
+            ->withRequestParams(
+                array(
+                    'draw' => 1,
+                    'start' => 0,
+                    'length' => 10,
+                    'search' => array('value' => '', 'regex' => true ),
+                    'columns' => array(
+                        array(
+                            'data' => 'id',
+                            'name' => 'id',
+                            'searchable' => true,
+                            'orderable' => true,
+                            'search' => array('value' => '[>]1', 'regex' => false)
+                        ),
+                        array(
+                            'data' => 'name',
+                            'name' => 'name',
+                            'searchable' => true,
+                            'orderable' => true,
+                            'search' => array('value' => '', 'regex' => false)
+                        )
+                    ),
+                    'order' => array( array( 'column' => 0, 'dir' => 'asc') )
+                )
+            );
+
+        $response = $datatables->getResponse();
+
+        $this->assertArrayHasKey('data', $response);
+        $this->assertCount(1, $response['data']);
+    }
+
+    public function testDataTableSearchColumnWithIn()
+    {
+        $doctrine = new \Daycry\Doctrine\Doctrine($this->config);
+        $request = \Config\Services::request();
+
+        $datatables = ( new \Daycry\Doctrine\DataTables\Builder() )
+            ->withColumnAliases(
+                [
+                    'id' => 't.id',
+                    'name' => 't.name'
+                ]
+            )
+            ->withIndexColumn('qlu.id')
+            ->setUseOutputWalkers(false)
+            ->withCaseInsensitive(false)
+            ->withColumnField('name')
+            ->withQueryBuilder(
+                $doctrine->em->createQueryBuilder()
+                    ->select('t.id, t.name')
+                    ->from(\Tests\Support\Models\Entities\Test::class, 't')
+            )
+            ->withRequestParams(
+                array(
+                    'draw' => 1,
+                    'start' => 0,
+                    'length' => 10,
+                    'search' => array('value' => '', 'regex' => true ),
+                    'columns' => array(
+                        array(
+                            'data' => 'id',
+                            'name' => 'id',
+                            'searchable' => true,
+                            'orderable' => true,
+                            'search' => array('value' => '[IN]2,3', 'regex' => false)
+                        ),
+                        array(
+                            'data' => 'name',
+                            'name' => 'name',
+                            'searchable' => true,
+                            'orderable' => true,
+                            'search' => array('value' => '', 'regex' => false)
+                        )
+                    ),
+                    'order' => array( array( 'column' => 0, 'dir' => 'asc') )
+                )
+            );
+
+        $response = $datatables->getResponse();
+
+        $this->assertArrayHasKey('data', $response);
+        $this->assertCount(1, $response['data']);
+    }
+
+    public function testDataTableSearchColumnWithOr()
+    {
+        $doctrine = new \Daycry\Doctrine\Doctrine($this->config);
+        $request = \Config\Services::request();
+
+        $datatables = ( new \Daycry\Doctrine\DataTables\Builder() )
+            ->withColumnAliases(
+                [
+                    'id' => 't.id',
+                    'name' => 't.name'
+                ]
+            )
+            ->withIndexColumn('qlu.id')
+            ->setUseOutputWalkers(false)
+            ->withCaseInsensitive(false)
+            ->withColumnField('name')
+            ->withQueryBuilder(
+                $doctrine->em->createQueryBuilder()
+                    ->select('t.id, t.name')
+                    ->from(\Tests\Support\Models\Entities\Test::class, 't')
+            )
+            ->withRequestParams(
+                array(
+                    'draw' => 1,
+                    'start' => 0,
+                    'length' => 10,
+                    'search' => array('value' => '', 'regex' => true ),
+                    'columns' => array(
+                        array(
+                            'data' => 'id',
+                            'name' => 'id',
+                            'searchable' => true,
+                            'orderable' => true,
+                            'search' => array('value' => '[OR]1,3', 'regex' => false)
+                        ),
+                        array(
+                            'data' => 'name',
+                            'name' => 'name',
+                            'searchable' => true,
+                            'orderable' => true,
+                            'search' => array('value' => '', 'regex' => false)
+                        )
+                    ),
+                    'order' => array( array( 'column' => 0, 'dir' => 'asc') )
+                )
+            );
+
+        $response = $datatables->getResponse();
+
+        $this->assertArrayHasKey('data', $response);
+        $this->assertCount(1, $response['data']);
+    }
+
+    public function testDataTableSearchColumnWithBetween()
+    {
+        $doctrine = new \Daycry\Doctrine\Doctrine($this->config);
+        $request = \Config\Services::request();
+
+        $datatables = ( new \Daycry\Doctrine\DataTables\Builder() )
+            ->withColumnAliases(
+                [
+                    'id' => 't.id',
+                    'name' => 't.name'
+                ]
+            )
+            ->withIndexColumn('qlu.id')
+            ->setUseOutputWalkers(false)
+            ->withCaseInsensitive(false)
+            ->withColumnField('name')
+            ->withQueryBuilder(
+                $doctrine->em->createQueryBuilder()
+                    ->select('t.id, t.name')
+                    ->from(\Tests\Support\Models\Entities\Test::class, 't')
+            )
+            ->withRequestParams(
+                array(
+                    'draw' => 1,
+                    'start' => 0,
+                    'length' => 10,
+                    'search' => array('value' => '', 'regex' => true ),
+                    'columns' => array(
+                        array(
+                            'data' => 'id',
+                            'name' => 'id',
+                            'searchable' => true,
+                            'orderable' => true,
+                            'search' => array('value' => '[><]2,3', 'regex' => false)
+                        ),
+                        array(
+                            'data' => 'name',
+                            'name' => 'name',
+                            'searchable' => true,
+                            'orderable' => true,
+                            'search' => array('value' => '', 'regex' => false)
+                        )
+                    ),
+                    'order' => array( array( 'column' => 0, 'dir' => 'asc') )
+                )
+            );
+
+        $response = $datatables->getResponse();
+
+        $this->assertArrayHasKey('data', $response);
+        $this->assertCount(1, $response['data']);
+    }
+
+    public function testDataTableSearchColumnWithEquals()
+    {
+        $doctrine = new \Daycry\Doctrine\Doctrine($this->config);
+        $request = \Config\Services::request();
+
+        $datatables = ( new \Daycry\Doctrine\DataTables\Builder() )
+            ->withColumnAliases(
+                [
+                    'id' => 't.id',
+                    'name' => 't.name'
+                ]
+            )
+            ->withIndexColumn('qlu.id')
+            ->setUseOutputWalkers(false)
+            ->withCaseInsensitive(false)
+            ->withColumnField('name')
+            ->withQueryBuilder(
+                $doctrine->em->createQueryBuilder()
+                    ->select('t.id, t.name')
+                    ->from(\Tests\Support\Models\Entities\Test::class, 't')
+            )
+            ->withRequestParams(
+                array(
+                    'draw' => 1,
+                    'start' => 0,
+                    'length' => 10,
+                    'search' => array('value' => '', 'regex' => true ),
+                    'columns' => array(
+                        array(
+                            'data' => 'id',
+                            'name' => 'id',
+                            'searchable' => true,
+                            'orderable' => true,
+                            'search' => array('value' => '[=]2', 'regex' => false)
+                        ),
+                        array(
+                            'data' => 'name',
+                            'name' => 'name',
+                            'searchable' => true,
+                            'orderable' => true,
+                            'search' => array('value' => '', 'regex' => false)
                         )
                     ),
                     'order' => array( array( 'column' => 0, 'dir' => 'asc') )

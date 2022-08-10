@@ -1,6 +1,6 @@
 <?php
 
-namespace Test\Support\Models\Entities;
+namespace Tests\Support\Models\Entities;
 
 use Doctrine\ORM\Mapping as ORM;
 
