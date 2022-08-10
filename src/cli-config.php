@@ -13,7 +13,7 @@ error_reporting(E_ALL);
 // Load our paths config file
 // This is the line that might need to be changed, depending on your folder structure.
 defined('FCPATH') || define('FCPATH', __DIR__ . DIRECTORY_SEPARATOR);
-
+defined('ENVIRONMENT') || define('ENVIRONMENT', 'development');
 /*
  *---------------------------------------------------------------
  * BOOTSTRAP THE APPLICATION
@@ -29,15 +29,20 @@ chdir(__DIR__);
 // Load our paths config file
 // This is the line that might need to be changed, depending on your folder structure.
 
-if (!class_exists('Config\Paths')) {
-    require realpath(FCPATH . '../app/Config/Paths.php') ?: FCPATH . '../app/Config/Paths.php';
-}
+//if (!class_exists('Config\Paths')) {
+    require realpath(FCPATH . 'app/Config/Paths.php') ?: FCPATH . 'app/Config/Paths.php';
+//}
 
 $paths = new Config\Paths();
 
 // Location of the framework bootstrap file.
-$bootstrap = rtrim($paths->systemDirectory, '\\/ ') . DIRECTORY_SEPARATOR . 'bootstrap.php';
-$app       = require realpath($bootstrap) ?: $bootstrap;
+require rtrim($paths->systemDirectory, '\\/ ') . DIRECTORY_SEPARATOR . 'bootstrap.php';
+
+
+// Load environment settings from .env files into $_SERVER and $_ENV
+require_once SYSTEMPATH . 'Config/DotEnv.php';
+(new CodeIgniter\Config\DotEnv(ROOTPATH))->load();
+
 
 use Doctrine\ORM\Tools\Console\ConsoleRunner;
 
