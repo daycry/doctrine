@@ -70,6 +70,17 @@ class DoctrineTest extends CIUnitTestCase
         }
     }
 
+    public function testInstanceDoctrineFile()
+    {
+        $cacheConf = config('Cache');
+        $cacheConf->handler = 'file';
+
+        $doctrine = new \Daycry\Doctrine\Doctrine($this->config, $cacheConf);
+
+        $this->assertInstanceOf(\Daycry\Doctrine\Doctrine::class, $doctrine);
+        $this->assertInstanceOf(\Doctrine\ORM\EntityManager::class, $doctrine->em);
+    }
+
     public function testInstanceDoctrineMemcached()
     {
         $cacheConf = config('Cache');
