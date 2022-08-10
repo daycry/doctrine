@@ -156,15 +156,15 @@ To search from datatables there are nine different search modes
 
 Mode | Pattern | Desctiption
 -------- | ------------- | -----------
-LIKE '…%' | [*%]searchTerm | This performs a LIKE '…%' search where the start of the search term must match a value in the given column. This can be archived with only providing the search term (because it's default) or by prefixing the search term with "[*%]" ([*%]searchTerm).
-LIKE '%…%'| [%%]searchTerm | This performs a LIKE '%…%' search where any part the search term must match a value in the given column. This can be archived by prefixing the search term with "[%%]" ([%%]searchTerm).
-Equality | [=]searchTerm | This performs a = … search. The search term must exactly match a value in the given column. This can be archived by prefixing the search term with "[=]" ([=]searchTerm).
-!= (No Equality) | [!=]searchTerm | This performs a != … search. The search term must not exactly match a value in the given column. This can be archived by prefixing the search term with "[!=]" ([!=]searchTerm).
-> (Greater Than) | [>]searchTerm | This performs a > … search. The search term must be smaller than a value in the given column. This can be archived by prefixing the search term with "[>]" ([>]searchTerm).
-< (Smaller Than) | [<]searchTerm | This performs a < … search. The search term must be greater than a value in the given column. This can be archived by prefixing the search term with "[<]" ([<]searchTerm).
-< (IN) | [IN]searchTerm,searchTerm,… | This performs an IN(…) search. One of the provided comma-separated search terms must exactly match a value in the given column. This can be archived by prefixing the search terms with "[IN]" ([IN]searchTerm,searchTerm,…).
-< (OR) | [OR]searchTerm,searchTerm,… | This performs multiple OR-connected LIKE('%…%') searches. One of the provided comma-separated search terms must match a fragment of a value in the given column. This can be archived by prefixing the search terms with "[OR]" ([OR]searchTerm,searchTerm,…).
->< (Between) | [><]searchTerm,searchTerm | This performs a BETWEEN … AND … search. Both search terms must be separated with a comma. This operation can be archived by prefixing the comma-separated search terms with "[><]" ([><]searchTerm,searchTerm).
+**LIKE '…%'** | [*%]searchTerm | This performs a LIKE '…%' search where the start of the search term must match a value in the given column. This can be archived with only providing the search term (because it's default) or by prefixing the search term with "[*%]" ([*%]searchTerm).
+**LIKE '%…%'**| [%%]searchTerm | This performs a LIKE '%…%' search where any part the search term must match a value in the given column. This can be archived by prefixing the search term with "[%%]" ([%%]searchTerm).
+**Equality** | [=]searchTerm | This performs a = … search. The search term must exactly match a value in the given column. This can be archived by prefixing the search term with "[=]" ([=]searchTerm).
+**!= (No Equality)** | [!=]searchTerm | This performs a != … search. The search term must not exactly match a value in the given column. This can be archived by prefixing the search term with "[!=]" ([!=]searchTerm).
+**>** (Greater Than) | [>]searchTerm | This performs a > … search. The search term must be smaller than a value in the given column. This can be archived by prefixing the search term with "[>]" ([>]searchTerm).
+**<** (Smaller Than) | [<]searchTerm | This performs a < … search. The search term must be greater than a value in the given column. This can be archived by prefixing the search term with "[<]" ([<]searchTerm).
+**< (IN)** | [IN]searchTerm,searchTerm,… | This performs an IN(…) search. One of the provided comma-separated search terms must exactly match a value in the given column. This can be archived by prefixing the search terms with "[IN]" ([IN]searchTerm,searchTerm,…).
+**< (OR)** | [OR]searchTerm,searchTerm,… | This performs multiple OR-connected LIKE('%…%') searches. One of the provided comma-separated search terms must match a fragment of a value in the given column. This can be archived by prefixing the search terms with "[OR]" ([OR]searchTerm,searchTerm,…).
+**\>< (Between)** | [><]searchTerm,searchTerm | This performs a BETWEEN … AND … search. Both search terms must be separated with a comma. This operation can be archived by prefixing the comma-separated search terms with "[><]" ([><]searchTerm,searchTerm).
 
 Prefixes are case-insenstive (IN, in, OR, or). Provided search terms were trimmed.
 
