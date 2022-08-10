@@ -30,11 +30,6 @@ class Builder
     /**
      * @var bool
      */
-    //protected $returnCollection = false;
-
-    /**
-     * @var bool
-     */
     protected $caseInsensitive = false;
 
     /**
@@ -95,15 +90,6 @@ class Builder
         }
 
         return $result;
-        /*if ($query instanceof ORMQueryBuilder) {
-            if ($this->returnCollection) {
-                return $query->getQuery()->getResult();
-            } else {
-                return $query->getQuery()->getScalarResult();
-            }
-        } else {
-            return $query->execute()->fetchAll();
-        }*/
     }
 
     /**
