@@ -57,7 +57,7 @@ class DataTableTest extends CIUnitTestCase
                     'draw' => 1,
                     'start' => 0,
                     'length' => 10,
-                    'search' => array('value' => '', 'regex' => false ),
+                    'search' => array('value' => 'am', 'regex' => false ),
                     'columns' => array(
                         array(
                             'data' => 'id',
