@@ -57,7 +57,7 @@ class Doctrine
         $reader = new AnnotationReader();
         $driver = new \Doctrine\ORM\Mapping\Driver\AnnotationDriver($reader, array( $configuration->folderEntity ));
 
-        $config = Setup::createAnnotationMetadataConfiguration(array( $configuration->folderEntity ), $dev_mode, $configuration->folderProxy, $this->cache, true);
+        $config = Setup::createAnnotationMetadataConfiguration(array( $configuration->folderEntity ), $dev_mode, $configuration->folderProxy, $this->cache, false);
         $config->setMetadataCacheImpl($this->cache);
         $config->setQueryCacheImpl($this->cache);
         $config->setMetadataDriverImpl($driver);
