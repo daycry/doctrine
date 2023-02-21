@@ -53,8 +53,10 @@
             "@composer dump-autoload"
         ],
         "test": "vendor/bin/phpunit",
-        "cs-fixer": "vendor/bin/php-cs-fixer fix src",
-        "cs-fixer-tests": "vendor/bin/php-cs-fixer fix tests"
+        "cs-fixer": [
+            "vendor/bin/php-cs-fixer fix src",
+            "vendor/bin/php-cs-fixer fix tests"
+        ]
     },
     "config": {
         "allow-plugins": {

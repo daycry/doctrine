@@ -16,7 +16,8 @@ use Doctrine\Common\Annotations\AnnotationReader;
 class Doctrine
 {
     public $em = null;
-
+    private $cache;
+    
     public function __construct(BaseConfig $configuration = null, BaseConfig $cacheConf = null)
     {
         if ($configuration === null) {
@@ -114,7 +115,8 @@ class Doctrine
                 'host'     => $db->hostname,
                 'dbname'   => $db->database,
                 'charset'  => $db->charset,
-                'port'     => $db->port
+                'port'     => $db->port,
+                'servicename' => $db->servicename //OCI8
             ];
         }
 
