@@ -13,7 +13,7 @@ class Redis extends RedisHandler
         $this->initialize();
     }
 
-    public function getClass()
+    public function getInstance()
     {
         return $this->redis;
     }

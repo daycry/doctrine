@@ -7,20 +7,12 @@
  * @copyright  2022 Daycry
  * @link       https://github.com/daycry/doctrine
  */
-
-require_once "vendor/autoload.php";
-
-use CodeIgniter\Config\DotEnv;
-use Doctrine\ORM\Tools\Console\ConsoleRunner;
-use Doctrine\ORM\Tools\Console\EntityManagerProvider\SingleManagerProvider;
-use Daycry\Doctrine\Config\Doctrine as DoctrineConfig;
-use Daycry\Doctrine\Doctrine;
-
 error_reporting(E_ALL);
 
 // Load our paths config file
 // This is the line that might need to be changed, depending on your folder structure.
-defined('FCPATH') || define('FCPATH', __DIR__ . DIRECTORY_SEPARATOR);
+//defined('FCPATH') || define('FCPATH', __DIR__ . DIRECTORY_SEPARATOR);
+defined('FCPATH') || define('FCPATH', __DIR__ . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'codeigniter4' . DIRECTORY_SEPARATOR . 'framework' . DIRECTORY_SEPARATOR);
 defined('ENVIRONMENT') || define('ENVIRONMENT', 'development');
 /*
  *---------------------------------------------------------------
@@ -49,16 +41,23 @@ require rtrim($paths->systemDirectory, '\\/ ') . DIRECTORY_SEPARATOR . 'bootstra
 
 // Load environment settings from .env files into $_SERVER and $_ENV
 require_once SYSTEMPATH . 'Config/DotEnv.php';
-(new DotEnv(ROOTPATH))->load();
+(new CodeIgniter\Config\DotEnv(ROOTPATH))->load();
 
-$doctrine = new Doctrine(new DoctrineConfig());
+use Doctrine\ORM\Tools\Console\ConsoleRunner;
+use Doctrine\ORM\Tools\Console\EntityManagerProvider\SingleManagerProvider;
 
-$commands = [
-    // If you want to add your own custom console commands,
-    // you can do so here.
-];
+$config = new \Daycry\Doctrine\Config\Doctrine();
+$doctrine = new \Daycry\Doctrine\Doctrine($config);
 
 ConsoleRunner::run(
-    new SingleManagerProvider($entityManager),
-    $commands
+    new SingleManagerProvider($doctrine->em), []
 );
+
+$doctrine = new \Daycry\Doctrine\Doctrine();
+
+
+/*use Doctrine\ORM\Tools\Console\ConsoleRunner;
+
+$doctrine = new \Daycry\Doctrine\Doctrine();
+
+return ConsoleRunner::createHelperSet($doctrine->em);*/

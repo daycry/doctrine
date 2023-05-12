@@ -1,0 +1,29 @@
+TestYaml:
+  type: entity
+  index:
+    deleted_at:
+      columns: [ deleted_at ]
+  uniqueConstraints:
+    name:
+      columns: [ name ]
+  table: test
+  id:
+    id:
+      type: integer
+      generator:
+        strategy: AUTO
+  fields:
+    name:
+      type: string
+      nullable: false
+    created_at:
+      type: datetime
+      nullable: false
+      options:
+        default: CURRENT_TIMESTAMP
+    updated_at:
+      type: datetime
+      nullable: true
+    deleted_at:
+      type: datetime
+      nullable: true

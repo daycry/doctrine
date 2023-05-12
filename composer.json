@@ -16,11 +16,15 @@
     ],
     "license": "MIT",
     "require": {
-      "php": "^7.4 || ^8.0",
-        "doctrine/orm": "^2.9",
+        "php": "^7.4 || ^8.0",
+        "doctrine/orm": "^2.14",
+        "doctrine/dbal": "^3.2",
+        "symfony/yaml": "^6.2",
+        "symfony/cache": "^6.2",
         "beberlei/doctrineextensions": "^1.0",
         "jms/serializer-bundle": "^4",
-        "yogarine/doctrine-annotation-autoload": "^0.3.0"
+        "yogarine/doctrine-annotation-autoload": "^0.3.0",
+        "doctrine/cache": "^2.2"
     },
     "require-dev":
     {

@@ -6,25 +6,27 @@ use CodeIgniter\Config\BaseConfig;
 
 class Doctrine extends BaseConfig
 {
-    public $debug = false;
+    public bool $setAutoGenerateProxyClasses = ENVIRONMENT === 'development' ? true : false;
 
-    // see doc https://www.doctrine-project.org/projects/doctrine-orm/en/2.8/reference/advanced-configuration.html#auto-generating-proxy-classes-optional
-    public $setAutoGenerateProxyClasses = ENVIRONMENT === 'development' ? true : false;
+    public array $entities = [APPPATH . 'Models/Entity'];
 
-    /*
-     * Namespace and folder of models
+    public string $proxies = APPPATH . 'Models/Proxies';
+
+    public bool $queryCache = true;
+    public string $queryCacheNamespace = 'doctrine_queries';
+
+    public bool $resultsCache = true;
+    public string $resultsCacheNamespace = 'doctrine_results';
+
+    /**
+     * Ex: attribute, yaml, xml, annotation
      */
-    public $namespaceModel = 'App/Models';
-    public $folderModel = APPPATH . 'Models';
+    public string $metadataConfigurationMethod = 'annotation';
 
-    /*
-     * Namespace and folder of proxies
-     */
-    public $namespaceProxy = 'App/Models/Proxies';
-    public $folderProxy = APPPATH . 'Models/Proxies';
-
-    /*
-     * Folder for entities
-     */
-    public $folderEntity = APPPATH . 'Models/Entity';
+    public array $metadataConfigMap = [
+        'annotation' => 'createAnnotationMetadataConfiguration',
+        'attribute' => 'createAttributeMetadataConfiguration',
+        'yaml' => 'createYAMLMetadataConfiguration',
+        'xml' => 'createXMLMetadataConfiguration'
+    ];
 }

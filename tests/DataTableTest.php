@@ -5,6 +5,9 @@ namespace Tests;
 use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
+use Daycry\Doctrine\Doctrine;
+use Daycry\Doctrine\DataTables\Builder;
+use Tests\Support\Models\Entities\Test;
 
 class DataTableTest extends CIUnitTestCase
 {
@@ -24,19 +27,16 @@ class DataTableTest extends CIUnitTestCase
         parent::setUp();
 
         $this->config = config('Doctrine');
-        $this->config->namespaceModel = 'Tests/Support/Models';
-        $this->config->folderModel = SUPPORTPATH . 'Models';
-        $this->config->namespaceProxy = 'Tests/Support/Models/Proxies';
-        $this->config->folderProxy = SUPPORTPATH . 'Models/Proxies';
-        $this->config->folderEntity = SUPPORTPATH . 'Models/Entities';
+        $this->config = config('Doctrine');
+        $this->config->entities = [SUPPORTPATH . 'Models/Entities'];
+        $this->config->proxies = SUPPORTPATH . 'Models/Proxies';
     }
 
     public function testDataTableDefault()
     {
-        $doctrine = new \Daycry\Doctrine\Doctrine($this->config);
-        $request = \Config\Services::request();
+        $doctrine = new Doctrine($this->config);
 
-        $datatables = ( new \Daycry\Doctrine\DataTables\Builder() )
+        $datatables = ( new Builder() )
             ->withColumnAliases(
                 [
                     'id' => 't.id',
@@ -50,7 +50,7 @@ class DataTableTest extends CIUnitTestCase
             ->withQueryBuilder(
                 $doctrine->em->createQueryBuilder()
                     ->select('t.id, t.name')
-                    ->from(\Tests\Support\Models\Entities\Test::class, 't')
+                    ->from(Test::class, 't')
             )
             ->withRequestParams(
                 array(
@@ -87,10 +87,9 @@ class DataTableTest extends CIUnitTestCase
 
     public function testDataTableSearchColumn()
     {
-        $doctrine = new \Daycry\Doctrine\Doctrine($this->config);
-        $request = \Config\Services::request();
+        $doctrine = new Doctrine($this->config);
 
-        $datatables = ( new \Daycry\Doctrine\DataTables\Builder() )
+        $datatables = ( new Builder() )
             ->withColumnAliases(
                 [
                     'id' => 't.id',
@@ -104,7 +103,7 @@ class DataTableTest extends CIUnitTestCase
             ->withQueryBuilder(
                 $doctrine->em->createQueryBuilder()
                     ->select('t.id, t.name')
-                    ->from(\Tests\Support\Models\Entities\Test::class, 't')
+                    ->from(Test::class, 't')
             )
             ->withRequestParams(
                 array(
@@ -140,10 +139,9 @@ class DataTableTest extends CIUnitTestCase
 
     public function testDataTableSearchColumnWithPercent()
     {
-        $doctrine = new \Daycry\Doctrine\Doctrine($this->config);
-        $request = \Config\Services::request();
+        $doctrine = new Doctrine($this->config);
 
-        $datatables = ( new \Daycry\Doctrine\DataTables\Builder() )
+        $datatables = ( new Builder() )
             ->withColumnAliases(
                 [
                     'id' => 't.id',
@@ -157,7 +155,7 @@ class DataTableTest extends CIUnitTestCase
             ->withQueryBuilder(
                 $doctrine->em->createQueryBuilder()
                     ->select('t.id, t.name')
-                    ->from(\Tests\Support\Models\Entities\Test::class, 't')
+                    ->from(Test::class, 't')
             )
             ->withRequestParams(
                 array(
@@ -193,10 +191,9 @@ class DataTableTest extends CIUnitTestCase
 
     public function testDataTableSearchColumnWithDifferent()
     {
-        $doctrine = new \Daycry\Doctrine\Doctrine($this->config);
-        $request = \Config\Services::request();
+        $doctrine = new Doctrine($this->config);
 
-        $datatables = ( new \Daycry\Doctrine\DataTables\Builder() )
+        $datatables = ( new Builder() )
             ->withColumnAliases(
                 [
                     'id' => 't.id',
@@ -210,7 +207,7 @@ class DataTableTest extends CIUnitTestCase
             ->withQueryBuilder(
                 $doctrine->em->createQueryBuilder()
                     ->select('t.id, t.name')
-                    ->from(\Tests\Support\Models\Entities\Test::class, 't')
+                    ->from(Test::class, 't')
             )
             ->withRequestParams(
                 array(
@@ -246,10 +243,9 @@ class DataTableTest extends CIUnitTestCase
 
     public function testDataTableSearchColumnWithLessThan()
     {
-        $doctrine = new \Daycry\Doctrine\Doctrine($this->config);
-        $request = \Config\Services::request();
+        $doctrine = new Doctrine($this->config);
 
-        $datatables = ( new \Daycry\Doctrine\DataTables\Builder() )
+        $datatables = ( new Builder() )
             ->withColumnAliases(
                 [
                     'id' => 't.id',
@@ -263,7 +259,7 @@ class DataTableTest extends CIUnitTestCase
             ->withQueryBuilder(
                 $doctrine->em->createQueryBuilder()
                     ->select('t.id, t.name')
-                    ->from(\Tests\Support\Models\Entities\Test::class, 't')
+                    ->from(Test::class, 't')
             )
             ->withRequestParams(
                 array(
@@ -299,10 +295,9 @@ class DataTableTest extends CIUnitTestCase
 
     public function testDataTableSearchColumnWithMoreThan()
     {
-        $doctrine = new \Daycry\Doctrine\Doctrine($this->config);
-        $request = \Config\Services::request();
+        $doctrine = new Doctrine($this->config);
 
-        $datatables = ( new \Daycry\Doctrine\DataTables\Builder() )
+        $datatables = ( new Builder() )
             ->withColumnAliases(
                 [
                     'id' => 't.id',
@@ -316,7 +311,7 @@ class DataTableTest extends CIUnitTestCase
             ->withQueryBuilder(
                 $doctrine->em->createQueryBuilder()
                     ->select('t.id, t.name')
-                    ->from(\Tests\Support\Models\Entities\Test::class, 't')
+                    ->from(Test::class, 't')
             )
             ->withRequestParams(
                 array(
@@ -352,10 +347,9 @@ class DataTableTest extends CIUnitTestCase
 
     public function testDataTableSearchColumnWithIn()
     {
-        $doctrine = new \Daycry\Doctrine\Doctrine($this->config);
-        $request = \Config\Services::request();
+        $doctrine = new Doctrine($this->config);
 
-        $datatables = ( new \Daycry\Doctrine\DataTables\Builder() )
+        $datatables = ( new Builder() )
             ->withColumnAliases(
                 [
                     'id' => 't.id',
@@ -369,7 +363,7 @@ class DataTableTest extends CIUnitTestCase
             ->withQueryBuilder(
                 $doctrine->em->createQueryBuilder()
                     ->select('t.id, t.name')
-                    ->from(\Tests\Support\Models\Entities\Test::class, 't')
+                    ->from(Test::class, 't')
             )
             ->withRequestParams(
                 array(
@@ -405,10 +399,9 @@ class DataTableTest extends CIUnitTestCase
 
     public function testDataTableSearchColumnWithOr()
     {
-        $doctrine = new \Daycry\Doctrine\Doctrine($this->config);
-        $request = \Config\Services::request();
+        $doctrine = new Doctrine($this->config);
 
-        $datatables = ( new \Daycry\Doctrine\DataTables\Builder() )
+        $datatables = ( new Builder() )
             ->withColumnAliases(
                 [
                     'id' => 't.id',
@@ -422,7 +415,7 @@ class DataTableTest extends CIUnitTestCase
             ->withQueryBuilder(
                 $doctrine->em->createQueryBuilder()
                     ->select('t.id, t.name')
-                    ->from(\Tests\Support\Models\Entities\Test::class, 't')
+                    ->from(Test::class, 't')
             )
             ->withRequestParams(
                 array(
@@ -458,10 +451,9 @@ class DataTableTest extends CIUnitTestCase
 
     public function testDataTableSearchColumnWithBetween()
     {
-        $doctrine = new \Daycry\Doctrine\Doctrine($this->config);
-        $request = \Config\Services::request();
+        $doctrine = new Doctrine($this->config);
 
-        $datatables = ( new \Daycry\Doctrine\DataTables\Builder() )
+        $datatables = ( new Builder() )
             ->withColumnAliases(
                 [
                     'id' => 't.id',
@@ -475,7 +467,7 @@ class DataTableTest extends CIUnitTestCase
             ->withQueryBuilder(
                 $doctrine->em->createQueryBuilder()
                     ->select('t.id, t.name')
-                    ->from(\Tests\Support\Models\Entities\Test::class, 't')
+                    ->from(Test::class, 't')
             )
             ->withRequestParams(
                 array(
@@ -511,10 +503,9 @@ class DataTableTest extends CIUnitTestCase
 
     public function testDataTableSearchColumnWithEquals()
     {
-        $doctrine = new \Daycry\Doctrine\Doctrine($this->config);
-        $request = \Config\Services::request();
+        $doctrine = new Doctrine($this->config);
 
-        $datatables = ( new \Daycry\Doctrine\DataTables\Builder() )
+        $datatables = ( new Builder() )
             ->withColumnAliases(
                 [
                     'id' => 't.id',
@@ -528,7 +519,7 @@ class DataTableTest extends CIUnitTestCase
             ->withQueryBuilder(
                 $doctrine->em->createQueryBuilder()
                     ->select('t.id, t.name')
-                    ->from(\Tests\Support\Models\Entities\Test::class, 't')
+                    ->from(Test::class, 't')
             )
             ->withRequestParams(
                 array(

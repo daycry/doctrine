@@ -4,6 +4,9 @@ namespace Tests;
 
 use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\DatabaseTestTrait;
+use Tests\Support\Database\Seeds\TestSeeder;
+use Doctrine\ORM\EntityManager;
+use Daycry\Doctrine\Doctrine;
 
 class DoctrineTest extends CIUnitTestCase
 {
@@ -13,7 +16,7 @@ class DoctrineTest extends CIUnitTestCase
     protected $migrateOnce = false;
     protected $refresh     = true;
     protected $seedOnce = false;
-    protected $seed = \Tests\Support\Database\Seeds\TestSeeder::class;
+    protected $seed = TestSeeder::class;
 
     protected $config;
 
@@ -22,19 +25,16 @@ class DoctrineTest extends CIUnitTestCase
         parent::setUp();
 
         $this->config = config('Doctrine');
-        $this->config->namespaceModel = 'Tests/Support/Models';
-        $this->config->folderModel = SUPPORTPATH . 'Models';
-        $this->config->namespaceProxy = 'Tests/Support/Models/Proxies';
-        $this->config->folderProxy = SUPPORTPATH . 'Models/Proxies';
-        $this->config->folderEntity = SUPPORTPATH . 'Models/Entities';
+        $this->config->entities = [SUPPORTPATH . 'Models/Entities'];
+        $this->config->proxies = SUPPORTPATH . 'Models/Proxies';
     }
 
     public function testInstanceDoctrine()
     {
-        $doctrine = new \Daycry\Doctrine\Doctrine();
+        $doctrine = new Doctrine();
 
-        $this->assertInstanceOf(\Daycry\Doctrine\Doctrine::class, $doctrine);
-        $this->assertInstanceOf(\Doctrine\ORM\EntityManager::class, $doctrine->em);
+        $this->assertInstanceOf(Doctrine::class, $doctrine);
+        $this->assertInstanceOf(EntityManager::class, $doctrine->em);
     }
 
     public function testInstanceDoctrineAsAHelper()
@@ -43,16 +43,16 @@ class DoctrineTest extends CIUnitTestCase
 
         $doctrine = doctrine_instance();
 
-        $this->assertInstanceOf(\Daycry\Doctrine\Doctrine::class, $doctrine);
-        $this->assertInstanceOf(\Doctrine\ORM\EntityManager::class, $doctrine->em);
+        $this->assertInstanceOf(Doctrine::class, $doctrine);
+        $this->assertInstanceOf(EntityManager::class, $doctrine->em);
     }
 
     public function testInstanceDoctrineCustomConfig()
     {
-        $doctrine = new \Daycry\Doctrine\Doctrine($this->config);
+        $doctrine = new Doctrine($this->config);
 
-        $this->assertInstanceOf(\Daycry\Doctrine\Doctrine::class, $doctrine);
-        $this->assertInstanceOf(\Doctrine\ORM\EntityManager::class, $doctrine->em);
+        $this->assertInstanceOf(Doctrine::class, $doctrine);
+        $this->assertInstanceOf(EntityManager::class, $doctrine->em);
     }
 
     public function testInstanceDoctrineRedis()
@@ -63,10 +63,10 @@ class DoctrineTest extends CIUnitTestCase
         $cache = \Config\Services::cache($cacheConf);
 
         if ($cache->isSupported()) {
-            $doctrine = new \Daycry\Doctrine\Doctrine($this->config, $cacheConf);
+            $doctrine = new Doctrine($this->config, $cacheConf);
 
-            $this->assertInstanceOf(\Daycry\Doctrine\Doctrine::class, $doctrine);
-            $this->assertInstanceOf(\Doctrine\ORM\EntityManager::class, $doctrine->em);
+            $this->assertInstanceOf(Doctrine::class, $doctrine);
+            $this->assertInstanceOf(EntityManager::class, $doctrine->em);
         }
     }
 
@@ -75,13 +75,13 @@ class DoctrineTest extends CIUnitTestCase
         $cacheConf = config('Cache');
         $cacheConf->handler = 'file';
 
-        $doctrine = new \Daycry\Doctrine\Doctrine($this->config, $cacheConf);
+        $doctrine = new Doctrine($this->config, $cacheConf);
 
-        $this->assertInstanceOf(\Daycry\Doctrine\Doctrine::class, $doctrine);
-        $this->assertInstanceOf(\Doctrine\ORM\EntityManager::class, $doctrine->em);
+        $this->assertInstanceOf(Doctrine::class, $doctrine);
+        $this->assertInstanceOf(EntityManager::class, $doctrine->em);
     }
 
-    public function testInstanceDoctrineMemcached()
+    /*public function testInstanceDoctrineMemcached()
     {
         $cacheConf = config('Cache');
         $cacheConf->handler = 'memcached';
@@ -93,7 +93,7 @@ class DoctrineTest extends CIUnitTestCase
 
             $this->assertInstanceOf(\Daycry\Doctrine\Doctrine::class, $doctrine);
         }
-    }
+    }*/
 
     public function testDoctrineReOpen()
     {

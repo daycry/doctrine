@@ -13,7 +13,7 @@ class Memcached extends MemcachedHandler
         $this->initialize();
     }
 
-    public function getClass()
+    public function getInstance()
     {
         return $this->memcached;
     }

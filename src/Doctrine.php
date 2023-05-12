@@ -2,12 +2,18 @@
 
 namespace Daycry\Doctrine;
 
-use CodeIgniter\Config\BaseConfig;
-use Doctrine\Common\ClassLoader;
-//use Doctrine\ORM\Configuration;
+use Daycry\Doctrine\Config\Doctrine as DoctrineConfig;
+use Config\Cache;
+use Doctrine\DBAL\DriverManager;
+use Doctrine\ORM\ORMSetup;
 use Doctrine\ORM\EntityManager;
-use Doctrine\ORM\Tools\Setup;
-use Doctrine\Common\Annotations\AnnotationReader;
+use Symfony\Component\Cache\Adapter\PhpFilesAdapter;
+use Daycry\Doctrine\Libraries\Redis;
+use Daycry\Doctrine\Libraries\Memcached;
+use Symfony\Component\Cache\Adapter\RedisAdapter;
+use Symfony\Component\Cache\Adapter\MemcachedAdapter;
+use Symfony\Component\Cache\Adapter\ArrayAdapter;
+use Exception;
 
 /**
  * Class General
@@ -18,67 +24,71 @@ class Doctrine
     public $em = null;
     private $cache;
     
-    public function __construct(BaseConfig $configuration = null, BaseConfig $cacheConf = null)
+    public function __construct(DoctrineConfig $doctrineConfig = null, Cache $cacheConfig = null)
     {
-        if ($configuration === null) {
-            $configuration = config('Doctrine');
+        if ($doctrineConfig === NULL) {
+            $doctrineConfig = config('Doctrine');
         }
 
-        if ($cacheConf === null) {
-            $cacheConf = config('Cache');
+        if ($cacheConfig === NULL) {
+            $cacheConfig = config('Cache');
         }
 
         $db = \Config\Database::connect();
 
-        $entitiesClassLoader = new ClassLoader($configuration->namespaceModel, $configuration->folderModel);
-        $entitiesClassLoader->register();
+        $devMode = (ENVIRONMENT == "development") ? true : false;
 
-        $proxiesClassLoader = new ClassLoader($configuration->namespaceProxy, $configuration->folderProxy);
-        $proxiesClassLoader->register();
-
-        $dev_mode = (ENVIRONMENT == "development") ? true : false;
-
-        if ($cacheConf->handler == 'redis') {
-            $redis = new \Daycry\Doctrine\Libraries\Redis($cacheConf);
-            $redis = $redis->getClass();
-            $redis->select($cacheConf->redis[ 'database' ]);
-            $this->cache = new \Daycry\Doctrine\Cache\RedisCache();
-            $this->cache->setRedis($redis);
-            $this->cache->setNamespace($cacheConf->prefix);
-        } elseif ($cacheConf->handler == 'memcached') {
-            $memcached = new \Daycry\Doctrine\Libraries\Memcached($cacheConf);
-            $this->cache = new \Daycry\Doctrine\Cache\MemcachedCache();
-            $this->cache->setMemcached($memcached->getClass());
-        } elseif ($cacheConf->handler == 'file') {
-            $this->cache = new \Daycry\Doctrine\Cache\PhpFileCache($cacheConf->storePath . 'doctrine');
-        } else {
-            $this->cache = new \Daycry\Doctrine\Cache\ArrayCache();
+        switch ($cacheConfig->handler) {
+            case 'file':
+                $cacheQuery = new PhpFilesAdapter($cacheConfig->prefix . $doctrineConfig->queryCacheNamespace, $cacheConfig->ttl, $cacheConfig->file['storePath']);
+                $cacheResult = new PhpFilesAdapter($cacheConfig->prefix . $doctrineConfig->resultsCacheNamespace, $cacheConfig->ttl, $cacheConfig->file['storePath']);
+                break;
+            case 'redis':
+                $redis = new Redis($cacheConfig);
+                $redis = $redis->getInstance();
+                $redis->select($cacheConfig->redis[ 'database' ]);
+                $cacheQuery = new RedisAdapter($redis, $cacheConfig->prefix . $doctrineConfig->queryCacheNamespace, $cacheConfig->ttl);
+                $cacheResult = new RedisAdapter($redis, $cacheConfig->prefix . $doctrineConfig->resultsCacheNamespace, $cacheConfig->ttl);
+                break;
+            case 'memcached':
+                $memcached = new Memcached($cacheConfig);
+                $cacheQuery = new MemcachedAdapter($memcached->getInstance(), $cacheConfig->prefix . $doctrineConfig->queryCacheNamespace, $cacheConfig->ttl);
+                $cacheResult = new MemcachedAdapter($memcached->getInstance(), $cacheConfig->prefix . $doctrineConfig->resultsCacheNamespace, $cacheConfig->ttl);
+                break;
+            default:
+                $cacheQuery = new ArrayAdapter($cacheConfig->ttl);
+                $cacheResult = new ArrayAdapter($cacheConfig->ttl);
         }
 
-        $reader = new AnnotationReader();
-        $driver = new \Doctrine\ORM\Mapping\Driver\AnnotationDriver($reader, array( $configuration->folderEntity ));
+        $dataConfig = [$doctrineConfig->entities, $devMode, $doctrineConfig->proxies, null];
 
-        $config = Setup::createAnnotationMetadataConfiguration(array( $configuration->folderEntity ), $dev_mode, $configuration->folderProxy, $this->cache, false);
-        $config->setMetadataCacheImpl($this->cache);
-        $config->setQueryCacheImpl($this->cache);
-        $config->setMetadataDriverImpl($driver);
+        $config  = \call_user_func_array(array(ORMSetup::class, $doctrineConfig->metadataConfigMap[$doctrineConfig->metadataConfigurationMethod]), $dataConfig);
+        /*$config = ORMSetup::createAttributeMetadataConfiguration(
+            paths: $doctrineConfig->entities,
+            isDevMode: $devMode,
+            proxyDir: $doctrineConfig->folderProxy,
+            cache: null
+        );*/
 
+        $config->setAutoGenerateProxyClasses($doctrineConfig->setAutoGenerateProxyClasses);
 
-        //Force generate proxy classes
-        // comand: vendor/bin/doctrine orm:generate-proxies app/Models/Proxies
-        $config->setAutoGenerateProxyClasses($configuration->setAutoGenerateProxyClasses);
+        if($doctrineConfig->queryCache)
+        {
+            $config->setQueryCache($cacheQuery);
+        }
 
-        // Set up logger
-        if ($configuration->debug) {
-            //$logger = new EchoSQLLogger;
-            //$config->setSQLLogger( $logger );
+        if($doctrineConfig->resultsCache)
+        {
+            $config->setResultCache($cacheResult);
         }
 
         // Database connection information
         $connectionOptions = $this->convertDbConfig($db);
 
+        $connection = DriverManager::getConnection($connectionOptions, $config);
+        
         // Create EntityManager
-        $this->em = EntityManager::create($connectionOptions, $config);
+        $this->em = new EntityManager($connection, $config);
 
         $this->em->getConnection()->getDatabasePlatform()->registerDoctrineTypeMapping('set', 'string');
         $this->em->getConnection()->getDatabasePlatform()->registerDoctrineTypeMapping('enum', 'string');
@@ -86,7 +96,7 @@ class Doctrine
 
     public function reOpen()
     {
-        $this->em = EntityManager::create($this->em->getConnection(), $this->em->getConfiguration(), $this->em->getEventManager());
+        $this->em = new EntityManager($this->em->getConnection(), $this->em->getConfiguration(), $this->em->getEventManager());
     }
 
     /**
