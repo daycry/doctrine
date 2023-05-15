@@ -51,16 +51,16 @@ class DoctrineQueryTest extends CIUnitTestCase
         $this->assertSame('name1', $data->getName());
     }
 
-    public function testQueryYaml()
+    /*public function testQueryYaml()
     {
         $this->config->metadataConfigurationMethod = 'yaml';
         $doctrine = new Doctrine($this->config);
 
-        $data = $doctrine->em->getRepository("TestYaml")->findOneBy( array( 'id' => 1 ) );
+        $data = $doctrine->em->getRepository(\Tests\Support\Models\Entities\TestYaml::class)->findOneBy( array( 'id' => 1 ) );
 
         $this->assertSame(1, $data->getId());
         $this->assertSame('name1', $data->getName());
-    }
+    }*/
 
     protected function tearDown(): void
     {

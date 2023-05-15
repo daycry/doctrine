@@ -81,19 +81,27 @@ class DoctrineTest extends CIUnitTestCase
         $this->assertInstanceOf(EntityManager::class, $doctrine->em);
     }
 
-    /*public function testInstanceDoctrineMemcached()
+    public function testInstanceDoctrineMemcached()
     {
         $cacheConf = config('Cache');
         $cacheConf->handler = 'memcached';
 
-        $cache = \Config\Services::cache($cacheConf);
+        $doctrine = new Doctrine($this->config, $cacheConf);
 
-        if ($cache->isSupported()) {
-            $doctrine = new \Daycry\Doctrine\Doctrine($this->config, $cacheConf);
+        $this->assertInstanceOf(Doctrine::class, $doctrine);
+        $this->assertInstanceOf(EntityManager::class, $doctrine->em);
+    }
 
-            $this->assertInstanceOf(\Daycry\Doctrine\Doctrine::class, $doctrine);
-        }
-    }*/
+    public function testInstanceDoctrineArray()
+    {
+        $cacheConf = config('Cache');
+        $cacheConf->handler = 'dummy';
+
+        $doctrine = new Doctrine($this->config, $cacheConf);
+
+        $this->assertInstanceOf(Doctrine::class, $doctrine);
+        $this->assertInstanceOf(EntityManager::class, $doctrine->em);
+    }
 
     public function testDoctrineReOpen()
     {

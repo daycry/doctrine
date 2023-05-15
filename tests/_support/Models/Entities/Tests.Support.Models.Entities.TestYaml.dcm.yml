@@ -1,12 +1,12 @@
-TestYaml:
+Tests\Support\Models\Entities\TestYaml:
   type: entity
+  table: test
   index:
     deleted_at:
       columns: [ deleted_at ]
   uniqueConstraints:
     name:
       columns: [ name ]
-  table: test
   id:
     id:
       type: integer
