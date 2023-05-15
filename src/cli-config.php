@@ -59,6 +59,6 @@ $commands = [
 ];
 
 ConsoleRunner::run(
-    new SingleManagerProvider($entityManager),
+    new SingleManagerProvider($doctrine->em),
     $commands
 );

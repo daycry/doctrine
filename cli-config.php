@@ -45,16 +45,16 @@ require_once SYSTEMPATH . 'Config/DotEnv.php';
 
 use Doctrine\ORM\Tools\Console\ConsoleRunner;
 use Doctrine\ORM\Tools\Console\EntityManagerProvider\SingleManagerProvider;
+use Daycry\Doctrine\Config\Doctrine as ConfigDoctrine;
+use Daycry\Doctrine\Doctrine;
 
-$config = new \Daycry\Doctrine\Config\Doctrine();
-$doctrine = new \Daycry\Doctrine\Doctrine($config);
+$config = new ConfigDoctrine();
+dd($config);
+$doctrine = new Doctrine($config);
 
 ConsoleRunner::run(
     new SingleManagerProvider($doctrine->em), []
 );
-
-$doctrine = new \Daycry\Doctrine\Doctrine();
-
 
 /*use Doctrine\ORM\Tools\Console\ConsoleRunner;
 
