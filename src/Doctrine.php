@@ -40,8 +40,8 @@ class Doctrine
 
         switch ($cacheConfig->handler) {
             case 'file':
-                $cacheQuery = new PhpFilesAdapter($cacheConfig->prefix . $doctrineConfig->queryCacheNamespace, $cacheConfig->ttl, $cacheConfig->file['storePath']);
-                $cacheResult = new PhpFilesAdapter($cacheConfig->prefix . $doctrineConfig->resultsCacheNamespace, $cacheConfig->ttl, $cacheConfig->file['storePath']);
+                $cacheQuery = new PhpFilesAdapter($cacheConfig->prefix . $doctrineConfig->queryCacheNamespace, $cacheConfig->ttl, $cacheConfig->file['storePath'] . DIRECTORY_SEPARATOR . 'doctrine');
+                $cacheResult = new PhpFilesAdapter($cacheConfig->prefix . $doctrineConfig->resultsCacheNamespace, $cacheConfig->ttl, $cacheConfig->file['storePath'] . DIRECTORY_SEPARATOR . 'doctrine');
                 break;
             case 'redis':
                 $redis = new Redis($cacheConfig);
