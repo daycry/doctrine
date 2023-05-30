@@ -80,14 +80,14 @@ jobs:
         uses: actions/github-script@v6
         id: phpunit-coverage-option
         with:
-          script: 'return "${{ matrix.php-versions }}" == "8.0" ? "" : "--no-coverage"'
+          script: 'return "${{ matrix.php-versions }}" == "8.1" ? "" : "--no-coverage"'
           result-encoding: string
       
       - name: Test with PHPUnit
         run: script -e -c "vendor/bin/phpunit --color=always --exclude-group=auto-review ${{ steps.phpunit-coverage-option.outputs.result }}"
         
       - name: Run Coveralls
-        if: matrix.php-versions == '8.0'
+        if: matrix.php-versions == '8.1'
         run: |
           composer global require --ansi php-coveralls/php-coveralls:^2.4
           php-coveralls --coverage_clover=build/logs/clover.xml -v
