@@ -6,7 +6,11 @@ use Daycry\Doctrine\Config\Doctrine as DoctrineConfig;
 use Config\Cache;
 use Doctrine\DBAL\DriverManager;
 use Doctrine\ORM\ORMSetup;
+use Doctrine\ORM\Configuration;
 use Doctrine\ORM\EntityManager;
+use Doctrine\ORM\Mapping\Driver\AttributeDriver;
+use Doctrine\ORM\Mapping\Driver\XmlDriver;
+use Doctrine\ORM\Mapping\Driver\YamlDriver;
 use Symfony\Component\Cache\Adapter\PhpFilesAdapter;
 use Daycry\Doctrine\Libraries\Redis;
 use Daycry\Doctrine\Libraries\Memcached;
@@ -42,6 +46,7 @@ class Doctrine
             case 'file':
                 $cacheQuery = new PhpFilesAdapter($cacheConfig->prefix . $doctrineConfig->queryCacheNamespace, $cacheConfig->ttl, $cacheConfig->file['storePath'] . DIRECTORY_SEPARATOR . 'doctrine');
                 $cacheResult = new PhpFilesAdapter($cacheConfig->prefix . $doctrineConfig->resultsCacheNamespace, $cacheConfig->ttl, $cacheConfig->file['storePath'] . DIRECTORY_SEPARATOR . 'doctrine');
+                $cacheMetadata = new PhpFilesAdapter($cacheConfig->prefix . $doctrineConfig->metadataCacheNamespace, $cacheConfig->ttl, $cacheConfig->file['storePath'] . DIRECTORY_SEPARATOR . 'doctrine');
                 break;
             case 'redis':
                 $redis = new Redis($cacheConfig);
@@ -49,27 +54,24 @@ class Doctrine
                 $redis->select($cacheConfig->redis[ 'database' ]);
                 $cacheQuery = new RedisAdapter($redis, $cacheConfig->prefix . $doctrineConfig->queryCacheNamespace, $cacheConfig->ttl);
                 $cacheResult = new RedisAdapter($redis, $cacheConfig->prefix . $doctrineConfig->resultsCacheNamespace, $cacheConfig->ttl);
+                $cacheMetadata = new RedisAdapter($redis, $cacheConfig->prefix . $doctrineConfig->metadataCacheNamespace, $cacheConfig->ttl);
                 break;
             case 'memcached':
                 $memcached = new Memcached($cacheConfig);
                 $cacheQuery = new MemcachedAdapter($memcached->getInstance(), $cacheConfig->prefix . $doctrineConfig->queryCacheNamespace, $cacheConfig->ttl);
                 $cacheResult = new MemcachedAdapter($memcached->getInstance(), $cacheConfig->prefix . $doctrineConfig->resultsCacheNamespace, $cacheConfig->ttl);
+                $cacheMetadata = new MemcachedAdapter($memcached->getInstance(), $cacheConfig->prefix . $doctrineConfig->metadataCacheNamespace, $cacheConfig->ttl);
                 break;
             default:
-                $cacheQuery = new ArrayAdapter($cacheConfig->ttl);
-                $cacheResult = new ArrayAdapter($cacheConfig->ttl);
+                $cacheQuery = $cacheResult = $cacheMetadata = new ArrayAdapter($cacheConfig->ttl);
         }
 
         $dataConfig = [$doctrineConfig->entities, $devMode, $doctrineConfig->proxies, null];
 
-        $config  = \call_user_func_array(array(ORMSetup::class, $doctrineConfig->metadataConfigMap[$doctrineConfig->metadataConfigurationMethod]), $dataConfig);
-        /*$config = ORMSetup::createAttributeMetadataConfiguration(
-            paths: $doctrineConfig->entities,
-            isDevMode: $devMode,
-            proxyDir: $doctrineConfig->folderProxy,
-            cache: null
-        );*/
+        $config = new Configuration();
 
+        $config->setProxyDir($doctrineConfig->proxies);
+        $config->setProxyNamespace($doctrineConfig->proxiesNamespace);
         $config->setAutoGenerateProxyClasses($doctrineConfig->setAutoGenerateProxyClasses);
 
         if($doctrineConfig->queryCache)
@@ -80,6 +82,25 @@ class Doctrine
         if($doctrineConfig->resultsCache)
         {
             $config->setResultCache($cacheResult);
+        }
+
+        if($doctrineConfig->metadataCache)
+        {
+            $config->setMetadataCache($cacheMetadata);
+        }
+
+        switch ($doctrineConfig->metadataConfigurationMethod) {
+            case 'yaml':
+                $config->setMetadataDriverImpl(new YamlDriver($doctrineConfig->entities));
+                break;
+            case 'xml':
+                $config->setMetadataDriverImpl(new XmlDriver($doctrineConfig->entities, XmlDriver::DEFAULT_FILE_EXTENSION, $doctrineConfig->isXsdValidationEnabled));
+                break;
+            case 'attribute':
+                $config->setMetadataDriverImpl(new AttributeDriver($doctrineConfig->entities));
+                break;
+            default:
+            $config->setMetadataDriverImpl(ORMSetup::createDefaultAnnotationDriver($doctrineConfig->entities));
         }
 
         // Database connection information

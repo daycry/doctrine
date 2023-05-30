@@ -11,6 +11,7 @@ class Doctrine extends BaseConfig
     public array $entities = [APPPATH . 'Models/Entity'];
 
     public string $proxies = APPPATH . 'Models/Proxies';
+    public string $proxiesNamespace = 'DoctrineProxies';
 
     public bool $queryCache = true;
     public string $queryCacheNamespace = 'doctrine_queries';
@@ -18,15 +19,16 @@ class Doctrine extends BaseConfig
     public bool $resultsCache = true;
     public string $resultsCacheNamespace = 'doctrine_results';
 
+    public bool $metadataCache = true;
+    public string $metadataCacheNamespace = 'doctrine_metadata';
+
     /**
      * Ex: attribute, yaml, xml, annotation
      */
     public string $metadataConfigurationMethod = 'annotation';
 
-    public array $metadataConfigMap = [
-        'annotation' => 'createAnnotationMetadataConfiguration',
-        'attribute' => 'createAttributeMetadataConfiguration',
-        'yaml' => 'createYAMLMetadataConfiguration',
-        'xml' => 'createXMLMetadataConfiguration'
-    ];
+    /**
+     * If metadataConfigurationMethod is 'xml'
+     */
+    public bool $isXsdValidationEnabled = false;
 }
