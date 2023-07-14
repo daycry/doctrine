@@ -23,7 +23,7 @@ class Doctrine extends BaseConfig
     public string $metadataCacheNamespace = 'doctrine_metadata';
 
     /**
-     * Ex: attribute, yaml, xml, annotation
+     * Ex: attribute, yaml, xml, annotation, attribute
      */
     public string $metadataConfigurationMethod = 'annotation';
 
