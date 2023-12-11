@@ -49,7 +49,6 @@ use Daycry\Doctrine\Config\Doctrine as ConfigDoctrine;
 use Daycry\Doctrine\Doctrine;
 
 $config = new ConfigDoctrine();
-dd($config);
 $doctrine = new Doctrine($config);
 
 ConsoleRunner::run(
