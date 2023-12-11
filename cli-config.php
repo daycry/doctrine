@@ -51,12 +51,12 @@ use Daycry\Doctrine\Doctrine;
 $config = new ConfigDoctrine();
 $doctrine = new Doctrine($config);
 
+$commands = [
+    // If you want to add your own custom console commands,
+    // you can do so here.
+];
+
 ConsoleRunner::run(
-    new SingleManagerProvider($doctrine->em), []
+    new SingleManagerProvider($doctrine->em),
+    $commands
 );
-
-/*use Doctrine\ORM\Tools\Console\ConsoleRunner;
-
-$doctrine = new \Daycry\Doctrine\Doctrine();
-
-return ConsoleRunner::createHelperSet($doctrine->em);*/

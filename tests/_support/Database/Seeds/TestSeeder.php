@@ -10,10 +10,10 @@ class TestSeeder extends Seeder
     {
         $petition = [
             [
-                'name'=> 'name1'
+                'name' => 'name1'
             ],
             [
-                'name'=> 'name2'
+                'name' => 'name2'
             ]
         ];
 

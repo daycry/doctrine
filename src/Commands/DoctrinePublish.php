@@ -79,7 +79,7 @@ class DoctrinePublish extends BaseCommand
 
         $appPath = $config->psr4[APP_NAMESPACE];
         $directory = dirname($appPath . $path);
-        if (! is_dir($directory)) {
+        if (!is_dir($directory)) {
             mkdir($directory, 0777, true);
         }
         if (file_exists($appPath . $path) && CLI::prompt('Config file already exists, do you want to replace it?', ['y', 'n']) == 'n') {

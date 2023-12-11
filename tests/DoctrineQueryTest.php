@@ -34,7 +34,7 @@ class DoctrineQueryTest extends CIUnitTestCase
         $this->config->metadataConfigurationMethod = 'annotation';
         $doctrine = new Doctrine($this->config);
 
-        $data = $doctrine->em->getRepository("Tests\Support\Models\Entities\Test")->findOneBy( array( 'id' => 1 ) );
+        $data = $doctrine->em->getRepository("Tests\Support\Models\Entities\Test")->findOneBy(array( 'id' => 1 ));
 
         $this->assertSame(1, $data->getId());
         $this->assertSame('name1', $data->getName());
@@ -45,7 +45,7 @@ class DoctrineQueryTest extends CIUnitTestCase
         $this->config->metadataConfigurationMethod = 'attribute';
         $doctrine = new Doctrine($this->config);
 
-        $data = $doctrine->em->getRepository("Tests\Support\Models\Entities\TestAttribute")->findOneBy( array( 'id' => 1 ) );
+        $data = $doctrine->em->getRepository("Tests\Support\Models\Entities\TestAttribute")->findOneBy(array( 'id' => 1 ));
 
         $this->assertSame(1, $data->getId());
         $this->assertSame('name1', $data->getName());

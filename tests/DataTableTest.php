@@ -36,7 +36,7 @@ class DataTableTest extends CIUnitTestCase
     {
         $doctrine = new Doctrine($this->config);
 
-        $datatables = ( new Builder() )
+        $datatables = (new Builder())
             ->withColumnAliases(
                 [
                     'id' => 't.id',
@@ -89,7 +89,7 @@ class DataTableTest extends CIUnitTestCase
     {
         $doctrine = new Doctrine($this->config);
 
-        $datatables = ( new Builder() )
+        $datatables = (new Builder())
             ->withColumnAliases(
                 [
                     'id' => 't.id',
@@ -141,7 +141,7 @@ class DataTableTest extends CIUnitTestCase
     {
         $doctrine = new Doctrine($this->config);
 
-        $datatables = ( new Builder() )
+        $datatables = (new Builder())
             ->withColumnAliases(
                 [
                     'id' => 't.id',
@@ -193,7 +193,7 @@ class DataTableTest extends CIUnitTestCase
     {
         $doctrine = new Doctrine($this->config);
 
-        $datatables = ( new Builder() )
+        $datatables = (new Builder())
             ->withColumnAliases(
                 [
                     'id' => 't.id',
@@ -245,7 +245,7 @@ class DataTableTest extends CIUnitTestCase
     {
         $doctrine = new Doctrine($this->config);
 
-        $datatables = ( new Builder() )
+        $datatables = (new Builder())
             ->withColumnAliases(
                 [
                     'id' => 't.id',
@@ -297,7 +297,7 @@ class DataTableTest extends CIUnitTestCase
     {
         $doctrine = new Doctrine($this->config);
 
-        $datatables = ( new Builder() )
+        $datatables = (new Builder())
             ->withColumnAliases(
                 [
                     'id' => 't.id',
@@ -349,7 +349,7 @@ class DataTableTest extends CIUnitTestCase
     {
         $doctrine = new Doctrine($this->config);
 
-        $datatables = ( new Builder() )
+        $datatables = (new Builder())
             ->withColumnAliases(
                 [
                     'id' => 't.id',
@@ -401,7 +401,7 @@ class DataTableTest extends CIUnitTestCase
     {
         $doctrine = new Doctrine($this->config);
 
-        $datatables = ( new Builder() )
+        $datatables = (new Builder())
             ->withColumnAliases(
                 [
                     'id' => 't.id',
@@ -453,7 +453,7 @@ class DataTableTest extends CIUnitTestCase
     {
         $doctrine = new Doctrine($this->config);
 
-        $datatables = ( new Builder() )
+        $datatables = (new Builder())
             ->withColumnAliases(
                 [
                     'id' => 't.id',
@@ -505,7 +505,7 @@ class DataTableTest extends CIUnitTestCase
     {
         $doctrine = new Doctrine($this->config);
 
-        $datatables = ( new Builder() )
+        $datatables = (new Builder())
             ->withColumnAliases(
                 [
                     'id' => 't.id',

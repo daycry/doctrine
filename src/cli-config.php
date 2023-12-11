@@ -38,7 +38,7 @@ chdir(__DIR__);
 // This is the line that might need to be changed, depending on your folder structure.
 
 //if (!class_exists('Config\Paths')) {
-    require realpath(FCPATH . 'app/Config/Paths.php') ?: FCPATH . 'app/Config/Paths.php';
+require realpath(FCPATH . 'app/Config/Paths.php') ?: FCPATH . 'app/Config/Paths.php';
 //}
 
 $paths = new Config\Paths();

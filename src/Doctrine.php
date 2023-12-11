@@ -27,14 +27,14 @@ class Doctrine
 {
     public $em = null;
     private $cache;
-    
+
     public function __construct(DoctrineConfig $doctrineConfig = null, Cache $cacheConfig = null)
     {
-        if ($doctrineConfig === NULL) {
+        if ($doctrineConfig === null) {
             $doctrineConfig = config('Doctrine');
         }
 
-        if ($cacheConfig === NULL) {
+        if ($cacheConfig === null) {
             $cacheConfig = config('Cache');
         }
 
@@ -74,18 +74,15 @@ class Doctrine
         $config->setProxyNamespace($doctrineConfig->proxiesNamespace);
         $config->setAutoGenerateProxyClasses($doctrineConfig->setAutoGenerateProxyClasses);
 
-        if($doctrineConfig->queryCache)
-        {
+        if($doctrineConfig->queryCache) {
             $config->setQueryCache($cacheQuery);
         }
 
-        if($doctrineConfig->resultsCache)
-        {
+        if($doctrineConfig->resultsCache) {
             $config->setResultCache($cacheResult);
         }
 
-        if($doctrineConfig->metadataCache)
-        {
+        if($doctrineConfig->metadataCache) {
             $config->setMetadataCache($cacheMetadata);
         }
 
@@ -100,14 +97,14 @@ class Doctrine
                 $config->setMetadataDriverImpl(new AttributeDriver($doctrineConfig->entities));
                 break;
             default:
-            $config->setMetadataDriverImpl(ORMSetup::createDefaultAnnotationDriver($doctrineConfig->entities));
+                $config->setMetadataDriverImpl(ORMSetup::createDefaultAnnotationDriver($doctrineConfig->entities));
         }
 
         // Database connection information
         $connectionOptions = $this->convertDbConfig($db);
 
         $connection = DriverManager::getConnection($connectionOptions, $config);
-        
+
         // Create EntityManager
         $this->em = new EntityManager($connection, $config);
 
@@ -129,7 +126,7 @@ class Doctrine
      * @param object $db
      * @return array
      * @throws Exception
-     * 
+     *
      */
 
     public function convertDbConfig($db)

@@ -202,11 +202,11 @@ class Builder
                         $query->setParameter("filter_{$i}", $value);
                         break;
                     case '%': // Like(default); usage: [%]search_term
-                        default:
-                            $andX->add($query->expr()->like($column[$this->columnField], ":filter_{$i}"));
-                            $value = "{$value}%";
-                            $query->setParameter("filter_{$i}", $value);
-                            break;
+                    default:
+                        $andX->add($query->expr()->like($column[$this->columnField], ":filter_{$i}"));
+                        $value = "{$value}%";
+                        $query->setParameter("filter_{$i}", $value);
+                        break;
                 }
             }
             if ($andX->count() >= 1) {
