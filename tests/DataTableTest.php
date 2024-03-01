@@ -2,14 +2,16 @@
 
 namespace Tests;
 
-use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
 use Daycry\Doctrine\Doctrine;
+use Daycry\Doctrine\Config\Doctrine as DoctrineConfig;
 use Daycry\Doctrine\DataTables\Builder;
-use Tests\Support\Models\Entities\Test;
+use Tests\Support\Models\Entities\TestAttribute;
+use Tests\Support\TestCase;
+use Tests\Support\Database\Seeds\TestSeeder;
 
-class DataTableTest extends CIUnitTestCase
+class DataTableTest extends TestCase
 {
     use DatabaseTestTrait;
     use FeatureTestTrait;
@@ -18,7 +20,7 @@ class DataTableTest extends CIUnitTestCase
     protected $migrateOnce = false;
     protected $refresh     = true;
     protected $seedOnce = false;
-    protected $seed = \Tests\Support\Database\Seeds\TestSeeder::class;
+    protected $seed = TestSeeder::class;
 
     protected $config;
 
@@ -26,7 +28,7 @@ class DataTableTest extends CIUnitTestCase
     {
         parent::setUp();
 
-        $this->config = config('Doctrine');
+        /** @var DoctrineConfig $config */
         $this->config = config('Doctrine');
         $this->config->entities = [SUPPORTPATH . 'Models/Entities'];
         $this->config->proxies = SUPPORTPATH . 'Models/Proxies';
@@ -50,7 +52,7 @@ class DataTableTest extends CIUnitTestCase
             ->withQueryBuilder(
                 $doctrine->em->createQueryBuilder()
                     ->select('t.id, t.name')
-                    ->from(Test::class, 't')
+                    ->from(TestAttribute::class, 't')
             )
             ->withRequestParams(
                 array(
@@ -103,7 +105,7 @@ class DataTableTest extends CIUnitTestCase
             ->withQueryBuilder(
                 $doctrine->em->createQueryBuilder()
                     ->select('t.id, t.name')
-                    ->from(Test::class, 't')
+                    ->from(TestAttribute::class, 't')
             )
             ->withRequestParams(
                 array(
@@ -155,7 +157,7 @@ class DataTableTest extends CIUnitTestCase
             ->withQueryBuilder(
                 $doctrine->em->createQueryBuilder()
                     ->select('t.id, t.name')
-                    ->from(Test::class, 't')
+                    ->from(TestAttribute::class, 't')
             )
             ->withRequestParams(
                 array(
@@ -207,7 +209,7 @@ class DataTableTest extends CIUnitTestCase
             ->withQueryBuilder(
                 $doctrine->em->createQueryBuilder()
                     ->select('t.id, t.name')
-                    ->from(Test::class, 't')
+                    ->from(TestAttribute::class, 't')
             )
             ->withRequestParams(
                 array(
@@ -259,7 +261,7 @@ class DataTableTest extends CIUnitTestCase
             ->withQueryBuilder(
                 $doctrine->em->createQueryBuilder()
                     ->select('t.id, t.name')
-                    ->from(Test::class, 't')
+                    ->from(TestAttribute::class, 't')
             )
             ->withRequestParams(
                 array(
@@ -311,7 +313,7 @@ class DataTableTest extends CIUnitTestCase
             ->withQueryBuilder(
                 $doctrine->em->createQueryBuilder()
                     ->select('t.id, t.name')
-                    ->from(Test::class, 't')
+                    ->from(TestAttribute::class, 't')
             )
             ->withRequestParams(
                 array(
@@ -363,7 +365,7 @@ class DataTableTest extends CIUnitTestCase
             ->withQueryBuilder(
                 $doctrine->em->createQueryBuilder()
                     ->select('t.id, t.name')
-                    ->from(Test::class, 't')
+                    ->from(TestAttribute::class, 't')
             )
             ->withRequestParams(
                 array(
@@ -415,7 +417,7 @@ class DataTableTest extends CIUnitTestCase
             ->withQueryBuilder(
                 $doctrine->em->createQueryBuilder()
                     ->select('t.id, t.name')
-                    ->from(Test::class, 't')
+                    ->from(TestAttribute::class, 't')
             )
             ->withRequestParams(
                 array(
@@ -467,7 +469,7 @@ class DataTableTest extends CIUnitTestCase
             ->withQueryBuilder(
                 $doctrine->em->createQueryBuilder()
                     ->select('t.id, t.name')
-                    ->from(Test::class, 't')
+                    ->from(TestAttribute::class, 't')
             )
             ->withRequestParams(
                 array(
@@ -519,7 +521,7 @@ class DataTableTest extends CIUnitTestCase
             ->withQueryBuilder(
                 $doctrine->em->createQueryBuilder()
                     ->select('t.id, t.name')
-                    ->from(Test::class, 't')
+                    ->from(TestAttribute::class, 't')
             )
             ->withRequestParams(
                 array(

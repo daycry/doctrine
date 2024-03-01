@@ -2,13 +2,13 @@
 
 namespace Tests;
 
-use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\DatabaseTestTrait;
 use Tests\Support\Database\Seeds\TestSeeder;
-use Doctrine\ORM\EntityManager;
 use Daycry\Doctrine\Doctrine;
+use Daycry\Doctrine\Config\Doctrine as DoctrineConfig;
+use Tests\Support\TestCase;
 
-class DoctrineQueryTest extends CIUnitTestCase
+class DoctrineQueryTest extends TestCase
 {
     use DatabaseTestTrait;
 
@@ -24,20 +24,10 @@ class DoctrineQueryTest extends CIUnitTestCase
     {
         parent::setUp();
 
+        /** @var DoctrineConfig $config */
         $this->config = config('Doctrine');
         $this->config->entities = [SUPPORTPATH . 'Models/Entities'];
         $this->config->proxies = SUPPORTPATH . 'Models/Proxies';
-    }
-
-    public function testQueryAnnotation()
-    {
-        $this->config->metadataConfigurationMethod = 'annotation';
-        $doctrine = new Doctrine($this->config);
-
-        $data = $doctrine->em->getRepository("Tests\Support\Models\Entities\Test")->findOneBy(array( 'id' => 1 ));
-
-        $this->assertSame(1, $data->getId());
-        $this->assertSame('name1', $data->getName());
     }
 
     public function testQueryAttribute()
@@ -50,17 +40,6 @@ class DoctrineQueryTest extends CIUnitTestCase
         $this->assertSame(1, $data->getId());
         $this->assertSame('name1', $data->getName());
     }
-
-    /*public function testQueryYaml()
-    {
-        $this->config->metadataConfigurationMethod = 'yaml';
-        $doctrine = new Doctrine($this->config);
-
-        $data = $doctrine->em->getRepository(\Tests\Support\Models\Entities\TestYaml::class)->findOneBy( array( 'id' => 1 ) );
-
-        $this->assertSame(1, $data->getId());
-        $this->assertSame('name1', $data->getName());
-    }*/
 
     protected function tearDown(): void
     {

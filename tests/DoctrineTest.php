@@ -2,13 +2,15 @@
 
 namespace Tests;
 
-use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\DatabaseTestTrait;
 use Tests\Support\Database\Seeds\TestSeeder;
 use Doctrine\ORM\EntityManager;
 use Daycry\Doctrine\Doctrine;
+use Daycry\Doctrine\Config\Doctrine as DoctrineConfig;
+use Tests\Support\TestCase;
+use Config\Cache;
 
-class DoctrineTest extends CIUnitTestCase
+class DoctrineTest extends TestCase
 {
     use DatabaseTestTrait;
 
@@ -24,6 +26,7 @@ class DoctrineTest extends CIUnitTestCase
     {
         parent::setUp();
 
+        /** @var DoctrineConfig $config */
         $this->config = config('Doctrine');
         $this->config->entities = [SUPPORTPATH . 'Models/Entities'];
         $this->config->proxies = SUPPORTPATH . 'Models/Proxies';
@@ -57,6 +60,7 @@ class DoctrineTest extends CIUnitTestCase
 
     public function testInstanceDoctrineRedis()
     {
+        /** @var Cache $cacheConf */
         $cacheConf = config('Cache');
         $cacheConf->handler = 'redis';
 
@@ -72,6 +76,7 @@ class DoctrineTest extends CIUnitTestCase
 
     public function testInstanceDoctrineFile()
     {
+        /** @var Cache $cacheConf */
         $cacheConf = config('Cache');
         $cacheConf->handler = 'file';
 
@@ -83,6 +88,7 @@ class DoctrineTest extends CIUnitTestCase
 
     public function testInstanceDoctrineMemcached()
     {
+        /** @var Cache $cacheConf */
         $cacheConf = config('Cache');
         $cacheConf->handler = 'memcached';
 
@@ -94,6 +100,7 @@ class DoctrineTest extends CIUnitTestCase
 
     public function testInstanceDoctrineArray()
     {
+        /** @var Cache $cacheConf */
         $cacheConf = config('Cache');
         $cacheConf->handler = 'dummy';
 
