@@ -21,7 +21,7 @@ jobs:
       matrix:
         php-versions: ['8.2']
         db-platforms: ['MySQLi']
-        mysql-versions: ['5.7']
+        mysql-versions: ['5.7', '8.0']
 
     services:
       mysql:
@@ -75,13 +75,6 @@ jobs:
           composer remove --ansi --dev --unused -W -- rector/rector phpstan/phpstan friendsofphp/php-cs-fixer nexusphp/cs-config codeigniter/coding-standard
         env:
           COMPOSER_AUTH: ${{ secrets.COMPOSER_AUTH }}
-          
-      - name: Compute coverage option
-        uses: actions/github-script@v6
-        id: phpunit-coverage-option
-        with:
-          script: 'return "${{ matrix.php-versions }}" == "8.1" ? "" : "--no-coverage"'
-          result-encoding: string
       
       - name: Test with PHPUnit
         run: script -e -c "vendor/bin/phpunit --color=always --exclude-group=auto-review ${{ steps.phpunit-coverage-option.outputs.result }}"
@@ -89,8 +82,8 @@ jobs:
       - name: Run Coveralls
         if: matrix.php-versions == '8.2'
         run: |
-          composer global require --ansi php-coveralls/php-coveralls:^2.4
-          php-coveralls --coverage_clover=build/logs/clover.xml -v
+          composer global require --ansi php-coveralls/php-coveralls:^2.7
+          vendor/bin/php-coveralls --coverage_clover=build/logs/clover.xml -v
         env:
           COVERALLS_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           COVERALLS_PARALLEL: true
