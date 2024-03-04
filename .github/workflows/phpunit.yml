@@ -13,7 +13,7 @@ on:
 
 jobs:
   tests:
-    name: PHP ${{ matrix.php-versions }} - ${{ matrix.db-platforms }}
+    name: PHP ${{ matrix.php-versions }} - ${{ matrix.db-platforms }} - ${{ matrix.mysql-versions }}
     runs-on: ubuntu-latest
     
     strategy:
