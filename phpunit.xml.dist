@@ -51,10 +51,10 @@
 		<const name="PUBLICPATH" value="./public/"/>
 		<!-- Database configuration -->
 		<!-- <env name="database.tests.hostname" value="localhost" force="true"/> -->
-		<env name="database.tests.database" value="doctrine_tests" force="true"/>
+		<!--<env name="database.tests.database" value="doctrine_tests" force="true"/>
 		<env name="database.tests.username" value="root" force="true"/>
 		<env name="database.tests.password" value="" force="true"/>
 		<env name="database.tests.DBDriver" value="MySQLi"/>
-		<env name="database.tests.DBPrefix" value="" force="true"/>
+		<env name="database.tests.DBPrefix" value="" force="true"/>-->
 	</php>
 </phpunit>

@@ -12,10 +12,12 @@ use Doctrine\ORM\Mapping\Driver\XmlDriver;
 use Symfony\Component\Cache\Adapter\PhpFilesAdapter;
 use Daycry\Doctrine\Libraries\Redis;
 use Daycry\Doctrine\Libraries\Memcached;
+use Doctrine\DBAL\Tools\DsnParser;
 use Symfony\Component\Cache\Adapter\RedisAdapter;
 use Symfony\Component\Cache\Adapter\MemcachedAdapter;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
 use Exception;
+use Config\Database;
 
 /**
  * Class General
@@ -36,8 +38,6 @@ class Doctrine
             /** @var Cache $cacheConfig */
             $cacheConfig = config('Cache');
         }
-
-        $db = \Config\Database::connect();
 
         $devMode = (ENVIRONMENT == "development") ? true : false;
 
@@ -68,8 +68,6 @@ class Doctrine
                 $cacheQuery = $cacheResult = $cacheMetadata = new ArrayAdapter($cacheConfig->ttl);
         }
 
-        $dataConfig = [$doctrineConfig->entities, $devMode, $doctrineConfig->proxies, null];
-
         $config = new Configuration();
 
         $config->setProxyDir($doctrineConfig->proxies);
@@ -93,13 +91,17 @@ class Doctrine
                 $config->setMetadataDriverImpl(new XmlDriver($doctrineConfig->entities, XmlDriver::DEFAULT_FILE_EXTENSION, $doctrineConfig->isXsdValidationEnabled));
                 break;
             case 'attribute':
-                default:
+            default:
                 $config->setMetadataDriverImpl(new AttributeDriver($doctrineConfig->entities));
                 break;
         }
 
+        /** @var Database $dbConfig */
+        $dbConfig = config('Database');
+        $dbGroup = (ENVIRONMENT === 'testing') ? 'tests' : $dbConfig->defaultGroup;
+
         // Database connection information
-        $connectionOptions = $this->convertDbConfig($db);
+        $connectionOptions = $this->convertDbConfig($dbConfig->$dbGroup);
 
         $connection = DriverManager::getConnection($connectionOptions, $config);
 
@@ -131,7 +133,52 @@ class Doctrine
     {
         $connectionOptions = [];
 
-        if ($db->DBDriver === 'pdo') {
+        $db = (is_array($db)) ? json_decode(json_encode($db)) : $db;
+
+        if($db->DSN)
+        {
+            $driverMapper = ['MySQLi' => 'mysqli', 'Postgre' => 'pgsql', 'OCI8' => 'oci8', 'SQLSRV' => 'sqlsrv', 'SQLite3' => 'sqlite3'];
+            
+            if(str_contains($db->DSN, 'SQLite'))
+            {
+                $db->DSN = strtolower($db->DSN);
+            }
+
+            $dsnParser = new DsnParser($driverMapper);
+            $connectionOptions = $dsnParser->parse($db->DSN);
+
+        }else{
+
+            switch(strtolower($db->DBDriver))
+            {
+                case 'sqlite3':
+                    if($db->database === ':memory:')
+                    {
+                        $connectionOptions = [
+                            'driver' => strtolower($db->DBDriver),
+                            'memory' => true
+                        ];
+                    }else{
+                        $connectionOptions = [
+                            'driver' => strtolower($db->DBDriver),
+                            'path' => $db->database
+                        ];
+                    }
+                break;
+                default:
+                    $connectionOptions = [
+                        'driver'   => strtolower($db->DBDriver),
+                        'user'     => $db->username,
+                        'password' => $db->password,
+                        'host'     => $db->hostname,
+                        'dbname'   => $db->database,
+                        'charset'  => $db->charset,
+                        'port'     => $db->port
+                    ];
+            }
+            
+        }
+        /*if ($db->DBDriver === 'pdo') {
             return $this->convertDbConfigPdo($db);
         } else {
             $connectionOptions = [
@@ -144,7 +191,7 @@ class Doctrine
                 'port'     => $db->port,
                 'servicename' => $db->servicename //OCI8
             ];
-        }
+        }*/
 
         return $connectionOptions;
     }

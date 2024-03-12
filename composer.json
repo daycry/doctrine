@@ -22,8 +22,7 @@
         "symfony/cache": "^7",
         "symfony/yaml": "^6.2",
         "beberlei/doctrineextensions": "^1.0",
-        "jms/serializer-bundle": "^4",
-        "codeigniter4/settings": "^2.2"
+        "jms/serializer-bundle": "^4"
     },
     "require-dev":
     {
