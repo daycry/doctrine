@@ -22,16 +22,11 @@ class DataTableTest extends TestCase
     protected $seedOnce = false;
     protected $seed = TestSeeder::class;
 
-    protected $config;
-
     protected function setUp(): void
     {
         parent::setUp();
 
-        /** @var DoctrineConfig $config */
-        $this->config = config('Doctrine');
-        $this->config->entities = [SUPPORTPATH . 'Models/Entities'];
-        $this->config->proxies = SUPPORTPATH . 'Models/Proxies';
+        $config = $this->getMysqlDSNConfig();
     }
 
     public function testDataTableDefault()
