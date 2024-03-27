@@ -83,13 +83,13 @@ var_dump( $data );
 ```php
 
 //Mapping de database to entities classes
-vendor/bin/doctrine orm:convert-mapping --namespace="App\Models\Entity\" --force --from-database annotation .
+php cli-config.php orm:convert-mapping --namespace="App\Models\Entity\" --force --from-database annotation .
 
 //Generate getters & setters
-vendor/bin/doctrine orm:generate-entities .
+php cli-config.php orm:generate-entities .
 
 //Generate proxy classes
-vendor/bin/doctrine orm:generate-proxies app/Models/Proxies
+php cli-config.php orm:generate-proxies app/Models/Proxies
 
 ```
 If you receive the followrin error:
