@@ -5,7 +5,6 @@ namespace Tests;
 use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
 use Daycry\Doctrine\Doctrine;
-use Daycry\Doctrine\Config\Doctrine as DoctrineConfig;
 use Daycry\Doctrine\DataTables\Builder;
 use Tests\Support\Models\Entities\TestAttribute;
 use Tests\Support\TestCase;
@@ -16,21 +15,16 @@ class DataTableTest extends TestCase
     use DatabaseTestTrait;
     use FeatureTestTrait;
 
-    protected $migrate     = true;
+    /*rotected $migrate     = true;
     protected $migrateOnce = false;
     protected $refresh     = true;
-    protected $seedOnce = false;
+    protected $seedOnce = false;*/
     protected $seed = TestSeeder::class;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $config = $this->getMysqlDSNConfig();
-    }
 
     public function testDataTableDefault()
     {
+        $config = $this->getMysqlDSNConfig();
+
         $doctrine = new Doctrine($this->config);
 
         $datatables = (new Builder())
@@ -84,6 +78,8 @@ class DataTableTest extends TestCase
 
     public function testDataTableSearchColumn()
     {
+        $config = $this->getMysqlDSNConfig();
+
         $doctrine = new Doctrine($this->config);
 
         $datatables = (new Builder())
@@ -136,6 +132,8 @@ class DataTableTest extends TestCase
 
     public function testDataTableSearchColumnWithPercent()
     {
+        $config = $this->getMysqlDSNConfig();
+
         $doctrine = new Doctrine($this->config);
 
         $datatables = (new Builder())
@@ -188,6 +186,8 @@ class DataTableTest extends TestCase
 
     public function testDataTableSearchColumnWithDifferent()
     {
+        $config = $this->getMysqlDSNConfig();
+
         $doctrine = new Doctrine($this->config);
 
         $datatables = (new Builder())
@@ -240,6 +240,8 @@ class DataTableTest extends TestCase
 
     public function testDataTableSearchColumnWithLessThan()
     {
+        $config = $this->getMysqlDSNConfig();
+
         $doctrine = new Doctrine($this->config);
 
         $datatables = (new Builder())
@@ -292,6 +294,8 @@ class DataTableTest extends TestCase
 
     public function testDataTableSearchColumnWithMoreThan()
     {
+        $config = $this->getMysqlDSNConfig();
+
         $doctrine = new Doctrine($this->config);
 
         $datatables = (new Builder())
@@ -344,6 +348,8 @@ class DataTableTest extends TestCase
 
     public function testDataTableSearchColumnWithIn()
     {
+        $config = $this->getMysqlDSNConfig();
+
         $doctrine = new Doctrine($this->config);
 
         $datatables = (new Builder())
@@ -396,6 +402,8 @@ class DataTableTest extends TestCase
 
     public function testDataTableSearchColumnWithOr()
     {
+        $config = $this->getMysqlDSNConfig();
+
         $doctrine = new Doctrine($this->config);
 
         $datatables = (new Builder())
@@ -448,6 +456,8 @@ class DataTableTest extends TestCase
 
     public function testDataTableSearchColumnWithBetween()
     {
+        $config = $this->getMysqlDSNConfig();
+
         $doctrine = new Doctrine($this->config);
 
         $datatables = (new Builder())
@@ -500,6 +510,8 @@ class DataTableTest extends TestCase
 
     public function testDataTableSearchColumnWithEquals()
     {
+        $config = $this->getMysqlDSNConfig();
+
         $doctrine = new Doctrine($this->config);
 
         $datatables = (new Builder())
@@ -548,10 +560,5 @@ class DataTableTest extends TestCase
 
         $this->assertArrayHasKey('data', $response);
         $this->assertCount(1, $response['data']);
-    }
-
-    protected function tearDown(): void
-    {
-        parent::tearDown();
     }
 }
