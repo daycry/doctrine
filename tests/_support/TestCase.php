@@ -30,8 +30,8 @@ abstract class TestCase extends CIUnitTestCase
         /** @var Database $config*/
         $config = config('Database');
         $config->tests['database'] = 'doctrine_tests';
-        $config->tests['hostname'] = 'localhost';
-        $config->tests['username'] = 'tests_user';
+        $config->tests['hostname'] = '127.0.0.1';
+        $config->tests['username'] = 'root';
         $config->tests['password'] = '';
         $config->tests['DBPrefix'] = '';
 
