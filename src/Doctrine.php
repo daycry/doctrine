@@ -41,11 +41,8 @@ class Doctrine
 
         $devMode = (ENVIRONMENT == "development") ? true : false;
 
-        
         switch ($cacheConfig->handler) {
             case 'file':
-
-                
                 $cacheQuery = new PhpFilesAdapter($cacheConfig->prefix . $doctrineConfig->queryCacheNamespace, $cacheConfig->ttl, $cacheConfig->file['storePath'] . DIRECTORY_SEPARATOR . 'doctrine');
                 $cacheResult = new PhpFilesAdapter($cacheConfig->prefix . $doctrineConfig->resultsCacheNamespace, $cacheConfig->ttl, $cacheConfig->file['storePath'] . DIRECTORY_SEPARATOR . 'doctrine');
                 $cacheMetadata = new PhpFilesAdapter($cacheConfig->prefix . $doctrineConfig->metadataCacheNamespace, $cacheConfig->ttl, $cacheConfig->file['storePath'] . DIRECTORY_SEPARATOR . 'doctrine');
@@ -103,6 +100,7 @@ class Doctrine
         // Database connection information
         $connectionOptions = $this->convertDbConfig($dbConfig->$dbGroup);
 
+        log_message('debug', 'Doctrine: Database connection options: ' . print_r($connectionOptions, true));
         $connection = DriverManager::getConnection($connectionOptions, $config);
 
         // Create EntityManager
