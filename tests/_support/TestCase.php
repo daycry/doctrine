@@ -43,10 +43,9 @@ abstract class TestCase extends CIUnitTestCase
         /** @var Database $config*/
         $config = $this->_getDatabaseConfig();
         $config->tests['DBDriver'] = 'SQLite3';
-        if($memory)
-        {
+        if($memory) {
             $config->tests['database'] = ':memory:';
-        }else{
+        } else {
             $config->tests['database'] = SUPPORTPATH . 'db.sqlite';
         }
         return $config;
@@ -56,10 +55,9 @@ abstract class TestCase extends CIUnitTestCase
     {
         /** @var Database $config*/
         $config = $this->_getDatabaseConfig();
-        if($memory)
-        {
+        if($memory) {
             $config->tests['DSN'] = 'SQLite3:///:memory:';
-        }else{
+        } else {
             $config->tests['DSN'] = 'SQLite3:' . SUPPORTPATH . 'db.sqlite';
         }
 
@@ -75,7 +73,7 @@ abstract class TestCase extends CIUnitTestCase
 
         return $config;
     }
-    
+
     protected function getMysqlDSNConfig(): Database
     {
         /** @var Database $config*/

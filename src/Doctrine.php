@@ -133,36 +133,32 @@ class Doctrine
 
         $db = (is_array($db)) ? json_decode(json_encode($db)) : $db;
 
-        if($db->DSN)
-        {
+        if($db->DSN) {
             $driverMapper = ['MySQLi' => 'mysqli', 'Postgre' => 'pgsql', 'OCI8' => 'oci8', 'SQLSRV' => 'sqlsrv', 'SQLite3' => 'sqlite3'];
-            
-            if(str_contains($db->DSN, 'SQLite'))
-            {
+
+            if(str_contains($db->DSN, 'SQLite')) {
                 $db->DSN = strtolower($db->DSN);
             }
 
             $dsnParser = new DsnParser($driverMapper);
             $connectionOptions = $dsnParser->parse($db->DSN);
 
-        }else{
+        } else {
 
-            switch(strtolower($db->DBDriver))
-            {
+            switch(strtolower($db->DBDriver)) {
                 case 'sqlite3':
-                    if($db->database === ':memory:')
-                    {
+                    if($db->database === ':memory:') {
                         $connectionOptions = [
                             'driver' => strtolower($db->DBDriver),
                             'memory' => true
                         ];
-                    }else{
+                    } else {
                         $connectionOptions = [
                             'driver' => strtolower($db->DBDriver),
                             'path' => $db->database
                         ];
                     }
-                break;
+                    break;
                 default:
                     $connectionOptions = [
                         'driver'   => strtolower($db->DBDriver),
@@ -174,7 +170,7 @@ class Doctrine
                         'port'     => $db->port
                     ];
             }
-            
+
         }
         /*if ($db->DBDriver === 'pdo') {
             return $this->convertDbConfigPdo($db);
