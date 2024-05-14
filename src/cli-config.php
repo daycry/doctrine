@@ -18,9 +18,14 @@ use Daycry\Doctrine\Doctrine;
 
 error_reporting(E_ALL);
 
-// Load our paths config file
-// This is the line that might need to be changed, depending on your folder structure.
-defined('FCPATH') || define('FCPATH', __DIR__ . DIRECTORY_SEPARATOR);
+// Path to the front controller (this file)
+define('FCPATH', __DIR__ . DIRECTORY_SEPARATOR);
+
+// Ensure the current directory is pointing to the front controller's directory
+if (getcwd() . DIRECTORY_SEPARATOR !== FCPATH) {
+    chdir(FCPATH);
+}
+
 defined('ENVIRONMENT') || define('ENVIRONMENT', 'development');
 /*
  *---------------------------------------------------------------
@@ -43,13 +48,12 @@ require realpath(FCPATH . 'app/Config/Paths.php') ?: FCPATH . 'app/Config/Paths.
 
 $paths = new Config\Paths();
 
-// Location of the framework bootstrap file.
-require rtrim($paths->systemDirectory, '\\/ ') . DIRECTORY_SEPARATOR . 'bootstrap.php';
+// LOAD THE FRAMEWORK BOOTSTRAP FILE
+require $paths->systemDirectory . '/Boot.php';
 
 
 // Load environment settings from .env files into $_SERVER and $_ENV
-require_once SYSTEMPATH . 'Config/DotEnv.php';
-(new DotEnv(ROOTPATH))->load();
+$response = Daycry\Doctrine\Boot::bootDoctrine($paths);
 
 $doctrine = new Doctrine(new DoctrineConfig());
 

@@ -15,10 +15,6 @@ class DataTableTest extends TestCase
     use DatabaseTestTrait;
     use FeatureTestTrait;
 
-    protected $migrate     = true;
-    protected $migrateOnce = false;
-    protected $refresh     = true;
-    protected $seedOnce = false;
     protected $seed = TestSeeder::class;
 
     public function testDataTableDefault()
