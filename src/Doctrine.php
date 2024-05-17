@@ -99,8 +99,6 @@ class Doctrine
 
         // Database connection information
         $connectionOptions = $this->convertDbConfig($dbConfig->$dbGroup);
-
-        log_message('debug', 'Doctrine: Database connection options: ' . print_r($connectionOptions, true));
         $connection = DriverManager::getConnection($connectionOptions, $config);
 
         // Create EntityManager
