@@ -5,12 +5,9 @@ namespace Tests\Support;
 use CodeIgniter\Test\CIUnitTestCase;
 use Config\Database;
 use Daycry\Doctrine\Config\Doctrine;
-use Nexus\PHPUnit\Extension\Expeditable;
 
 abstract class TestCase extends CIUnitTestCase
 {
-    use Expeditable;
-
     protected Doctrine $config;
     /**
      * Sets up the ArrayHandler for faster & easier tests.
