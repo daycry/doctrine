@@ -72,7 +72,6 @@ jobs:
       - name: Install dependencies
         run: |
           composer update --ansi --no-interaction
-          composer remove --ansi --dev --unused -W -- rector/rector phpstan/phpstan friendsofphp/php-cs-fixer nexusphp/cs-config codeigniter/coding-standard
         env:
           COMPOSER_AUTH: ${{ secrets.COMPOSER_AUTH }}
       
