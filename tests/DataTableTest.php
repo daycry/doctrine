@@ -123,7 +123,7 @@ class DataTableTest extends TestCase
         $response = $datatables->getResponse();
 
         $this->assertArrayHasKey('data', $response);
-        $this->assertCount(2, $response['data']);
+        $this->assertCount(1, $response['data']);
     }
 
     public function testDataTableSearchColumnWithPercent()
@@ -231,7 +231,7 @@ class DataTableTest extends TestCase
         $response = $datatables->getResponse();
 
         $this->assertArrayHasKey('data', $response);
-        $this->assertCount(2, $response['data']);
+        $this->assertCount(1, $response['data']);
     }
 
     public function testDataTableSearchColumnWithLessThan()
@@ -285,7 +285,7 @@ class DataTableTest extends TestCase
         $response = $datatables->getResponse();
 
         $this->assertArrayHasKey('data', $response);
-        $this->assertCount(2, $response['data']);
+        $this->assertCount(1, $response['data']);
     }
 
     public function testDataTableSearchColumnWithMoreThan()
@@ -339,7 +339,7 @@ class DataTableTest extends TestCase
         $response = $datatables->getResponse();
 
         $this->assertArrayHasKey('data', $response);
-        $this->assertCount(2, $response['data']);
+        $this->assertCount(1, $response['data']);
     }
 
     public function testDataTableSearchColumnWithIn()
@@ -393,7 +393,7 @@ class DataTableTest extends TestCase
         $response = $datatables->getResponse();
 
         $this->assertArrayHasKey('data', $response);
-        $this->assertCount(2, $response['data']);
+        $this->assertCount(1, $response['data']);
     }
 
     public function testDataTableSearchColumnWithOr()
@@ -447,7 +447,7 @@ class DataTableTest extends TestCase
         $response = $datatables->getResponse();
 
         $this->assertArrayHasKey('data', $response);
-        $this->assertCount(2, $response['data']);
+        $this->assertCount(1, $response['data']);
     }
 
     public function testDataTableSearchColumnWithBetween()
@@ -501,7 +501,7 @@ class DataTableTest extends TestCase
         $response = $datatables->getResponse();
 
         $this->assertArrayHasKey('data', $response);
-        $this->assertCount(2, $response['data']);
+        $this->assertCount(1, $response['data']);
     }
 
     public function testDataTableSearchColumnWithEquals()
@@ -555,6 +555,6 @@ class DataTableTest extends TestCase
         $response = $datatables->getResponse();
 
         $this->assertArrayHasKey('data', $response);
-        $this->assertCount(2, $response['data']);
+        $this->assertCount(1, $response['data']);
     }
 }

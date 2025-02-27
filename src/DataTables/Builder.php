@@ -131,7 +131,8 @@ class Builder
         for ($i = 0; $i < $c; $i++) {
             $column = &$columns[$i];
             $andX   = $query->expr()->andX();
-            if (($column['searchable'] === 'true') && ($value = trim($column['search']['value']))) {
+
+            if (($column['searchable'] === true) && ($value = trim($column['search']['value']))) {
                 if (array_key_exists($column[$this->columnField], $this->columnAliases)) {
                     $column[$this->columnField] = $this->columnAliases[$column[$this->columnField]];
                 }
@@ -139,6 +140,7 @@ class Builder
                 // $operator = preg_match('~^\[(?<operator>[=!%<>]+)\].*$~', $value, $matches) ? $matches['operator'] : '=';
                 $operator = preg_match('~^\[(?<operator>[INOR=!%<>•]+)\].*$~i', $value, $matches) ? strtoupper($matches['operator']) : '%•';
                 $value    = preg_match('~^\[(?<operator>[INOR=!%<>•]+)\](?<term>.*)$~i', $value, $matches) ? $matches['term'] : $value;
+                
                 if ($this->caseInsensitive) {
                     $searchColumn = 'lower(' . $column[$this->columnField] . ')';
                     $filter       = "lower(:filter_{$i})";
