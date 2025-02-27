@@ -2,32 +2,31 @@
 
 namespace Daycry\Doctrine;
 
-use Daycry\Doctrine\Config\Doctrine as DoctrineConfig;
 use Config\Cache;
+use Config\Database;
+use Daycry\Doctrine\Config\Doctrine as DoctrineConfig;
+use Daycry\Doctrine\Libraries\Memcached;
+use Daycry\Doctrine\Libraries\Redis;
 use Doctrine\DBAL\DriverManager;
+use Doctrine\DBAL\Tools\DsnParser;
 use Doctrine\ORM\Configuration;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\Mapping\Driver\AttributeDriver;
 use Doctrine\ORM\Mapping\Driver\XmlDriver;
-use Symfony\Component\Cache\Adapter\PhpFilesAdapter;
-use Daycry\Doctrine\Libraries\Redis;
-use Daycry\Doctrine\Libraries\Memcached;
-use Doctrine\DBAL\Tools\DsnParser;
-use Symfony\Component\Cache\Adapter\RedisAdapter;
-use Symfony\Component\Cache\Adapter\MemcachedAdapter;
-use Symfony\Component\Cache\Adapter\ArrayAdapter;
 use Exception;
-use Config\Database;
+use Symfony\Component\Cache\Adapter\ArrayAdapter;
+use Symfony\Component\Cache\Adapter\MemcachedAdapter;
+use Symfony\Component\Cache\Adapter\PhpFilesAdapter;
+use Symfony\Component\Cache\Adapter\RedisAdapter;
 
 /**
  * Class General
- *
  */
 class Doctrine
 {
     public ?EntityManager $em = null;
 
-    public function __construct(DoctrineConfig $doctrineConfig = null, Cache $cacheConfig = null)
+    public function __construct(?DoctrineConfig $doctrineConfig = null, ?Cache $cacheConfig = null)
     {
         if ($doctrineConfig === null) {
             /** @var DoctrineConfig $doctrineConfig */
@@ -39,28 +38,31 @@ class Doctrine
             $cacheConfig = config('Cache');
         }
 
-        $devMode = (ENVIRONMENT == "development") ? true : false;
+        $devMode = (ENVIRONMENT === 'development') ? true : false;
 
         switch ($cacheConfig->handler) {
             case 'file':
-                $cacheQuery = new PhpFilesAdapter($cacheConfig->prefix . $doctrineConfig->queryCacheNamespace, $cacheConfig->ttl, $cacheConfig->file['storePath'] . DIRECTORY_SEPARATOR . 'doctrine');
-                $cacheResult = new PhpFilesAdapter($cacheConfig->prefix . $doctrineConfig->resultsCacheNamespace, $cacheConfig->ttl, $cacheConfig->file['storePath'] . DIRECTORY_SEPARATOR . 'doctrine');
+                $cacheQuery    = new PhpFilesAdapter($cacheConfig->prefix . $doctrineConfig->queryCacheNamespace, $cacheConfig->ttl, $cacheConfig->file['storePath'] . DIRECTORY_SEPARATOR . 'doctrine');
+                $cacheResult   = new PhpFilesAdapter($cacheConfig->prefix . $doctrineConfig->resultsCacheNamespace, $cacheConfig->ttl, $cacheConfig->file['storePath'] . DIRECTORY_SEPARATOR . 'doctrine');
                 $cacheMetadata = new PhpFilesAdapter($cacheConfig->prefix . $doctrineConfig->metadataCacheNamespace, $cacheConfig->ttl, $cacheConfig->file['storePath'] . DIRECTORY_SEPARATOR . 'doctrine');
                 break;
+
             case 'redis':
                 $redis = new Redis($cacheConfig);
                 $redis = $redis->getInstance();
-                $redis->select($cacheConfig->redis[ 'database' ]);
-                $cacheQuery = new RedisAdapter($redis, $cacheConfig->prefix . $doctrineConfig->queryCacheNamespace, $cacheConfig->ttl);
-                $cacheResult = new RedisAdapter($redis, $cacheConfig->prefix . $doctrineConfig->resultsCacheNamespace, $cacheConfig->ttl);
+                $redis->select($cacheConfig->redis['database']);
+                $cacheQuery    = new RedisAdapter($redis, $cacheConfig->prefix . $doctrineConfig->queryCacheNamespace, $cacheConfig->ttl);
+                $cacheResult   = new RedisAdapter($redis, $cacheConfig->prefix . $doctrineConfig->resultsCacheNamespace, $cacheConfig->ttl);
                 $cacheMetadata = new RedisAdapter($redis, $cacheConfig->prefix . $doctrineConfig->metadataCacheNamespace, $cacheConfig->ttl);
                 break;
+
             case 'memcached':
-                $memcached = new Memcached($cacheConfig);
-                $cacheQuery = new MemcachedAdapter($memcached->getInstance(), $cacheConfig->prefix . $doctrineConfig->queryCacheNamespace, $cacheConfig->ttl);
-                $cacheResult = new MemcachedAdapter($memcached->getInstance(), $cacheConfig->prefix . $doctrineConfig->resultsCacheNamespace, $cacheConfig->ttl);
+                $memcached     = new Memcached($cacheConfig);
+                $cacheQuery    = new MemcachedAdapter($memcached->getInstance(), $cacheConfig->prefix . $doctrineConfig->queryCacheNamespace, $cacheConfig->ttl);
+                $cacheResult   = new MemcachedAdapter($memcached->getInstance(), $cacheConfig->prefix . $doctrineConfig->resultsCacheNamespace, $cacheConfig->ttl);
                 $cacheMetadata = new MemcachedAdapter($memcached->getInstance(), $cacheConfig->prefix . $doctrineConfig->metadataCacheNamespace, $cacheConfig->ttl);
                 break;
+
             default:
                 $cacheQuery = $cacheResult = $cacheMetadata = new ArrayAdapter($cacheConfig->ttl);
         }
@@ -71,15 +73,15 @@ class Doctrine
         $config->setProxyNamespace($doctrineConfig->proxiesNamespace);
         $config->setAutoGenerateProxyClasses($doctrineConfig->setAutoGenerateProxyClasses);
 
-        if($doctrineConfig->queryCache) {
+        if ($doctrineConfig->queryCache) {
             $config->setQueryCache($cacheQuery);
         }
 
-        if($doctrineConfig->resultsCache) {
+        if ($doctrineConfig->resultsCache) {
             $config->setResultCache($cacheResult);
         }
 
-        if($doctrineConfig->metadataCache) {
+        if ($doctrineConfig->metadataCache) {
             $config->setMetadataCache($cacheMetadata);
         }
 
@@ -87,6 +89,7 @@ class Doctrine
             case 'xml':
                 $config->setMetadataDriverImpl(new XmlDriver($doctrineConfig->entities, XmlDriver::DEFAULT_FILE_EXTENSION, $doctrineConfig->isXsdValidationEnabled));
                 break;
+
             case 'attribute':
             default:
                 $config->setMetadataDriverImpl(new AttributeDriver($doctrineConfig->entities));
@@ -95,11 +98,11 @@ class Doctrine
 
         /** @var Database $dbConfig */
         $dbConfig = config('Database');
-        $dbGroup = (ENVIRONMENT === 'testing') ? 'tests' : $dbConfig->defaultGroup;
+        $dbGroup  = (ENVIRONMENT === 'testing') ? 'tests' : $dbConfig->defaultGroup;
 
         // Database connection information
-        $connectionOptions = $this->convertDbConfig($dbConfig->$dbGroup);
-        $connection = DriverManager::getConnection($connectionOptions, $config);
+        $connectionOptions = $this->convertDbConfig($dbConfig->{$dbGroup});
+        $connection        = DriverManager::getConnection($connectionOptions, $config);
 
         // Create EntityManager
         $this->em = new EntityManager($connection, $config);
@@ -120,43 +123,42 @@ class Doctrine
      * See http://docs.doctrine-project.org/projects/doctrine-dbal/en/latest/reference/configuration.html
      *
      * @param object $db
-     * @return array
-     * @throws Exception
      *
+     * @return array
+     *
+     * @throws Exception
      */
-
     public function convertDbConfig($db)
     {
         $connectionOptions = [];
 
         $db = (is_array($db)) ? json_decode(json_encode($db)) : $db;
 
-        if($db->DSN) {
+        if ($db->DSN) {
             $driverMapper = ['MySQLi' => 'mysqli', 'Postgre' => 'pgsql', 'OCI8' => 'oci8', 'SQLSRV' => 'sqlsrv', 'SQLite3' => 'sqlite3'];
 
-            if(str_contains($db->DSN, 'SQLite')) {
+            if (str_contains($db->DSN, 'SQLite')) {
                 $db->DSN = strtolower($db->DSN);
             }
 
-            $dsnParser = new DsnParser($driverMapper);
+            $dsnParser         = new DsnParser($driverMapper);
             $connectionOptions = $dsnParser->parse($db->DSN);
-
         } else {
-
-            switch(strtolower($db->DBDriver)) {
+            switch (strtolower($db->DBDriver)) {
                 case 'sqlite3':
-                    if($db->database === ':memory:') {
+                    if ($db->database === ':memory:') {
                         $connectionOptions = [
                             'driver' => strtolower($db->DBDriver),
-                            'memory' => true
+                            'memory' => true,
                         ];
                     } else {
                         $connectionOptions = [
                             'driver' => strtolower($db->DBDriver),
-                            'path' => $db->database
+                            'path'   => $db->database,
                         ];
                     }
                     break;
+
                 default:
                     $connectionOptions = [
                         'driver'   => strtolower($db->DBDriver),
@@ -165,10 +167,9 @@ class Doctrine
                         'host'     => $db->hostname,
                         'dbname'   => $db->database,
                         'charset'  => $db->charset,
-                        'port'     => $db->port
+                        'port'     => $db->port,
                     ];
             }
-
         }
         /*if ($db->DBDriver === 'pdo') {
             return $this->convertDbConfigPdo($db);
@@ -190,6 +191,8 @@ class Doctrine
 
     /**
      * @codeCoverageIgnore
+     *
+     * @param mixed $db
      */
     protected function convertDbConfigPdo($db)
     {
@@ -217,7 +220,7 @@ class Doctrine
                 'host'     => $db->hostname,
                 'dbname'   => $db->database,
                 'charset'  => $db->charset,
-                'port'     => $db->port
+                'port'     => $db->port,
             ];
         } else {
             throw new Exception('Your Database Configuration is not confirmed by CodeIgniter Doctrine');

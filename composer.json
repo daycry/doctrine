@@ -26,10 +26,13 @@
     "require-dev":
     {
         "codeigniter4/framework": "^4",
-        "codeigniter4/devkit": "*",
-        "codeigniter/phpstan-codeigniter": "^1.3",
-        "phpstan/phpstan-strict-rules": "^1.5",
-        "phpunit/phpcov": "^9.0.2"
+        "codeigniter/phpstan-codeigniter": "^1.4",
+        "codeigniter4/devkit": "^1",
+        "daycry/phpunit-extension-vcr": "^1.0",
+        "ergebnis/composer-normalize": "^2.28",
+        "php-vcr/php-vcr": "^1",
+        "phpstan/phpstan-strict-rules": "^2",
+        "phpunit/phpcov": "^10"
     },
     "autoload": {
         "psr-4": {
@@ -51,16 +54,15 @@
             "@composer dump-autoload"
         ],
         "test": "vendor/bin/phpunit",
-        "cs-fixer": [
-            "vendor/bin/php-cs-fixer fix src",
-            "vendor/bin/php-cs-fixer fix tests"
-        ]
+        "cs-fix": "php-cs-fixer fix --ansi --verbose --diff",
+        "cs": "php-cs-fixer fix --ansi --verbose --dry-run --diff"
     },
     "minimum-stability": "dev",
     "prefer-stable": true,
     "config": {
         "allow-plugins": {
-            "phpstan/extension-installer": true
+            "phpstan/extension-installer": true,
+            "ergebnis/composer-normalize": true
         }
     }
 }

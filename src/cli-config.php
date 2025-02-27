@@ -1,21 +1,18 @@
 <?php
+
 /**
  * Part of CodeIgniter Doctrine
  *
- * @author     Daycry <https://github.com/daycry>
  * @license    MIT License
  * @copyright  2022 Daycry
- * @link       https://github.com/daycry/doctrine
+ * @see       https://github.com/daycry/doctrine
  */
 
-require_once "vendor/autoload.php";
+require_once 'vendor/autoload.php';
 
-use CodeIgniter\Config\DotEnv;
+use Daycry\Doctrine\Doctrine;
 use Doctrine\ORM\Tools\Console\ConsoleRunner;
 use Doctrine\ORM\Tools\Console\EntityManagerProvider\SingleManagerProvider;
-use Daycry\Doctrine\Config\Doctrine as DoctrineConfig;
-use Daycry\Doctrine\Doctrine;
-use Daycry\Doctrine\Config\Services;
 
 error_reporting(E_ALL);
 
@@ -43,9 +40,8 @@ chdir(__DIR__);
 // Load our paths config file
 // This is the line that might need to be changed, depending on your folder structure.
 
-if(!$pathPaths = realpath(FCPATH . 'app/Config/Paths.php'))
-{
-    $pathPaths = realpath( FCPATH . '../vendor/codeigniter4/framework/app/Config/Paths.php');
+if (! $pathPaths = realpath(FCPATH . 'app/Config/Paths.php')) {
+    $pathPaths = realpath(FCPATH . '../vendor/codeigniter4/framework/app/Config/Paths.php');
 }
 
 require $pathPaths;
@@ -54,7 +50,6 @@ $paths = new Config\Paths();
 
 // LOAD THE FRAMEWORK BOOTSTRAP FILE
 require $paths->systemDirectory . '/Boot.php';
-
 
 // Load environment settings from .env files into $_SERVER and $_ENV
 $response = Daycry\Doctrine\Boot::bootDoctrine($paths);
@@ -68,5 +63,5 @@ $commands = [
 
 ConsoleRunner::run(
     new SingleManagerProvider($doctrine->em),
-    $commands
+    $commands,
 );

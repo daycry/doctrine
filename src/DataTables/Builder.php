@@ -8,14 +8,13 @@ use Doctrine\ORM\Tools\Pagination\Paginator;
 
 /**
  * Class Builder
- * @package Doctrine\Daycry\DataTables
  */
 class Builder
 {
     /**
      * @var array
      */
-    protected $columnAliases = array();
+    protected $columnAliases = [];
 
     /**
      * @var string
@@ -33,7 +32,7 @@ class Builder
     protected $caseInsensitive = false;
 
     /**
-     * @var QueryBuilder|ORMQueryBuilder
+     * @var ORMQueryBuilder|QueryBuilder
      */
     protected $queryBuilder;
 
@@ -45,21 +44,22 @@ class Builder
     /**
      * @var bool
      */
-    protected $useOutputWalkers = null;
+    protected $useOutputWalkers;
 
     /**
      * @return array
      */
     public function getData()
     {
-        $query = $this->getFilteredQuery();
+        $query   = $this->getFilteredQuery();
         $columns = &$this->requestParams['columns'];
 
         // Order
         if (array_key_exists('order', $this->requestParams)) {
             $order = &$this->requestParams['order'];
+
             foreach ($order as $sort) {
-                $column = &$columns[intval($sort['column'])];
+                $column = &$columns[(int) ($sort['column'])];
                 if (array_key_exists($column[$this->columnField], $this->columnAliases)) {
                     $column[$this->columnField] = $this->columnAliases[$column[$this->columnField]];
                 }
@@ -69,12 +69,12 @@ class Builder
 
         // Offset
         if (array_key_exists('start', $this->requestParams)) {
-            $query->setFirstResult(intval($this->requestParams['start']));
+            $query->setFirstResult((int) ($this->requestParams['start']));
         }
 
         // Limit
         if (array_key_exists('length', $this->requestParams)) {
-            $length = intval($this->requestParams['length']);
+            $length = (int) ($this->requestParams['length']);
             if ($length > 0) {
                 $query->setMaxResults($length);
             }
@@ -83,9 +83,9 @@ class Builder
         // Fetch
         $paginator = new Paginator($query, $fetchJoinCollection = true);
         $paginator->setUseOutputWalkers($this->useOutputWalkers);
-        $result = array();
+        $result = [];
 
-        foreach($paginator as $obj) {
+        foreach ($paginator as $obj) {
             $result[] = $obj;
         }
 
@@ -93,26 +93,27 @@ class Builder
     }
 
     /**
-     * @return QueryBuilder|ORMQueryBuilder
+     * @return ORMQueryBuilder|QueryBuilder
      */
     public function getFilteredQuery()
     {
-        $query = clone $this->queryBuilder;
+        $query   = clone $this->queryBuilder;
         $columns = &$this->requestParams['columns'];
-        $c = count($columns);
+        $c       = count($columns);
 
         // Search
         if (array_key_exists('search', $this->requestParams)) {
             if ($value = trim($this->requestParams['search']['value'])) {
                 $orX = $query->expr()->orX();
+
                 for ($i = 0; $i < $c; $i++) {
                     $column = &$columns[$i];
-                    if ($column['searchable'] == 'true') {
+                    if ($column['searchable'] === 'true') {
                         if (array_key_exists($column[$this->columnField], $this->columnAliases)) {
                             $column[$this->columnField] = $this->columnAliases[$column[$this->columnField]];
                         }
                         if ($this->caseInsensitive) {
-                            $searchColumn = "lower(" . $column[$this->columnField] . ")";
+                            $searchColumn = 'lower(' . $column[$this->columnField] . ')';
                             $orX->add($query->expr()->like($searchColumn, 'lower(:search)'));
                         } else {
                             $orX->add($query->expr()->like($column[$this->columnField], ':search'));
@@ -125,24 +126,25 @@ class Builder
                 }
             }
         }
+
         // Filter
         for ($i = 0; $i < $c; $i++) {
             $column = &$columns[$i];
-            $andX = $query->expr()->andX();
-            if (($column['searchable'] == 'true') && ($value = trim($column['search']['value']))) {
+            $andX   = $query->expr()->andX();
+            if (($column['searchable'] === 'true') && ($value = trim($column['search']['value']))) {
                 if (array_key_exists($column[$this->columnField], $this->columnAliases)) {
                     $column[$this->columnField] = $this->columnAliases[$column[$this->columnField]];
                 }
 
-                //$operator = preg_match('~^\[(?<operator>[=!%<>]+)\].*$~', $value, $matches) ? $matches['operator'] : '=';
+                // $operator = preg_match('~^\[(?<operator>[=!%<>]+)\].*$~', $value, $matches) ? $matches['operator'] : '=';
                 $operator = preg_match('~^\[(?<operator>[INOR=!%<>•]+)\].*$~i', $value, $matches) ? strtoupper($matches['operator']) : '%•';
                 $value    = preg_match('~^\[(?<operator>[INOR=!%<>•]+)\](?<term>.*)$~i', $value, $matches) ? $matches['term'] : $value;
                 if ($this->caseInsensitive) {
-                    $searchColumn = "lower(" . $column[$this->columnField] . ")";
-                    $filter = "lower(:filter_{$i})";
+                    $searchColumn = 'lower(' . $column[$this->columnField] . ')';
+                    $filter       = "lower(:filter_{$i})";
                 } else {
                     $searchColumn = $column[$this->columnField];
-                    $filter = ":filter_{$i}";
+                    $filter       = ":filter_{$i}";
                 }
 
                 switch ($operator) {
@@ -150,57 +152,71 @@ class Builder
                         $andX->add($query->expr()->neq($searchColumn, $filter));
                         $query->setParameter("filter_{$i}", $value);
                         break;
+
                     case '%%': // Like; usage: [%%]search_term
                         $andX->add($query->expr()->like($searchColumn, $filter));
                         $value = "%{$value}%";
                         $query->setParameter("filter_{$i}", $value);
                         break;
+
                     case '<': // Less than; usage: [>]search_term
                         $andX->add($query->expr()->lt($searchColumn, $filter));
                         $query->setParameter("filter_{$i}", $value);
                         break;
+
                     case '>': // Greater than; usage: [<]search_term
                         $andX->add($query->expr()->gt($searchColumn, $filter));
                         $query->setParameter("filter_{$i}", $value);
                         break;
+
                     case 'IN': // IN; usage: [IN]search_term,search_term  -> This equals OR with complete terms
-                        $value = explode(',', $value);
-                        $params = array();
+                        $value  = explode(',', $value);
+                        $params = [];
+
                         for ($j = 0; $j < count($value); $j++) {
                             $params[] = ":filter_{$i}_{$j}";
                         }
                         $andX->add($query->expr()->in($column[$this->columnField], implode(',', $params)));
+
                         for ($j = 0; $j < count($value); $j++) {
                             $query->setParameter("filter_{$i}_{$j}", trim($value[$j]));
                         }
                         break;
+
                     case 'OR': // OR; usage: [IN]search_term,search_term  -> This equals OR with complete terms
-                        $value = explode(',', $value);
-                        $params = array();
-                        $orX = $query->expr()->orX();
+                        $value  = explode(',', $value);
+                        $params = [];
+                        $orX    = $query->expr()->orX();
+
                         for ($j = 0; $j < count($value); $j++) {
                             $orX->add($query->expr()->like($column[$this->columnField], ":filter_{$i}_{$j}"));
                         }
                         $andX->add($orX);
+
                         for ($j = 0; $j < count($value); $j++) {
-                            $query->setParameter("filter_{$i}_{$j}", "%".trim($value[$j])."%");
+                            $query->setParameter("filter_{$i}_{$j}", '%' . trim($value[$j]) . '%');
                         }
                         break;
+
                     case '><': // Between than; usage: [><]search_term,search_term
-                        $value = explode(',', $value);
-                        $params = array();
+                        $value  = explode(',', $value);
+                        $params = [];
+
                         for ($j = 0; $j < count($value); $j++) {
                             $params[] = ":filter_{$i}_{$j}";
                         }
                         $andX->add($query->expr()->between($column[$this->columnField], trim($params[0]), trim($params[1])));
+
                         for ($j = 0; $j < count($value); $j++) {
                             $query->setParameter("filter_{$i}_{$j}", $value[$j]);
                         }
                         break;
+
                     case '=': // Equals; usage: [=]search_term
                         $andX->add($query->expr()->eq($column[$this->columnField], ":filter_{$i}"));
                         $query->setParameter("filter_{$i}", $value);
                         break;
+
                     case '%': // Like(default); usage: [%]search_term
                     default:
                         $andX->add($query->expr()->like($column[$this->columnField], ":filter_{$i}"));
@@ -213,6 +229,7 @@ class Builder
                 $query->andWhere($andX);
             }
         }
+
         // Done
         return $query;
     }
@@ -222,9 +239,10 @@ class Builder
      */
     public function getRecordsFiltered()
     {
-        $query = $this->getFilteredQuery();
+        $query     = $this->getFilteredQuery();
         $paginator = new Paginator($query, $fetchJoinCollection = true);
         $paginator->setUseOutputWalkers($this->useOutputWalkers);
+
         return $paginator->count();
     }
 
@@ -233,9 +251,10 @@ class Builder
      */
     public function getRecordsTotal()
     {
-        $query = clone $this->queryBuilder;
+        $query     = clone $this->queryBuilder;
         $paginator = new Paginator($query, $fetchJoinCollection = true);
         $paginator->setUseOutputWalkers($this->useOutputWalkers);
+
         return $paginator->count();
     }
 
@@ -244,81 +263,94 @@ class Builder
      */
     public function getResponse()
     {
-        return array(
-            'data' => $this->getData(),
-            'draw' => $this->requestParams['draw'],
+        return [
+            'data'            => $this->getData(),
+            'draw'            => $this->requestParams['draw'],
             'recordsFiltered' => $this->getRecordsFiltered(),
-            'recordsTotal' => $this->getRecordsTotal(),
-        );
+            'recordsTotal'    => $this->getRecordsTotal(),
+        ];
     }
 
     /**
      * @param string $indexColumn
+     *
      * @return static
      */
     public function withIndexColumn($indexColumn)
     {
         $this->indexColumn = $indexColumn;
+
         return $this;
     }
 
     /**
      * @param string|null $useOutputWalkers
-     * return static
+     *                                      return static
      */
     public function setUseOutputWalkers($useOutputWalkers)
     {
         $this->useOutputWalkers = $useOutputWalkers;
+
         return $this;
     }
 
     /**
      * @param array $columnAliases
+     *
      * @return static
      */
     public function withColumnAliases($columnAliases)
     {
         $this->columnAliases = $columnAliases;
+
         return $this;
     }
 
     /**
      * @param bool $caseInsensitive
+     *
      * @return static
      */
     public function withCaseInsensitive($caseInsensitive)
     {
         $this->caseInsensitive = $caseInsensitive;
+
         return $this;
     }
 
     /**
      * @param string $columnField
+     *
      * @return static
      */
     public function withColumnField($columnField)
     {
         $this->columnField = $columnField;
+
         return $this;
     }
 
     /**
-     * @param QueryBuilder|ORMQueryBuilder $queryBuilder
+     * @param ORMQueryBuilder|QueryBuilder $queryBuilder
+     *
      * @return static
      */
     public function withQueryBuilder($queryBuilder)
     {
         $this->queryBuilder = $queryBuilder;
+
         return $this;
     }
 
     /**
      * @param array $requestParams
+     *
      * @return static
      */
     public function withRequestParams($requestParams)
     {
         $this->requestParams = $requestParams;
+
         return $this;
     }
 }
