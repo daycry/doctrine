@@ -55,7 +55,12 @@
         ],
         "test": "vendor/bin/phpunit",
         "cs-fix": "php-cs-fixer fix --ansi --verbose --diff",
-        "cs": "php-cs-fixer fix --ansi --verbose --dry-run --diff"
+        "cs": "php-cs-fixer fix --ansi --verbose --dry-run --diff",
+        "analyze": [
+            "phpstan analyze",
+            "psalm",
+            "rector process --dry-run"
+        ]
     },
     "minimum-stability": "dev",
     "prefer-stable": true,
