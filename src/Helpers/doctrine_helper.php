@@ -1,5 +1,7 @@
 <?php
 
+use CodeIgniter\Config\Services;
+
 if (! function_exists('doctrine_instance')) {
     /**
      * load twig
@@ -8,6 +10,6 @@ if (! function_exists('doctrine_instance')) {
      */
     function doctrine_instance()
     {
-        return CodeIgniter\Config\Services::doctrine();
+        return Services::doctrine();
     }
 }

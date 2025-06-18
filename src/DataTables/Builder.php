@@ -140,7 +140,7 @@ class Builder
                 // $operator = preg_match('~^\[(?<operator>[=!%<>]+)\].*$~', $value, $matches) ? $matches['operator'] : '=';
                 $operator = preg_match('~^\[(?<operator>[INOR=!%<>•]+)\].*$~i', $value, $matches) ? strtoupper($matches['operator']) : '%•';
                 $value    = preg_match('~^\[(?<operator>[INOR=!%<>•]+)\](?<term>.*)$~i', $value, $matches) ? $matches['term'] : $value;
-                
+
                 if ($this->caseInsensitive) {
                     $searchColumn = 'lower(' . $column[$this->columnField] . ')';
                     $filter       = "lower(:filter_{$i})";
@@ -286,8 +286,8 @@ class Builder
     }
 
     /**
-     * @param string|null $useOutputWalkers
-     *                                      return static
+     * @param bool $useOutputWalkers
+     *                               return static
      */
     public function setUseOutputWalkers($useOutputWalkers)
     {

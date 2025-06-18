@@ -10,6 +10,8 @@
 
 require_once 'vendor/autoload.php';
 
+use Config\Paths;
+use Daycry\Doctrine\Boot;
 use Daycry\Doctrine\Doctrine;
 use Doctrine\ORM\Tools\Console\ConsoleRunner;
 use Doctrine\ORM\Tools\Console\EntityManagerProvider\SingleManagerProvider;
@@ -46,13 +48,13 @@ if (! $pathPaths = realpath(FCPATH . 'app/Config/Paths.php')) {
 
 require $pathPaths;
 
-$paths = new Config\Paths();
+$paths = new Paths();
 
 // LOAD THE FRAMEWORK BOOTSTRAP FILE
 require $paths->systemDirectory . '/Boot.php';
 
 // Load environment settings from .env files into $_SERVER and $_ENV
-$response = Daycry\Doctrine\Boot::bootDoctrine($paths);
+$response = Boot::bootDoctrine($paths);
 
 $doctrine = new Doctrine(config('Doctrine'));
 
