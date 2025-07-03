@@ -4,6 +4,8 @@ namespace Daycry\Doctrine;
 
 use Config\Cache;
 use Config\Database;
+use Daycry\Doctrine\Collectors\DoctrineCollector;
+use Daycry\Doctrine\Collectors\DoctrineQueryMiddleware;
 use Daycry\Doctrine\Config\Doctrine as DoctrineConfig;
 use Daycry\Doctrine\Libraries\Memcached;
 use Daycry\Doctrine\Libraries\Redis;
@@ -26,7 +28,7 @@ class Doctrine
 {
     public ?EntityManager $em = null;
 
-    public function __construct(?DoctrineConfig $doctrineConfig = null, ?Cache $cacheConfig = null)
+    public function __construct(?DoctrineConfig $doctrineConfig = null, ?Cache $cacheConfig = null, ?string $dbGroup = null)
     {
         if ($doctrineConfig === null) {
             /** @var DoctrineConfig $doctrineConfig */
@@ -96,10 +98,18 @@ class Doctrine
                 break;
         }
 
+        // INTEGRACIÓN DEL COLLECTOR Y MIDDLEWARE
+        $collector  = new DoctrineCollector();
+        $middleware = new DoctrineQueryMiddleware($collector);
+        if (method_exists($config, 'setMiddlewares')) {
+            $config->setMiddlewares([$middleware]);
+        }
+
         /** @var Database $dbConfig */
         $dbConfig = config('Database');
-        $dbGroup  = (ENVIRONMENT === 'testing') ? 'tests' : $dbConfig->defaultGroup;
-
+        if ($dbGroup === null) {
+            $dbGroup = (ENVIRONMENT === 'testing') ? 'tests' : $dbConfig->defaultGroup;
+        }
         // Database connection information
         $connectionOptions = $this->convertDbConfig($dbConfig->{$dbGroup});
         $connection        = DriverManager::getConnection($connectionOptions, $config);
@@ -109,6 +119,12 @@ class Doctrine
 
         $this->em->getConnection()->getDatabasePlatform()->registerDoctrineTypeMapping('set', 'string');
         $this->em->getConnection()->getDatabasePlatform()->registerDoctrineTypeMapping('enum', 'string');
+
+        // Si la Toolbar está activa, registra el collector manualmente
+        // (El método addCollector no existe, así que se elimina esta línea)
+        // if (function_exists('service') && service('toolbar')) {
+        //     service('toolbar')->addCollector($collector);
+        // }
     }
 
     public function reOpen()
@@ -131,16 +147,12 @@ class Doctrine
     public function convertDbConfig($db)
     {
         $connectionOptions = [];
-
-        $db = (is_array($db)) ? json_decode(json_encode($db)) : $db;
-
+        $db                = (is_array($db)) ? json_decode(json_encode($db)) : $db;
         if ($db->DSN) {
             $driverMapper = ['MySQLi' => 'mysqli', 'Postgre' => 'pgsql', 'OCI8' => 'oci8', 'SQLSRV' => 'sqlsrv', 'SQLite3' => 'sqlite3'];
-
             if (str_contains($db->DSN, 'SQLite')) {
                 $db->DSN = strtolower($db->DSN);
             }
-
             $dsnParser         = new DsnParser($driverMapper);
             $connectionOptions = $dsnParser->parse($db->DSN);
         } else {
@@ -169,22 +181,22 @@ class Doctrine
                         'charset'  => $db->charset,
                         'port'     => $db->port,
                     ];
+                    // Soporte para SSL y opciones avanzadas
+                    $sslOptions = ['sslmode', 'sslcert', 'sslkey', 'sslca', 'sslcapath', 'sslcipher', 'sslcrl', 'sslverify', 'sslcompression'];
+
+                    foreach ($sslOptions as $opt) {
+                        if (isset($db->{$opt})) {
+                            $connectionOptions[$opt] = $db->{$opt};
+                        }
+                    }
+                    // Opciones personalizadas
+                    if (isset($db->options) && is_array($db->options)) {
+                        foreach ($db->options as $key => $value) {
+                            $connectionOptions[$key] = $value;
+                        }
+                    }
             }
         }
-        /*if ($db->DBDriver === 'pdo') {
-            return $this->convertDbConfigPdo($db);
-        } else {
-            $connectionOptions = [
-                'driver'   => strtolower($db->DBDriver),
-                'user'     => $db->username,
-                'password' => $db->password,
-                'host'     => $db->hostname,
-                'dbname'   => $db->database,
-                'charset'  => $db->charset,
-                'port'     => $db->port,
-                'servicename' => $db->servicename //OCI8
-            ];
-        }*/
 
         return $connectionOptions;
     }

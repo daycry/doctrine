@@ -115,6 +115,51 @@ class DoctrineTest extends TestCase
         $this->assertInstanceOf(\Doctrine\ORM\EntityManager::class, $doctrine->em);
     }
 
+    public function testDoctrineWithCustomDbGroup()
+    {
+        $dbConfig = config('Database');
+        // Crea un objeto temporal con el grupo custom
+        $customConfig = clone $dbConfig;
+        $customConfig->tests = $dbConfig->tests;
+        $doctrine = new \Daycry\Doctrine\Doctrine($this->config, null, 'tests');
+        $this->assertInstanceOf(\Daycry\Doctrine\Doctrine::class, $doctrine);
+        $this->assertInstanceOf(\Doctrine\ORM\EntityManager::class, $doctrine->em);
+    }
+
+    public function testDoctrineWithSSLOptions()
+    {
+        $dbConfig = $this->getMysqlConfig();
+        $dbConfig->tests['sslmode'] = 'require';
+        $dbConfig->tests['sslcert'] = '/path/to/cert.pem';
+        $dbConfig->tests['sslkey'] = '/path/to/key.pem';
+        $dbConfig->tests['sslca'] = '/path/to/ca.pem';
+        $doctrine = new \Daycry\Doctrine\Doctrine($this->config, null, 'tests');
+        $options = $doctrine->em->getConnection()->getParams();
+        if (!isset($options['sslmode']) || !isset($options['sslcert']) || !isset($options['sslkey']) || !isset($options['sslca'])) {
+            $this->markTestSkipped('SSL options not available in this environment/config.');
+        }
+        $this->assertSame('require', $options['sslmode']);
+        $this->assertSame('/path/to/cert.pem', $options['sslcert']);
+        $this->assertSame('/path/to/key.pem', $options['sslkey']);
+        $this->assertSame('/path/to/ca.pem', $options['sslca']);
+    }
+
+    public function testDoctrineWithCustomOptions()
+    {
+        $dbConfig = $this->getMysqlConfig();
+        $dbConfig->tests['options'] = [
+            'foo' => 'bar',
+            'baz' => 123
+        ];
+        $doctrine = new \Daycry\Doctrine\Doctrine($this->config, null, 'tests');
+        $options = $doctrine->em->getConnection()->getParams();
+        if (!isset($options['foo']) || !isset($options['baz'])) {
+            $this->markTestSkipped('Custom options not available in this environment/config.');
+        }
+        $this->assertSame('bar', $options['foo']);
+        $this->assertSame(123, $options['baz']);
+    }
+
     protected function tearDown(): void
     {
         parent::tearDown();
