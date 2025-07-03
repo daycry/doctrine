@@ -83,6 +83,10 @@ class DoctrineTest extends TestCase
 
     public function testInstanceDoctrineMemcached()
     {
+        if (!extension_loaded('memcached')) {
+            $this->markTestSkipped('La extensión memcached no está habilitada.');
+        }
+        
         /** @var Cache $cacheConf */
         $cacheConf = config('Cache');
         $cacheConf->handler = 'memcached';

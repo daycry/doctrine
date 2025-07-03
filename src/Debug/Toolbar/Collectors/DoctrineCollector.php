@@ -165,4 +165,12 @@ class DoctrineCollector extends BaseCollector
 
         return preg_replace_callback($search, static fn ($matches): string => '<strong>' . str_replace(' ', '&nbsp;', $matches[0]) . '</strong>', $sql);
     }
+
+    /**
+     * Método público para testear debugToolbarDisplay
+     */
+    public function debugToolbarDisplayPublic(string $sql): string
+    {
+        return $this->debugToolbarDisplay($sql);
+    }
 }
