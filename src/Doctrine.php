@@ -4,9 +4,9 @@ namespace Daycry\Doctrine;
 
 use Config\Cache;
 use Config\Database;
-use Daycry\Doctrine\Collectors\DoctrineCollector;
-use Daycry\Doctrine\Collectors\DoctrineQueryMiddleware;
 use Daycry\Doctrine\Config\Doctrine as DoctrineConfig;
+use Daycry\Doctrine\Debug\Toolbar\Collectors\DoctrineConnectionProxy;
+use Daycry\Doctrine\Debug\Toolbar\Collectors\DoctrineQueryMiddleware;
 use Daycry\Doctrine\Libraries\Memcached;
 use Daycry\Doctrine\Libraries\Redis;
 use Doctrine\DBAL\DriverManager;
@@ -22,12 +22,32 @@ use Symfony\Component\Cache\Adapter\PhpFilesAdapter;
 use Symfony\Component\Cache\Adapter\RedisAdapter;
 
 /**
- * Class General
+ * Doctrine integration for CodeIgniter 4.
+ * Handles EntityManager, DBAL connection, and cache configuration.
  */
 class Doctrine
 {
+    /**
+     * The Doctrine EntityManager instance.
+     */
     public ?EntityManager $em = null;
 
+    /**
+     * Proxy connection for logging/debugging queries.
+     *
+     * @var DoctrineConnectionProxy|null
+     */
+    public $dbProxy;
+
+    /**
+     * Doctrine constructor.
+     *
+     * @param DoctrineConfig|null $doctrineConfig Doctrine configuration
+     * @param Cache|null          $cacheConfig    Cache configuration
+     * @param string|null         $dbGroup        Database group name
+     *
+     * @throws Exception
+     */
     public function __construct(?DoctrineConfig $doctrineConfig = null, ?Cache $cacheConfig = null, ?string $dbGroup = null)
     {
         if ($doctrineConfig === null) {
@@ -99,11 +119,10 @@ class Doctrine
         }
 
         // INTEGRACIÓN DEL COLLECTOR Y MIDDLEWARE
-        $collector  = new DoctrineCollector();
+        $collector  = service('doctrineCollector');
+        $dbalConfig = new \Doctrine\DBAL\Configuration();
         $middleware = new DoctrineQueryMiddleware($collector);
-        if (method_exists($config, 'setMiddlewares')) {
-            $config->setMiddlewares([$middleware]);
-        }
+        $dbalConfig->setMiddlewares([$middleware]);
 
         /** @var Database $dbConfig */
         $dbConfig = config('Database');
@@ -112,9 +131,10 @@ class Doctrine
         }
         // Database connection information
         $connectionOptions = $this->convertDbConfig($dbConfig->{$dbGroup});
-        $connection        = DriverManager::getConnection($connectionOptions, $config);
-
-        // Create EntityManager
+        $connection        = DriverManager::getConnection($connectionOptions, $dbalConfig);
+        // Proxy solo para logging/debug
+        $this->dbProxy = new DoctrineConnectionProxy($connection, $collector);
+        // Create EntityManager con la conexión original
         $this->em = new EntityManager($connection, $config);
 
         $this->em->getConnection()->getDatabasePlatform()->registerDoctrineTypeMapping('set', 'string');
@@ -127,16 +147,18 @@ class Doctrine
         // }
     }
 
+    /**
+     * Reopen the EntityManager with the current connection and configuration.
+     *
+     * @return void
+     */
     public function reOpen()
     {
         $this->em = new EntityManager($this->em->getConnection(), $this->em->getConfiguration(), $this->em->getEventManager());
     }
 
     /**
-     * Convert CodeIgniter database config array to Doctrine's
-     *
-     * See http://www.codeigniter.com/user_guide/database/configuration.html
-     * See http://docs.doctrine-project.org/projects/doctrine-dbal/en/latest/reference/configuration.html
+     * Convert CodeIgniter database config array to Doctrine's connection options.
      *
      * @param object $db
      *
@@ -202,9 +224,14 @@ class Doctrine
     }
 
     /**
-     * @codeCoverageIgnore
+     * Convert CodeIgniter PDO config to Doctrine's connection options.
      *
      * @param mixed $db
+     *
+     * @return array
+     *
+     * @throws Exception
+     * @codeCoverageIgnore
      */
     protected function convertDbConfigPdo($db)
     {

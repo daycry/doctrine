@@ -1,11 +1,13 @@
 <?php
 
-namespace Daycry\Doctrine\Collectors;
+namespace Daycry\Doctrine\Debug\Toolbar\Collectors;
 
 use Doctrine\DBAL\Driver;
 use Doctrine\DBAL\Driver\API\ExceptionConverter;
-use Doctrine\DBAL\Driver\Connection as DriverConnection;
+use Doctrine\DBAL\Driver\Connection;
 use Doctrine\DBAL\Driver\Middleware;
+use Doctrine\DBAL\Driver\Result;
+use Doctrine\DBAL\Driver\Statement;
 use Doctrine\DBAL\Platforms\AbstractPlatform;
 use Doctrine\DBAL\ServerVersionProvider;
 
@@ -32,38 +34,27 @@ class DoctrineQueryMiddleware implements Middleware
                 $this->collector = $collector;
             }
 
-            public function connect(array $params): DriverConnection
+            public function connect(array $params): Connection
             {
                 $conn      = $this->driver->connect($params);
                 $collector = $this->collector;
 
-                return new class ($conn, $collector) implements DriverConnection {
+                return new class ($conn, $collector) implements Connection {
                     private $conn;
                     private $collector;
 
-                    public function __construct(DriverConnection $conn, DoctrineCollector $collector)
+                    public function __construct($conn, DoctrineCollector $collector)
                     {
                         $this->conn      = $conn;
                         $this->collector = $collector;
                     }
 
-                    public function prepare(string $sql): Driver\Statement
+                    public function prepare(string $sql): Statement
                     {
-                        $start = microtime(true);
-                        $stmt  = $this->conn->prepare($sql);
-                        $this->collector->addQuery([
-                            'sql'      => $sql,
-                            'params'   => [],
-                            'types'    => [],
-                            'start'    => $start,
-                            'end'      => null,
-                            'duration' => null,
-                        ]);
-
-                        return $stmt;
+                        return $this->conn->prepare($sql);
                     }
 
-                    public function query(string $sql): Driver\Result
+                    public function query(string $sql): Result
                     {
                         $start  = microtime(true);
                         $result = $this->conn->query($sql);
@@ -95,9 +86,19 @@ class DoctrineQueryMiddleware implements Middleware
                         $this->conn->rollBack();
                     }
 
-                    public function lastInsertId(): int|string
+                    public function lastInsertId($name = null): string
                     {
-                        return $this->conn->lastInsertId();
+                        return $this->conn->lastInsertId($name);
+                    }
+
+                    public function getNativeConnection()
+                    {
+                        return $this->conn->getNativeConnection();
+                    }
+
+                    public function exec(string $sql): int|string
+                    {
+                        return $this->conn->exec($sql);
                     }
 
                     public function quote(string $value): string
@@ -105,19 +106,14 @@ class DoctrineQueryMiddleware implements Middleware
                         return $this->conn->quote($value);
                     }
 
-                    public function exec(string $sql): int
-                    {
-                        return $this->conn->exec($sql);
-                    }
-
-                    public function getNativeConnection(): object
-                    {
-                        return $this->conn->getNativeConnection();
-                    }
-
                     public function getServerVersion(): string
                     {
-                        return method_exists($this->conn, 'getServerVersion') ? $this->conn->getServerVersion() : 'unknown';
+                        return $this->conn->getServerVersion();
+                    }
+
+                    public function __call($name, $arguments)
+                    {
+                        return $this->conn->{$name}(...$arguments);
                     }
                 };
             }

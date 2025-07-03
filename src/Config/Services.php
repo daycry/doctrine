@@ -3,6 +3,7 @@
 namespace Daycry\Doctrine\Config;
 
 use CodeIgniter\Config\BaseService;
+use Daycry\Doctrine\Debug\Toolbar\Collectors\DoctrineCollector;
 use Daycry\Doctrine\Doctrine;
 
 class Services extends BaseService
@@ -16,5 +17,14 @@ class Services extends BaseService
         $config = config('Doctrine');
 
         return new Doctrine($config);
+    }
+
+    public static function doctrineCollector(bool $getShared = true)
+    {
+        if ($getShared) {
+            return static::getSharedInstance('doctrineCollector');
+        }
+
+        return new DoctrineCollector();
     }
 }

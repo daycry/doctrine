@@ -253,7 +253,7 @@ This library allows you to view all SQL queries executed by Doctrine directly in
    ```php
    public $collectors = [
        // ...other collectors...
-       \Daycry\Doctrine\Collectors\DoctrineCollector::class,
+       \Daycry\Doctrine\Debug\Toolbar\Collectors\DoctrineCollector::class,
    ];
    ```
 
