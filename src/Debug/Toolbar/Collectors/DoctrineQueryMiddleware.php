@@ -65,7 +65,7 @@ class DoctrineQueryMiddleware implements Middleware
                             'types'    => [],
                             'start'    => $start,
                             'end'      => $end,
-                            'duration' => $end - $start,
+                            'duration' => ($end - $start) * 1000, // Convert to milliseconds
                         ]);
 
                         return $result;
