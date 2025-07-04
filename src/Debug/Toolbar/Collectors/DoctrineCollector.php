@@ -76,7 +76,7 @@ class DoctrineCollector extends BaseCollector
             $params   = htmlspecialchars(json_encode($query['params'] ?? []), ENT_QUOTES, 'UTF-8');
             $time     = isset($query['duration']) ? number_format($query['duration'], 4) : '';
             $html .= '<tr class="{class}" title="' . $sql . '" data-toggle="' . md5($sql) . '-trace">';
-            $html .= '<td class="narrow">' . $time . '</td>';
+            $html .= '<td class="narrow">' . $time . ' ms</td>';
             // Shorten SQL if too long (over 120 chars), show full SQL in tooltip
             $maxLen     = 120;
             $displaySql = mb_strlen($shortSql) > $maxLen ? mb_substr($shortSql, 0, $maxLen - 3) . '...' : $shortSql;
