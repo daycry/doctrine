@@ -1,12 +1,13 @@
 <?php
 
 use CodeIgniter\Config\Services;
+use Daycry\Doctrine\Doctrine;
 
 if (! function_exists('doctrine_instance')) {
     /**
      * load twig
      *
-     * @return class
+     * @return Doctrine
      */
     function doctrine_instance()
     {
