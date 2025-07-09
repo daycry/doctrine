@@ -1,88 +1,109 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Daycry\Doctrine\DataTables;
 
+use CodeIgniter\Exceptions\InvalidArgumentException;
 use Doctrine\DBAL\Query\QueryBuilder;
 use Doctrine\ORM\QueryBuilder as ORMQueryBuilder;
 use Doctrine\ORM\Tools\Pagination\Paginator;
 
 /**
- * Class Builder
+ * Builder for DataTables integration with Doctrine ORM/DBAL.
+ * Enables dynamic pagination, filtering, and ordering of results.
+ *
+ * @property bool                         $caseInsensitive   Case-insensitive search
+ * @property array                        $columnAliases     Column aliases DataTables => DB
+ * @property string                       $columnField       Column field ('data' or 'name')
+ * @property string                       $indexColumn       Index column
+ * @property ORMQueryBuilder|QueryBuilder $queryBuilder      Doctrine QueryBuilder
+ * @property array                        $requestParams     DataTables request parameters
+ * @property array                        $searchableColumns Columns allowed for global LIKE search
+ * @property bool                         $useOutputWalkers  Use OutputWalkers in paginator
  */
 class Builder
 {
     /**
-     * @var array
+     * Column aliases DataTables => DB
+     *
+     * @var array<string, string>
      */
-    protected $columnAliases = [];
+    protected array $columnAliases = [];
 
     /**
-     * @var string
+     * Column field ('data' or 'name')
      */
-    protected $columnField = 'data'; // or 'name'
+    protected string $columnField = 'data';
 
     /**
-     * @var string
+     * Index column
      */
-    protected $indexColumn = '*';
+    protected string $indexColumn = '*';
 
     /**
-     * @var bool
+     * Case-insensitive search
      */
-    protected $caseInsensitive = false;
+    protected bool $caseInsensitive = false;
 
     /**
-     * @var ORMQueryBuilder|QueryBuilder
+     * Doctrine QueryBuilder
      */
-    protected $queryBuilder;
+    protected ORMQueryBuilder|QueryBuilder|null $queryBuilder = null;
 
     /**
-     * @var array
+     * DataTables request parameters
      */
-    protected $requestParams;
+    protected ?array $requestParams = null;
 
     /**
-     * @var bool
+     * Use OutputWalkers in paginator
      */
-    protected $useOutputWalkers;
+    protected ?bool $useOutputWalkers = null;
 
     /**
-     * @return array
+     * Columns allowed for global LIKE search
+     *
+     * @var list<string>
      */
-    public function getData()
+    protected array $searchableColumns = [];
+
+    /**
+     * Static factory for fluent usage.
+     */
+    public static function create(): self
     {
+        return new self();
+    }
+
+    /**
+     * Set columns allowed for global LIKE search.
+     *
+     * @param list<string> $columns
+     *
+     * @return $this
+     */
+    public function withSearchableColumns(array $columns): static
+    {
+        $this->searchableColumns = $columns;
+
+        return $this;
+    }
+
+    /**
+     * Returns paginated, filtered, and ordered data for DataTables.
+     *
+     * @throws InvalidArgumentException
+     */
+    public function getData(): array
+    {
+        $this->validate();
         $query   = $this->getFilteredQuery();
-        $columns = &$this->requestParams['columns'];
-
-        // Order
-        if (array_key_exists('order', $this->requestParams)) {
-            $order = &$this->requestParams['order'];
-
-            foreach ($order as $sort) {
-                $column = &$columns[(int) ($sort['column'])];
-                if (array_key_exists($column[$this->columnField], $this->columnAliases)) {
-                    $column[$this->columnField] = $this->columnAliases[$column[$this->columnField]];
-                }
-                $query->addOrderBy($column[$this->columnField], $sort['dir']);
-            }
-        }
-
-        // Offset
-        if (array_key_exists('start', $this->requestParams)) {
-            $query->setFirstResult((int) ($this->requestParams['start']));
-        }
-
-        // Limit
-        if (array_key_exists('length', $this->requestParams)) {
-            $length = (int) ($this->requestParams['length']);
-            if ($length > 0) {
-                $query->setMaxResults($length);
-            }
-        }
-
-        // Fetch
+        $columns = $this->requestParams['columns'];
+        $this->applyOrdering($query, $columns);
+        $this->applyPagination($query);
         $paginator = new Paginator($query, $fetchJoinCollection = true);
-        $paginator->setUseOutputWalkers($this->useOutputWalkers);
+        $paginator->setUseOutputWalkers($this->useOutputWalkers ?? true);
         $result = [];
 
         foreach ($paginator as $obj) {
@@ -93,30 +114,39 @@ class Builder
     }
 
     /**
-     * @return ORMQueryBuilder|QueryBuilder
+     * Returns a filtered QueryBuilder based on DataTables parameters.
+     *
+     * @throws InvalidArgumentException
      */
-    public function getFilteredQuery()
+    public function getFilteredQuery(): ORMQueryBuilder|QueryBuilder
     {
+        $this->validate();
         $query   = clone $this->queryBuilder;
-        $columns = &$this->requestParams['columns'];
+        $columns = $this->requestParams['columns'];
         $c       = count($columns);
 
         // Search
         if (array_key_exists('search', $this->requestParams)) {
-            if ($value = trim($this->requestParams['search']['value'])) {
+            if ($value = trim($this->requestParams['search']['value'] ?? '')) {
                 $orX = $query->expr()->orX();
 
                 for ($i = 0; $i < $c; $i++) {
-                    $column = &$columns[$i];
-                    if ($column['searchable'] === 'true') {
-                        if (array_key_exists($column[$this->columnField], $this->columnAliases)) {
-                            $column[$this->columnField] = $this->columnAliases[$column[$this->columnField]];
+                    $column = $columns[$i];
+                    if ($this->isColumnSearchable($column)) {
+                        $field = $this->resolveColumnAlias($column[$this->columnField] ?? '');
+                        // Only allow LIKE on configured searchable columns
+                        if (! empty($this->searchableColumns) && ! in_array($field, $this->searchableColumns, true)) {
+                            continue;
+                        }
+                        // Skip if field is not a valid identifier (prevents numeric or invalid LIKE)
+                        if (! preg_match('/^[a-zA-Z_][a-zA-Z0-9_\\.]*$/', $field)) {
+                            continue;
                         }
                         if ($this->caseInsensitive) {
-                            $searchColumn = 'lower(' . $column[$this->columnField] . ')';
+                            $searchColumn = 'lower(' . $field . ')';
                             $orX->add($query->expr()->like($searchColumn, 'lower(:search)'));
                         } else {
-                            $orX->add($query->expr()->like($column[$this->columnField], ':search'));
+                            $orX->add($query->expr()->like($field, ':search'));
                         }
                     }
                 }
@@ -129,101 +159,90 @@ class Builder
 
         // Filter
         for ($i = 0; $i < $c; $i++) {
-            $column = &$columns[$i];
+            $column = $columns[$i];
             $andX   = $query->expr()->andX();
-
-            if (($column['searchable'] === true) && ($value = trim($column['search']['value']))) {
-                if (array_key_exists($column[$this->columnField], $this->columnAliases)) {
-                    $column[$this->columnField] = $this->columnAliases[$column[$this->columnField]];
+            if ($this->isColumnSearchable($column) && ($value = trim($column['search']['value'] ?? ''))) {
+                $field = $this->resolveColumnAlias($column[$this->columnField] ?? '');
+                // Parse operator and value
+                $operator = preg_match('~^\[(?<operator>[A-Z!=%<>•]+)\].*$~i', $value, $matches) ? strtoupper($matches['operator']) : '%•';
+                $value    = preg_match('~^\[(?<operator>[A-Z!=%<>•]+)\](?<term>.*)$~i', $value, $matches) ? $matches['term'] : $value;
+                if (in_array($operator, ['LIKE', '%%'], true)) {
+                    $operator = '%';
                 }
-
-                // $operator = preg_match('~^\[(?<operator>[=!%<>]+)\].*$~', $value, $matches) ? $matches['operator'] : '=';
-                $operator = preg_match('~^\[(?<operator>[INOR=!%<>•]+)\].*$~i', $value, $matches) ? strtoupper($matches['operator']) : '%•';
-                $value    = preg_match('~^\[(?<operator>[INOR=!%<>•]+)\](?<term>.*)$~i', $value, $matches) ? $matches['term'] : $value;
-
+                $validOperators = ['!=', '<', '>', 'IN', 'OR', '><', '=', '%'];
+                if (! in_array($operator, $validOperators, true)) {
+                    $operator = '%';
+                }
                 if ($this->caseInsensitive) {
-                    $searchColumn = 'lower(' . $column[$this->columnField] . ')';
+                    $searchColumn = 'lower(' . $field . ')';
                     $filter       = "lower(:filter_{$i})";
                 } else {
-                    $searchColumn = $column[$this->columnField];
+                    $searchColumn = $field;
                     $filter       = ":filter_{$i}";
                 }
 
                 switch ($operator) {
-                    case '!=': // Not equals; usage: [!=]search_term
+                    case '!=':
                         $andX->add($query->expr()->neq($searchColumn, $filter));
                         $query->setParameter("filter_{$i}", $value);
                         break;
 
-                    case '%%': // Like; usage: [%%]search_term
-                        $andX->add($query->expr()->like($searchColumn, $filter));
-                        $value = "%{$value}%";
-                        $query->setParameter("filter_{$i}", $value);
-                        break;
-
-                    case '<': // Less than; usage: [>]search_term
+                    case '<':
                         $andX->add($query->expr()->lt($searchColumn, $filter));
                         $query->setParameter("filter_{$i}", $value);
                         break;
 
-                    case '>': // Greater than; usage: [<]search_term
+                    case '>':
                         $andX->add($query->expr()->gt($searchColumn, $filter));
                         $query->setParameter("filter_{$i}", $value);
                         break;
 
-                    case 'IN': // IN; usage: [IN]search_term,search_term  -> This equals OR with complete terms
-                        $value  = explode(',', $value);
-                        $params = [];
+                    case 'IN':
+                        $valueArr = explode(',', $value);
+                        $params   = [];
 
-                        for ($j = 0; $j < count($value); $j++) {
+                        for ($j = 0; $j < count($valueArr); $j++) {
                             $params[] = ":filter_{$i}_{$j}";
                         }
-                        $andX->add($query->expr()->in($column[$this->columnField], implode(',', $params)));
+                        $andX->add($query->expr()->in($field, implode(',', $params)));
 
-                        for ($j = 0; $j < count($value); $j++) {
-                            $query->setParameter("filter_{$i}_{$j}", trim($value[$j]));
+                        for ($j = 0; $j < count($valueArr); $j++) {
+                            $query->setParameter("filter_{$i}_{$j}", trim($valueArr[$j]));
                         }
                         break;
 
-                    case 'OR': // OR; usage: [IN]search_term,search_term  -> This equals OR with complete terms
-                        $value  = explode(',', $value);
-                        $params = [];
-                        $orX    = $query->expr()->orX();
+                    case 'OR':
+                        $valueArr = explode(',', $value);
+                        $orX      = $query->expr()->orX();
 
-                        for ($j = 0; $j < count($value); $j++) {
-                            $orX->add($query->expr()->like($column[$this->columnField], ":filter_{$i}_{$j}"));
+                        for ($j = 0; $j < count($valueArr); $j++) {
+                            $orX->add($query->expr()->like($field, ":filter_{$i}_{$j}"));
                         }
                         $andX->add($orX);
 
-                        for ($j = 0; $j < count($value); $j++) {
-                            $query->setParameter("filter_{$i}_{$j}", '%' . trim($value[$j]) . '%');
+                        for ($j = 0; $j < count($valueArr); $j++) {
+                            $query->setParameter("filter_{$i}_{$j}", '%' . trim($valueArr[$j]) . '%');
                         }
                         break;
 
-                    case '><': // Between than; usage: [><]search_term,search_term
-                        $value  = explode(',', $value);
-                        $params = [];
-
-                        for ($j = 0; $j < count($value); $j++) {
-                            $params[] = ":filter_{$i}_{$j}";
-                        }
-                        $andX->add($query->expr()->between($column[$this->columnField], trim($params[0]), trim($params[1])));
-
-                        for ($j = 0; $j < count($value); $j++) {
-                            $query->setParameter("filter_{$i}_{$j}", $value[$j]);
+                    case '><':
+                        $valueArr = explode(',', $value);
+                        if (count($valueArr) === 2) {
+                            $andX->add($query->expr()->between($field, ":filter_{$i}_0", ":filter_{$i}_1"));
+                            $query->setParameter("filter_{$i}_0", trim($valueArr[0]));
+                            $query->setParameter("filter_{$i}_1", trim($valueArr[1]));
                         }
                         break;
 
-                    case '=': // Equals; usage: [=]search_term
-                        $andX->add($query->expr()->eq($column[$this->columnField], ":filter_{$i}"));
+                    case '=':
+                        $andX->add($query->expr()->eq($searchColumn, $filter));
                         $query->setParameter("filter_{$i}", $value);
                         break;
 
-                    case '%': // Like(default); usage: [%]search_term
+                    case '%':
                     default:
-                        $andX->add($query->expr()->like($column[$this->columnField], ":filter_{$i}"));
-                        $value = "{$value}%";
-                        $query->setParameter("filter_{$i}", $value);
+                        $andX->add($query->expr()->like($searchColumn, $filter));
+                        $query->setParameter("filter_{$i}", "%{$value}%");
                         break;
                 }
             }
@@ -232,53 +251,51 @@ class Builder
             }
         }
 
-        // Done
         return $query;
     }
 
     /**
-     * @return int
+     * Returns the number of filtered records.
      */
-    public function getRecordsFiltered()
+    public function getRecordsFiltered(): int
     {
         $query     = $this->getFilteredQuery();
         $paginator = new Paginator($query, $fetchJoinCollection = true);
-        $paginator->setUseOutputWalkers($this->useOutputWalkers);
+        $paginator->setUseOutputWalkers($this->useOutputWalkers ?? true);
 
         return $paginator->count();
     }
 
     /**
-     * @return int
+     * Returns the total number of records (without filters).
      */
-    public function getRecordsTotal()
+    public function getRecordsTotal(): int
     {
+        $this->validate();
         $query     = clone $this->queryBuilder;
         $paginator = new Paginator($query, $fetchJoinCollection = true);
-        $paginator->setUseOutputWalkers($this->useOutputWalkers);
+        $paginator->setUseOutputWalkers($this->useOutputWalkers ?? true);
 
         return $paginator->count();
     }
 
     /**
-     * @return array
+     * Returns the DataTables response array.
      */
-    public function getResponse()
+    public function getResponse(): array
     {
         return [
             'data'            => $this->getData(),
-            'draw'            => $this->requestParams['draw'],
+            'draw'            => $this->requestParams['draw'] ?? 0,
             'recordsFiltered' => $this->getRecordsFiltered(),
             'recordsTotal'    => $this->getRecordsTotal(),
         ];
     }
 
     /**
-     * @param string $indexColumn
-     *
-     * @return static
+     * Sets the index column.
      */
-    public function withIndexColumn($indexColumn)
+    public function withIndexColumn(string $indexColumn): static
     {
         $this->indexColumn = $indexColumn;
 
@@ -286,10 +303,9 @@ class Builder
     }
 
     /**
-     * @param bool $useOutputWalkers
-     *                               return static
+     * Sets useOutputWalkers for the paginator.
      */
-    public function setUseOutputWalkers($useOutputWalkers)
+    public function setUseOutputWalkers(bool $useOutputWalkers): static
     {
         $this->useOutputWalkers = $useOutputWalkers;
 
@@ -297,11 +313,9 @@ class Builder
     }
 
     /**
-     * @param array $columnAliases
-     *
-     * @return static
+     * Sets column aliases.
      */
-    public function withColumnAliases($columnAliases)
+    public function withColumnAliases(array $columnAliases): static
     {
         $this->columnAliases = $columnAliases;
 
@@ -309,11 +323,9 @@ class Builder
     }
 
     /**
-     * @param bool $caseInsensitive
-     *
-     * @return static
+     * Enables or disables case-insensitive search.
      */
-    public function withCaseInsensitive($caseInsensitive)
+    public function withCaseInsensitive(bool $caseInsensitive): static
     {
         $this->caseInsensitive = $caseInsensitive;
 
@@ -321,11 +333,9 @@ class Builder
     }
 
     /**
-     * @param string $columnField
-     *
-     * @return static
+     * Sets the column field ('data' or 'name').
      */
-    public function withColumnField($columnField)
+    public function withColumnField(string $columnField): static
     {
         $this->columnField = $columnField;
 
@@ -333,11 +343,9 @@ class Builder
     }
 
     /**
-     * @param ORMQueryBuilder|QueryBuilder $queryBuilder
-     *
-     * @return static
+     * Sets the Doctrine QueryBuilder.
      */
-    public function withQueryBuilder($queryBuilder)
+    public function withQueryBuilder(ORMQueryBuilder|QueryBuilder $queryBuilder): static
     {
         $this->queryBuilder = $queryBuilder;
 
@@ -345,14 +353,76 @@ class Builder
     }
 
     /**
-     * @param array $requestParams
-     *
-     * @return static
+     * Sets the DataTables request parameters.
      */
-    public function withRequestParams($requestParams)
+    public function withRequestParams(array $requestParams): static
     {
         $this->requestParams = $requestParams;
 
         return $this;
+    }
+
+    /**
+     * Validates that required properties are set.
+     */
+    protected function validate(): void
+    {
+        if (! $this->queryBuilder) {
+            throw new InvalidArgumentException('QueryBuilder is not set.');
+        }
+        if (! is_array($this->requestParams) || empty($this->requestParams['columns'])) {
+            throw new InvalidArgumentException('Request parameters or columns are not set.');
+        }
+    }
+
+    /**
+     * Applies ordering to the query.
+     */
+    protected function applyOrdering(ORMQueryBuilder|QueryBuilder $query, array $columns): void
+    {
+        if (array_key_exists('order', $this->requestParams)) {
+            $order = $this->requestParams['order'];
+
+            foreach ($order as $sort) {
+                $column = $columns[(int) ($sort['column'])];
+                $field  = $this->resolveColumnAlias($column[$this->columnField] ?? '');
+                $query->addOrderBy($field, $sort['dir']);
+            }
+        }
+    }
+
+    /**
+     * Applies offset and limit to the query.
+     */
+    protected function applyPagination(ORMQueryBuilder|QueryBuilder $query): void
+    {
+        if (array_key_exists('start', $this->requestParams)) {
+            $query->setFirstResult((int) ($this->requestParams['start']));
+        }
+        if (array_key_exists('length', $this->requestParams)) {
+            $length = (int) ($this->requestParams['length']);
+            if ($length > 0) {
+                $query->setMaxResults($length);
+            }
+        }
+    }
+
+    /**
+     * Helper: Check if a column is searchable.
+     * Accepts both boolean true and string 'true'.
+     */
+    protected function isColumnSearchable(array $column): bool
+    {
+        return
+            (isset($column['searchable']) && ($column['searchable'] === true || $column['searchable'] === 'true'))
+            && isset($column[$this->columnField]) && $column[$this->columnField] !== '';
+    }
+
+    /**
+     * Helper: Resolve column alias if set.
+     */
+    protected function resolveColumnAlias(string $field): string
+    {
+        return $this->columnAliases[$field] ?? $field;
     }
 }
