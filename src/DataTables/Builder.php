@@ -133,20 +133,23 @@ class Builder
                 for ($i = 0; $i < $c; $i++) {
                     $column = $columns[$i];
                     if ($this->isColumnSearchable($column)) {
-                        $field = $this->resolveColumnAlias($column[$this->columnField] ?? '');
+                        $fieldName = $this->resolveFieldName($column[$this->columnField] ?? '', $i);
+                        
                         // Only allow LIKE on configured searchable columns
-                        if (! empty($this->searchableColumns) && ! in_array($field, $this->searchableColumns, true)) {
+                        if (! empty($this->searchableColumns) && ! in_array($fieldName, $this->searchableColumns, true)) {
                             continue;
                         }
-                        // Skip if field is not a valid identifier (prevents numeric or invalid LIKE)
-                        if (! preg_match('/^[a-zA-Z_][a-zA-Z0-9_\\.]*$/', $field)) {
+                        
+                        // Skip if field is not valid for DQL (prevents numeric indices and invalid identifiers)
+                        if (! $this->isValidDQLField($fieldName)) {
                             continue;
                         }
+                        
                         if ($this->caseInsensitive) {
-                            $searchColumn = 'lower(' . $field . ')';
+                            $searchColumn = 'lower(' . $fieldName . ')';
                             $orX->add($query->expr()->like($searchColumn, 'lower(:search)'));
                         } else {
-                            $orX->add($query->expr()->like($field, ':search'));
+                            $orX->add($query->expr()->like($fieldName, ':search'));
                         }
                     }
                 }
@@ -162,7 +165,13 @@ class Builder
             $column = $columns[$i];
             $andX   = $query->expr()->andX();
             if ($this->isColumnSearchable($column) && ($value = trim($column['search']['value'] ?? ''))) {
-                $field = $this->resolveColumnAlias($column[$this->columnField] ?? '');
+                $fieldName = $this->resolveFieldName($column[$this->columnField] ?? '', $i);
+                
+                // Skip if field is not valid for DQL (prevents numeric indices and invalid identifiers)
+                if (! $this->isValidDQLField($fieldName)) {
+                    continue;
+                }
+                
                 // Parse operator and value
                 $operator = preg_match('~^\[(?<operator>[A-Z!=%<>•]+)\].*$~i', $value, $matches) ? strtoupper($matches['operator']) : '%•';
                 $value    = preg_match('~^\[(?<operator>[A-Z!=%<>•]+)\](?<term>.*)$~i', $value, $matches) ? $matches['term'] : $value;
@@ -174,10 +183,10 @@ class Builder
                     $operator = '%';
                 }
                 if ($this->caseInsensitive) {
-                    $searchColumn = 'lower(' . $field . ')';
+                    $searchColumn = 'lower(' . $fieldName . ')';
                     $filter       = "lower(:filter_{$i})";
                 } else {
-                    $searchColumn = $field;
+                    $searchColumn = $fieldName;
                     $filter       = ":filter_{$i}";
                 }
 
@@ -204,7 +213,7 @@ class Builder
                         for ($j = 0; $j < count($valueArr); $j++) {
                             $params[] = ":filter_{$i}_{$j}";
                         }
-                        $andX->add($query->expr()->in($field, implode(',', $params)));
+                        $andX->add($query->expr()->in($fieldName, implode(',', $params)));
 
                         for ($j = 0; $j < count($valueArr); $j++) {
                             $query->setParameter("filter_{$i}_{$j}", trim($valueArr[$j]));
@@ -216,7 +225,7 @@ class Builder
                         $orX      = $query->expr()->orX();
 
                         for ($j = 0; $j < count($valueArr); $j++) {
-                            $orX->add($query->expr()->like($field, ":filter_{$i}_{$j}"));
+                            $orX->add($query->expr()->like($fieldName, ":filter_{$i}_{$j}"));
                         }
                         $andX->add($orX);
 
@@ -228,7 +237,7 @@ class Builder
                     case '><':
                         $valueArr = explode(',', $value);
                         if (count($valueArr) === 2) {
-                            $andX->add($query->expr()->between($field, ":filter_{$i}_0", ":filter_{$i}_1"));
+                            $andX->add($query->expr()->between($fieldName, ":filter_{$i}_0", ":filter_{$i}_1"));
                             $query->setParameter("filter_{$i}_0", trim($valueArr[0]));
                             $query->setParameter("filter_{$i}_1", trim($valueArr[1]));
                         }
@@ -385,8 +394,12 @@ class Builder
 
             foreach ($order as $sort) {
                 $column = $columns[(int) ($sort['column'])];
-                $field  = $this->resolveColumnAlias($column[$this->columnField] ?? '');
-                $query->addOrderBy($field, $sort['dir']);
+                $fieldName = $this->resolveFieldName($column[$this->columnField] ?? '', (int) ($sort['column']));
+                
+                // Only add ordering if field is valid for DQL
+                if ($this->isValidDQLField($fieldName)) {
+                    $query->addOrderBy($fieldName, $sort['dir']);
+                }
             }
         }
     }
@@ -424,5 +437,39 @@ class Builder
     protected function resolveColumnAlias(string $field): string
     {
         return $this->columnAliases[$field] ?? $field;
+    }
+
+    /**
+     * Helper: Resolve field name for DQL, handling DataTables column configuration.
+     * 
+     * @param mixed $columnValue The column value from DataTables (could be field name or index)
+     * @param int $columnIndex The column index as fallback
+     * @return string The resolved field name
+     */
+    protected function resolveFieldName($columnValue, int $columnIndex): string
+    {
+        // If columnValue is numeric or empty, it's likely an index, not a field name
+        if (is_numeric($columnValue) || empty($columnValue)) {
+            return (string) $columnIndex; // Return as string to be caught by isValidDQLField
+        }
+        
+        // Resolve alias if exists
+        return $this->resolveColumnAlias((string) $columnValue);
+    }
+
+    /**
+     * Helper: Check if field name is valid for DQL queries.
+     * Prevents numeric indices and invalid identifiers from being used in DQL.
+     * 
+     * @param string $field The field name to validate
+     * @return bool True if field is valid for DQL, false otherwise
+     */
+    protected function isValidDQLField(string $field): bool
+    {
+        // Must match valid DQL identifier pattern (letters, numbers, underscore, dots for joins)
+        // Must not be purely numeric
+        return !empty($field) 
+            && !is_numeric($field) 
+            && preg_match('/^[a-zA-Z_][a-zA-Z0-9_\\.]*$/', $field);
     }
 }
