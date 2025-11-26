@@ -8,15 +8,15 @@ use Daycry\Doctrine\Doctrine;
 
 class Services extends BaseService
 {
-    public static function doctrine(bool $getShared = true)
+    public static function doctrine(bool $getShared = true, ?string $dbGroup = null)
     {
-        if ($getShared) {
+        if ($getShared && $dbGroup === null) {
             return static::getSharedInstance('doctrine');
         }
 
         $config = config('Doctrine');
-
-        return new Doctrine($config);
+        $cacheConfig = config('Cache');
+        return new Doctrine($config, $cacheConfig, $dbGroup);
     }
 
     public static function doctrineCollector(bool $getShared = true)

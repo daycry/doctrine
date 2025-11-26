@@ -172,16 +172,8 @@ class Builder
                     continue;
                 }
                 
-                // Parse operator and value
-                $operator = preg_match('~^\[(?<operator>[A-Z!=%<>•]+)\].*$~i', $value, $matches) ? strtoupper($matches['operator']) : '%•';
-                $value    = preg_match('~^\[(?<operator>[A-Z!=%<>•]+)\](?<term>.*)$~i', $value, $matches) ? $matches['term'] : $value;
-                if (in_array($operator, ['LIKE', '%%'], true)) {
-                    $operator = '%';
-                }
-                $validOperators = ['!=', '<', '>', 'IN', 'OR', '><', '=', '%'];
-                if (! in_array($operator, $validOperators, true)) {
-                    $operator = '%';
-                }
+                // Parse operator and value via helper for maintainability
+                [$operator, $value] = $this->parseFilterOperator($value);
                 if ($this->caseInsensitive) {
                     $searchColumn = 'lower(' . $fieldName . ')';
                     $filter       = "lower(:filter_{$i})";
@@ -261,6 +253,26 @@ class Builder
         }
 
         return $query;
+    }
+
+    /**
+     * Parse a raw filter value extracting the operator and cleaned term.
+     * Returns [operator, value] with fallback to '%'.
+     * Supported operators: !=, <, >, IN, OR, ><, =, %, LIKE, %% (LIKE/%% normalize to %).
+     */
+    private function parseFilterOperator(string $raw): array
+    {
+        $operator = preg_match('~^\[(?<operator>[A-Z!=%<>•]+)\]~i', $raw, $m) ? strtoupper($m['operator']) : '%';
+        $value    = preg_replace('~^\[[A-Z!=%<>•]+\]~i', '', $raw);
+        // Normalize synonyms
+        if (in_array($operator, ['LIKE', '%%'], true)) {
+            $operator = '%';
+        }
+        $valid = ['!=', '<', '>', 'IN', 'OR', '><', '=', '%'];
+        if (! in_array($operator, $valid, true)) {
+            $operator = '%';
+        }
+        return [$operator, trim($value)];
     }
 
     /**

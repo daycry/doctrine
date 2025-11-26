@@ -26,4 +26,10 @@ class Doctrine extends BaseConfig
      * If metadataConfigurationMethod is 'xml'
      */
     public bool $isXsdValidationEnabled = false;
+
+    /**
+     * Second-Level Cache toggle.
+     * When true, SLC uses the framework cache backend configured in `Config\Cache`.
+     */
+    public bool $secondLevelCache = false;
 }

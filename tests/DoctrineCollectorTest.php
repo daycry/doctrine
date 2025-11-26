@@ -13,7 +13,8 @@ class DoctrineCollectorTest extends TestCase
         // Limpiar queries estáticas antes de cada test
         $ref = new \ReflectionProperty(DoctrineCollector::class, 'queries');
         $ref->setAccessible(true);
-        $ref->setValue([]);
+        // For static properties, pass null as the object per modern Reflection API
+        $ref->setValue(null, []);
     }
 
     public function testAddQueryAndGetQueries()

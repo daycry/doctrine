@@ -1,17 +1,26 @@
 # DataTables Search Modes
 
-DataTables integration supports several search modes for flexible querying.
+This document describes supported per-column search operators for the DataTables + Doctrine integration.
 
-| Mode                | Pattern                  | Description                                                                                       |
-|---------------------|-------------------------|---------------------------------------------------------------------------------------------------|
-| LIKE '…%'           | [*%]searchTerm          | LIKE '…%' search; the start of the search term must match a value in the column.                  |
-| LIKE '%…%'          | [%%]searchTerm          | LIKE '%…%' search; any part of the search term must match a value in the column.                  |
-| Equality            | [=]searchTerm           | = … search; the search term must exactly match a value in the column.                             |
-| != (No Equality)    | [!=]searchTerm          | != … search; the search term must not exactly match a value in the column.                        |
-| Greater Than        | [>]searchTerm           | > … search; the search term must be smaller than a value in the column.                           |
-| Smaller Than        | [<]searchTerm           | < … search; the search term must be greater than a value in the column.                           |
-| IN                  | [IN]searchTerm,...      | IN(…) search; one of the comma-separated search terms must exactly match a value in the column.   |
-| OR                  | [OR]searchTerm,...      | Multiple OR-connected LIKE('%…%') searches. Any term must match a fragment in the column.         |
-| BETWEEN             | [><]searchTerm,searchTerm | BETWEEN … AND … search. Both search terms must be separated with a comma.                        |
+## Key Concepts
 
-Prefixes are case-insensitive (IN, in, OR, or). Provided search terms are trimmed.
+- Prefixes are case-insensitive and search terms are trimmed.
+- Operators are applied per column via the DataTables request `columns[*].search.value`.
+- Unknown operators default to LIKE '%term%'.
+
+| Mode                | Pattern                   | Description                                                                                         |
+|---------------------|---------------------------|-----------------------------------------------------------------------------------------------------|
+| LIKE '%…%' (default)| `[%]term` or `term`       | LIKE '%term%' search; any part of the term may match a value in the column.                         |
+| Equality            | `[=]term`                 | Exact match: column = term.                                                                         |
+| Not Equal           | `[!=]term`                | Not equal: column != term.                                                                          |
+| Greater Than        | `[>]number`               | Greater than: column > number.                                                                      |
+| Less Than           | `[<]number`               | Less than: column < number.                                                                         |
+| IN list             | `[IN]a,b,c`               | IN list: one of the comma-separated terms must exactly match.                                       |
+| OR (LIKE-group)     | `[OR]a,b,c`               | OR of LIKE '%…%' for each term: column LIKE '%a%' OR '%b%' OR '%c%'.                                |
+| BETWEEN range       | `[><]min,max`             | Range: column BETWEEN min AND max.                                                                  |
+| LIKE synonyms       | `[LIKE]term`, `[%%]term`  | Synonyms for LIKE '%term%'.                                                                         |
+
+## Notes
+
+- Global search applies LIKE to configured text columns. Use `withSearchableColumns([...])` and `withColumnAliases([...])` to ensure valid fields.
+- Invalid or unknown operators default to LIKE '%term%'.

@@ -17,6 +17,9 @@ class Redis extends RedisHandler
      */
     public function __construct(Cache $config)
     {
+        if (! extension_loaded('redis')) {
+            throw new \RuntimeException('Redis extension not loaded; install php-redis to enable Redis cache backend.');
+        }
         parent::__construct($config);
         $this->initialize();
     }

@@ -5,7 +5,6 @@ namespace Daycry\Doctrine;
 use Config\Cache;
 use Config\Database;
 use Daycry\Doctrine\Config\Doctrine as DoctrineConfig;
-use Daycry\Doctrine\Debug\Toolbar\Collectors\DoctrineConnectionProxy;
 use Daycry\Doctrine\Debug\Toolbar\Collectors\DoctrineQueryMiddleware;
 use Daycry\Doctrine\Libraries\Memcached;
 use Daycry\Doctrine\Libraries\Redis;
@@ -16,6 +15,10 @@ use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\Mapping\Driver\AttributeDriver;
 use Doctrine\ORM\Mapping\Driver\XmlDriver;
 use Exception;
+use Doctrine\ORM\Cache\CacheConfiguration as ORMCacheConfiguration;
+use Doctrine\ORM\Cache\DefaultCacheFactory;
+use Doctrine\ORM\Cache\RegionsConfiguration;
+use Symfony\Component\Cache\Adapter\AdapterInterface as Psr6AdapterInterface;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
 use Symfony\Component\Cache\Adapter\MemcachedAdapter;
 use Symfony\Component\Cache\Adapter\PhpFilesAdapter;
@@ -32,12 +35,15 @@ class Doctrine
      */
     public ?EntityManager $em = null;
 
+
     /**
-     * Proxy connection for logging/debugging queries.
-     *
-     * @var DoctrineConnectionProxy|null
+     * Shared cache backend clients to avoid duplicate connections.
      */
-    public $dbProxy;
+    /** @var object|null Redis client instance if available */
+    protected $sharedRedisClient = null;
+    /** @var object|null Memcached client instance if available */
+    protected $sharedMemcachedClient = null;
+    protected ?string $sharedFilesystemPath = null;
 
     /**
      * Doctrine constructor.
@@ -60,29 +66,39 @@ class Doctrine
             $cacheConfig = config('Cache');
         }
 
-        $devMode = (ENVIRONMENT === 'development') ? true : false;
+        $devMode = (ENVIRONMENT === 'development');
+
+        // Validate entity paths exist (prevent silent misconfiguration)
+        foreach ($doctrineConfig->entities as $entityPath) {
+            if (! is_dir($entityPath)) {
+                // Throwing helps surface misconfiguration early; adjust to log() if preferred
+                throw new Exception('Doctrine entity path does not exist: ' . $entityPath);
+            }
+        }
 
         switch ($cacheConfig->handler) {
             case 'file':
-                $cacheQuery    = new PhpFilesAdapter($cacheConfig->prefix . $doctrineConfig->queryCacheNamespace, $cacheConfig->ttl, $cacheConfig->file['storePath'] . DIRECTORY_SEPARATOR . 'doctrine');
-                $cacheResult   = new PhpFilesAdapter($cacheConfig->prefix . $doctrineConfig->resultsCacheNamespace, $cacheConfig->ttl, $cacheConfig->file['storePath'] . DIRECTORY_SEPARATOR . 'doctrine');
-                $cacheMetadata = new PhpFilesAdapter($cacheConfig->prefix . $doctrineConfig->metadataCacheNamespace, $cacheConfig->ttl, $cacheConfig->file['storePath'] . DIRECTORY_SEPARATOR . 'doctrine');
+            $this->sharedFilesystemPath = $cacheConfig->file['storePath'] . DIRECTORY_SEPARATOR . 'doctrine';
+            $cacheQuery    = new PhpFilesAdapter($cacheConfig->prefix . $doctrineConfig->queryCacheNamespace, $cacheConfig->ttl, $this->sharedFilesystemPath);
+            $cacheResult   = new PhpFilesAdapter($cacheConfig->prefix . $doctrineConfig->resultsCacheNamespace, $cacheConfig->ttl, $this->sharedFilesystemPath);
+            $cacheMetadata = new PhpFilesAdapter($cacheConfig->prefix . $doctrineConfig->metadataCacheNamespace, $cacheConfig->ttl, $this->sharedFilesystemPath);
                 break;
 
             case 'redis':
-                $redis = new Redis($cacheConfig);
-                $redis = $redis->getInstance();
-                $redis->select($cacheConfig->redis['database']);
-                $cacheQuery    = new RedisAdapter($redis, $cacheConfig->prefix . $doctrineConfig->queryCacheNamespace, $cacheConfig->ttl);
-                $cacheResult   = new RedisAdapter($redis, $cacheConfig->prefix . $doctrineConfig->resultsCacheNamespace, $cacheConfig->ttl);
-                $cacheMetadata = new RedisAdapter($redis, $cacheConfig->prefix . $doctrineConfig->metadataCacheNamespace, $cacheConfig->ttl);
+                $redisLib = new Redis($cacheConfig);
+                $this->sharedRedisClient = $redisLib->getInstance();
+                $this->sharedRedisClient->select($cacheConfig->redis['database']);
+                $cacheQuery    = new RedisAdapter($this->sharedRedisClient, $cacheConfig->prefix . $doctrineConfig->queryCacheNamespace, $cacheConfig->ttl);
+                $cacheResult   = new RedisAdapter($this->sharedRedisClient, $cacheConfig->prefix . $doctrineConfig->resultsCacheNamespace, $cacheConfig->ttl);
+                $cacheMetadata = new RedisAdapter($this->sharedRedisClient, $cacheConfig->prefix . $doctrineConfig->metadataCacheNamespace, $cacheConfig->ttl);
                 break;
 
             case 'memcached':
-                $memcached     = new Memcached($cacheConfig);
-                $cacheQuery    = new MemcachedAdapter($memcached->getInstance(), $cacheConfig->prefix . $doctrineConfig->queryCacheNamespace, $cacheConfig->ttl);
-                $cacheResult   = new MemcachedAdapter($memcached->getInstance(), $cacheConfig->prefix . $doctrineConfig->resultsCacheNamespace, $cacheConfig->ttl);
-                $cacheMetadata = new MemcachedAdapter($memcached->getInstance(), $cacheConfig->prefix . $doctrineConfig->metadataCacheNamespace, $cacheConfig->ttl);
+                $memcachedLib  = new Memcached($cacheConfig);
+                $this->sharedMemcachedClient = $memcachedLib->getInstance();
+                $cacheQuery    = new MemcachedAdapter($this->sharedMemcachedClient, $cacheConfig->prefix . $doctrineConfig->queryCacheNamespace, $cacheConfig->ttl);
+                $cacheResult   = new MemcachedAdapter($this->sharedMemcachedClient, $cacheConfig->prefix . $doctrineConfig->resultsCacheNamespace, $cacheConfig->ttl);
+                $cacheMetadata = new MemcachedAdapter($this->sharedMemcachedClient, $cacheConfig->prefix . $doctrineConfig->metadataCacheNamespace, $cacheConfig->ttl);
                 break;
 
             default:
@@ -105,6 +121,24 @@ class Doctrine
 
         if ($doctrineConfig->metadataCache) {
             $config->setMetadataCache($cacheMetadata);
+        }
+
+        // Second-Level Cache (SLC): uses the framework cache backend
+        if (!empty($doctrineConfig->secondLevelCache)) {
+            $regionsConfig = new RegionsConfiguration(
+                (int) ($cacheConfig->ttl ?? 3600),
+                60
+            );
+
+            $psr6Pool = $this->createSecondLevelCachePool($cacheConfig);
+
+            $slcConfig = new ORMCacheConfiguration();
+            $slcConfig->setRegionsConfiguration($regionsConfig);
+            $cacheFactory = new DefaultCacheFactory($regionsConfig, $psr6Pool);
+            $slcConfig->setCacheFactory($cacheFactory);
+
+            $config->setSecondLevelCacheEnabled(true);
+            $config->setSecondLevelCacheConfiguration($slcConfig);
         }
 
         switch ($doctrineConfig->metadataConfigurationMethod) {
@@ -132,9 +166,7 @@ class Doctrine
         // Database connection information
         $connectionOptions = $this->convertDbConfig($dbConfig->{$dbGroup});
         $connection        = DriverManager::getConnection($connectionOptions, $dbalConfig);
-        // Proxy solo para logging/debug
-        $this->dbProxy = new DoctrineConnectionProxy($connection, $collector);
-        // Create EntityManager con la conexión original
+        // Create EntityManager con la conexión original (middleware ya captura queries)
         $this->em = new EntityManager($connection, $config);
 
         $this->em->getConnection()->getDatabasePlatform()->registerDoctrineTypeMapping('set', 'string');
@@ -267,4 +299,39 @@ class Doctrine
 
         return $connectionOptions;
     }
+
+    /**
+     * Create PSR-6 cache pool for Doctrine SLC based on configured adapter.
+     */
+    protected function createSecondLevelCachePool(\Config\Cache $cacheConfig): Psr6AdapterInterface
+    {
+        $ttl = $cacheConfig->ttl;
+
+        switch ($cacheConfig->handler) {
+            case 'file':
+                $dir = $this->sharedFilesystemPath ?? ($cacheConfig->file['storePath'] . DIRECTORY_SEPARATOR . 'doctrine');
+                return new PhpFilesAdapter($cacheConfig->prefix . 'doctrine_slc', $ttl, $dir);
+            case 'redis':
+                $client = $this->sharedRedisClient;
+                if ($client === null) {
+                    $redisLib = new \Daycry\Doctrine\Libraries\Redis($cacheConfig);
+                    $client = $redisLib->getInstance();
+                    $client->select($cacheConfig->redis['database']);
+                    $this->sharedRedisClient = $client;
+                }
+                return new RedisAdapter($client, $cacheConfig->prefix . 'doctrine_slc', $ttl);
+            case 'memcached':
+                $client = $this->sharedMemcachedClient;
+                if ($client === null) {
+                    $memcachedLib = new \Daycry\Doctrine\Libraries\Memcached($cacheConfig);
+                    $client = $memcachedLib->getInstance();
+                    $this->sharedMemcachedClient = $client;
+                }
+                return new MemcachedAdapter($client, $cacheConfig->prefix . 'doctrine_slc', $ttl);
+            case 'array':
+            default:
+                return new ArrayAdapter($ttl);
+        }
+    }
 }
+    

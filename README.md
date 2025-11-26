@@ -18,8 +18,10 @@ Doctrine for Codeigniter 4
 - [Usage](docs/usage.md)
 - [CLI Commands](docs/cli_commands.md)
 - [Using DataTables](docs/datatables.md)
+    - Filtering operators and search behavior documented in `docs/datatables.md`.
 - [DataTables Search Modes](docs/search_modes.md)
 - [Viewing Doctrine Queries in the Debug Toolbar](docs/debug_toolbar.md)
+- [Second-Level Cache (SLC)](docs/second_level_cache.md) — Enable Doctrine entity caching across requests. SLC uses the same cache backend configured in CodeIgniter (`Config\Cache`) and its `ttl`; toggle on/off in `Config\Doctrine`.
 
 ## Installation via composer
 
@@ -269,3 +271,26 @@ This library allows you to view all SQL queries executed by Doctrine directly in
 - You do not need to call any method manually to enable the Collector or Middleware.
 - If you do not see the "Doctrine" tab in the Toolbar, make sure the Collector is registered in `Toolbar.php` and that the Toolbar is enabled in your environment.
 - Fully compatible with advanced connections (SQLite3, SSL, custom options) and Doctrine DBAL 4+.
+
+## Second-Level Cache (SLC)
+
+Doctrine's Second-Level Cache caches entities across requests. This library wires SLC based on `Config\Doctrine.php` without requiring app code changes.
+
+- Enable via `secondLevelCache.enabled = true`.
+- Choose adapter: `array` (default), `file`, `redis`, `memcached`, or supply a PSR-6 pool in `secondLevelCache.psr6Pool`.
+- Tune lifetimes with `defaultLifetime` and `defaultLockLifetime`.
+
+Example configuration:
+
+```php
+public array $secondLevelCache = [
+    'enabled' => true,
+    'adapter' => 'redis',
+    'defaultLifetime' => 3600,
+    'defaultLockLifetime' => 60,
+    'host' => '127.0.0.1',
+    'port' => 6379,
+];
+```
+
+When enabled, `src\Doctrine.php` sets up a `DefaultCacheFactory` with region lifetimes and a PSR-6 cache pool matching your adapter.

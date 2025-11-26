@@ -5,7 +5,7 @@ use Daycry\Doctrine\Doctrine;
 
 if (! function_exists('doctrine_instance')) {
     /**
-     * load twig
+     * Returns the shared Doctrine integration service.
      *
      * @return Doctrine
      */
