@@ -4,6 +4,7 @@ namespace Daycry\Doctrine\Libraries;
 
 use CodeIgniter\Cache\Handlers\RedisHandler;
 use Config\Cache;
+use RuntimeException;
 
 /**
  * Redis cache handler extension for Doctrine integration.
@@ -18,7 +19,7 @@ class Redis extends RedisHandler
     public function __construct(Cache $config)
     {
         if (! extension_loaded('redis')) {
-            throw new \RuntimeException('Redis extension not loaded; install php-redis to enable Redis cache backend.');
+            throw new RuntimeException('Redis extension not loaded; install php-redis to enable Redis cache backend.');
         }
         parent::__construct($config);
         $this->initialize();

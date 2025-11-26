@@ -134,17 +134,17 @@ class Builder
                     $column = $columns[$i];
                     if ($this->isColumnSearchable($column)) {
                         $fieldName = $this->resolveFieldName($column[$this->columnField] ?? '', $i);
-                        
+
                         // Only allow LIKE on configured searchable columns
                         if (! empty($this->searchableColumns) && ! in_array($fieldName, $this->searchableColumns, true)) {
                             continue;
                         }
-                        
+
                         // Skip if field is not valid for DQL (prevents numeric indices and invalid identifiers)
                         if (! $this->isValidDQLField($fieldName)) {
                             continue;
                         }
-                        
+
                         if ($this->caseInsensitive) {
                             $searchColumn = 'lower(' . $fieldName . ')';
                             $orX->add($query->expr()->like($searchColumn, 'lower(:search)'));
@@ -166,12 +166,12 @@ class Builder
             $andX   = $query->expr()->andX();
             if ($this->isColumnSearchable($column) && ($value = trim($column['search']['value'] ?? ''))) {
                 $fieldName = $this->resolveFieldName($column[$this->columnField] ?? '', $i);
-                
+
                 // Skip if field is not valid for DQL (prevents numeric indices and invalid identifiers)
                 if (! $this->isValidDQLField($fieldName)) {
                     continue;
                 }
-                
+
                 // Parse operator and value via helper for maintainability
                 [$operator, $value] = $this->parseFilterOperator($value);
                 if ($this->caseInsensitive) {
@@ -272,6 +272,7 @@ class Builder
         if (! in_array($operator, $valid, true)) {
             $operator = '%';
         }
+
         return [$operator, trim($value)];
     }
 
@@ -405,9 +406,9 @@ class Builder
             $order = $this->requestParams['order'];
 
             foreach ($order as $sort) {
-                $column = $columns[(int) ($sort['column'])];
+                $column    = $columns[(int) ($sort['column'])];
                 $fieldName = $this->resolveFieldName($column[$this->columnField] ?? '', (int) ($sort['column']));
-                
+
                 // Only add ordering if field is valid for DQL
                 if ($this->isValidDQLField($fieldName)) {
                     $query->addOrderBy($fieldName, $sort['dir']);
@@ -453,9 +454,10 @@ class Builder
 
     /**
      * Helper: Resolve field name for DQL, handling DataTables column configuration.
-     * 
+     *
      * @param mixed $columnValue The column value from DataTables (could be field name or index)
-     * @param int $columnIndex The column index as fallback
+     * @param int   $columnIndex The column index as fallback
+     *
      * @return string The resolved field name
      */
     protected function resolveFieldName($columnValue, int $columnIndex): string
@@ -464,7 +466,7 @@ class Builder
         if (is_numeric($columnValue) || empty($columnValue)) {
             return (string) $columnIndex; // Return as string to be caught by isValidDQLField
         }
-        
+
         // Resolve alias if exists
         return $this->resolveColumnAlias((string) $columnValue);
     }
@@ -472,16 +474,17 @@ class Builder
     /**
      * Helper: Check if field name is valid for DQL queries.
      * Prevents numeric indices and invalid identifiers from being used in DQL.
-     * 
+     *
      * @param string $field The field name to validate
+     *
      * @return bool True if field is valid for DQL, false otherwise
      */
     protected function isValidDQLField(string $field): bool
     {
         // Must match valid DQL identifier pattern (letters, numbers, underscore, dots for joins)
         // Must not be purely numeric
-        return !empty($field) 
-            && !is_numeric($field) 
+        return ! empty($field)
+            && ! is_numeric($field)
             && preg_match('/^[a-zA-Z_][a-zA-Z0-9_\\.]*$/', $field);
     }
 }

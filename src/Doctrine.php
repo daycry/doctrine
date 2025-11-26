@@ -10,15 +10,16 @@ use Daycry\Doctrine\Libraries\Memcached;
 use Daycry\Doctrine\Libraries\Redis;
 use Doctrine\DBAL\DriverManager;
 use Doctrine\DBAL\Tools\DsnParser;
+use Doctrine\ORM\Cache\CacheConfiguration as ORMCacheConfiguration;
+use Doctrine\ORM\Cache\DefaultCacheFactory;
+use Doctrine\ORM\Cache\Logging\CacheLogger;
+use Doctrine\ORM\Cache\Logging\StatisticsCacheLogger;
+use Doctrine\ORM\Cache\RegionsConfiguration;
 use Doctrine\ORM\Configuration;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\Mapping\Driver\AttributeDriver;
 use Doctrine\ORM\Mapping\Driver\XmlDriver;
 use Exception;
-use Doctrine\ORM\Cache\CacheConfiguration as ORMCacheConfiguration;
-use Doctrine\ORM\Cache\DefaultCacheFactory;
-use Doctrine\ORM\Cache\RegionsConfiguration;
-use Doctrine\ORM\Cache\Logging\StatisticsCacheLogger;
 use Symfony\Component\Cache\Adapter\AdapterInterface as Psr6AdapterInterface;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
 use Symfony\Component\Cache\Adapter\MemcachedAdapter;
@@ -36,14 +37,19 @@ class Doctrine
      */
     public ?EntityManager $em = null;
 
-
     /**
      * Shared cache backend clients to avoid duplicate connections.
      */
-    /** @var object|null Redis client instance if available */
-    protected $sharedRedisClient = null;
-    /** @var object|null Memcached client instance if available */
-    protected $sharedMemcachedClient = null;
+    /**
+     * @var object|null Redis client instance if available
+     */
+    protected $sharedRedisClient;
+
+    /**
+     * @var object|null Memcached client instance if available
+     */
+    protected $sharedMemcachedClient;
+
     protected ?string $sharedFilesystemPath = null;
 
     /**
@@ -79,14 +85,14 @@ class Doctrine
 
         switch ($cacheConfig->handler) {
             case 'file':
-            $this->sharedFilesystemPath = $cacheConfig->file['storePath'] . DIRECTORY_SEPARATOR . 'doctrine';
-            $cacheQuery    = new PhpFilesAdapter($cacheConfig->prefix . $doctrineConfig->queryCacheNamespace, $cacheConfig->ttl, $this->sharedFilesystemPath);
-            $cacheResult   = new PhpFilesAdapter($cacheConfig->prefix . $doctrineConfig->resultsCacheNamespace, $cacheConfig->ttl, $this->sharedFilesystemPath);
-            $cacheMetadata = new PhpFilesAdapter($cacheConfig->prefix . $doctrineConfig->metadataCacheNamespace, $cacheConfig->ttl, $this->sharedFilesystemPath);
+                $this->sharedFilesystemPath = $cacheConfig->file['storePath'] . DIRECTORY_SEPARATOR . 'doctrine';
+                $cacheQuery                 = new PhpFilesAdapter($cacheConfig->prefix . $doctrineConfig->queryCacheNamespace, $cacheConfig->ttl, $this->sharedFilesystemPath);
+                $cacheResult                = new PhpFilesAdapter($cacheConfig->prefix . $doctrineConfig->resultsCacheNamespace, $cacheConfig->ttl, $this->sharedFilesystemPath);
+                $cacheMetadata              = new PhpFilesAdapter($cacheConfig->prefix . $doctrineConfig->metadataCacheNamespace, $cacheConfig->ttl, $this->sharedFilesystemPath);
                 break;
 
             case 'redis':
-                $redisLib = new Redis($cacheConfig);
+                $redisLib                = new Redis($cacheConfig);
                 $this->sharedRedisClient = $redisLib->getInstance();
                 $this->sharedRedisClient->select($cacheConfig->redis['database']);
                 $cacheQuery    = new RedisAdapter($this->sharedRedisClient, $cacheConfig->prefix . $doctrineConfig->queryCacheNamespace, $cacheConfig->ttl);
@@ -95,11 +101,11 @@ class Doctrine
                 break;
 
             case 'memcached':
-                $memcachedLib  = new Memcached($cacheConfig);
+                $memcachedLib                = new Memcached($cacheConfig);
                 $this->sharedMemcachedClient = $memcachedLib->getInstance();
-                $cacheQuery    = new MemcachedAdapter($this->sharedMemcachedClient, $cacheConfig->prefix . $doctrineConfig->queryCacheNamespace, $cacheConfig->ttl);
-                $cacheResult   = new MemcachedAdapter($this->sharedMemcachedClient, $cacheConfig->prefix . $doctrineConfig->resultsCacheNamespace, $cacheConfig->ttl);
-                $cacheMetadata = new MemcachedAdapter($this->sharedMemcachedClient, $cacheConfig->prefix . $doctrineConfig->metadataCacheNamespace, $cacheConfig->ttl);
+                $cacheQuery                  = new MemcachedAdapter($this->sharedMemcachedClient, $cacheConfig->prefix . $doctrineConfig->queryCacheNamespace, $cacheConfig->ttl);
+                $cacheResult                 = new MemcachedAdapter($this->sharedMemcachedClient, $cacheConfig->prefix . $doctrineConfig->resultsCacheNamespace, $cacheConfig->ttl);
+                $cacheMetadata               = new MemcachedAdapter($this->sharedMemcachedClient, $cacheConfig->prefix . $doctrineConfig->metadataCacheNamespace, $cacheConfig->ttl);
                 break;
 
             default:
@@ -125,10 +131,10 @@ class Doctrine
         }
 
         // Second-Level Cache (SLC): uses the framework cache backend
-        if (!empty($doctrineConfig->secondLevelCache)) {
+        if (! empty($doctrineConfig->secondLevelCache)) {
             $regionsConfig = new RegionsConfiguration(
                 (int) ($cacheConfig->ttl ?? 3600),
-                60
+                60,
             );
 
             $psr6Pool = $this->createSecondLevelCachePool($cacheConfig);
@@ -139,7 +145,7 @@ class Doctrine
             $slcConfig->setCacheFactory($cacheFactory);
 
             // Optional SLC statistics logger (hits/misses/puts)
-            if (!empty($doctrineConfig->secondLevelCacheStatistics)) {
+            if (! empty($doctrineConfig->secondLevelCacheStatistics)) {
                 $slcConfig->setCacheLogger(new StatisticsCacheLogger());
             }
 
@@ -309,31 +315,37 @@ class Doctrine
     /**
      * Create PSR-6 cache pool for Doctrine SLC based on configured adapter.
      */
-    protected function createSecondLevelCachePool(\Config\Cache $cacheConfig): Psr6AdapterInterface
+    protected function createSecondLevelCachePool(Cache $cacheConfig): Psr6AdapterInterface
     {
         $ttl = $cacheConfig->ttl;
 
         switch ($cacheConfig->handler) {
             case 'file':
                 $dir = $this->sharedFilesystemPath ?? ($cacheConfig->file['storePath'] . DIRECTORY_SEPARATOR . 'doctrine');
+
                 return new PhpFilesAdapter($cacheConfig->prefix . 'doctrine_slc', $ttl, $dir);
+
             case 'redis':
                 $client = $this->sharedRedisClient;
                 if ($client === null) {
-                    $redisLib = new \Daycry\Doctrine\Libraries\Redis($cacheConfig);
-                    $client = $redisLib->getInstance();
+                    $redisLib = new Redis($cacheConfig);
+                    $client   = $redisLib->getInstance();
                     $client->select($cacheConfig->redis['database']);
                     $this->sharedRedisClient = $client;
                 }
+
                 return new RedisAdapter($client, $cacheConfig->prefix . 'doctrine_slc', $ttl);
+
             case 'memcached':
                 $client = $this->sharedMemcachedClient;
                 if ($client === null) {
-                    $memcachedLib = new \Daycry\Doctrine\Libraries\Memcached($cacheConfig);
-                    $client = $memcachedLib->getInstance();
+                    $memcachedLib                = new Memcached($cacheConfig);
+                    $client                      = $memcachedLib->getInstance();
                     $this->sharedMemcachedClient = $client;
                 }
+
                 return new MemcachedAdapter($client, $cacheConfig->prefix . 'doctrine_slc', $ttl);
+
             case 'array':
             default:
                 return new ArrayAdapter($ttl);
@@ -344,13 +356,14 @@ class Doctrine
      * Return Second-Level Cache logger if enabled.
      * Consumers can inspect the logger for stats.
      */
-    public function getSecondLevelCacheLogger(): ?\Doctrine\ORM\Cache\Logging\CacheLogger
+    public function getSecondLevelCacheLogger(): ?CacheLogger
     {
         $cfg = $this->em?->getConfiguration()?->getSecondLevelCacheConfiguration();
         if ($cfg === null) {
             return null;
         }
         $logger = $cfg->getCacheLogger();
+
         return $logger instanceof StatisticsCacheLogger ? $logger : null;
     }
 
@@ -366,14 +379,15 @@ class Doctrine
         // Prefer clearStats() in Doctrine ORM 3.x
         if (method_exists($logger, 'clearStats')) {
             $logger->clearStats();
+
             return;
         }
+
         // Fallback: zero known public properties (legacy stubs)
         foreach (['cacheHits', 'cacheMisses', 'cachePuts'] as $prop) {
             if (property_exists($logger, $prop)) {
-                $logger->$prop = 0;
+                $logger->{$prop} = 0;
             }
         }
     }
 }
-    

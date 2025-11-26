@@ -14,8 +14,9 @@ class Services extends BaseService
             return static::getSharedInstance('doctrine');
         }
 
-        $config = config('Doctrine');
+        $config      = config('Doctrine');
         $cacheConfig = config('Cache');
+
         return new Doctrine($config, $cacheConfig, $dbGroup);
     }
 

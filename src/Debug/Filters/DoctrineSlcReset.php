@@ -5,6 +5,7 @@ namespace Daycry\Doctrine\Debug\Filters;
 use CodeIgniter\Filters\FilterInterface;
 use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
+use Config\Services;
 
 class DoctrineSlcReset implements FilterInterface
 {
@@ -14,8 +15,8 @@ class DoctrineSlcReset implements FilterInterface
         if (defined('ENVIRONMENT') && ENVIRONMENT !== 'development') {
             return;
         }
-        if (class_exists('Config\\Services') && method_exists(\Config\Services::class, 'doctrine')) {
-            $doctrine = \Config\Services::doctrine();
+        if (class_exists('Config\\Services') && method_exists(Services::class, 'doctrine')) {
+            $doctrine = Services::doctrine();
             if (method_exists($doctrine, 'resetSecondLevelCacheStatistics')) {
                 $doctrine->resetSecondLevelCacheStatistics();
             }
