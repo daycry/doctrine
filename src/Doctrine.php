@@ -18,6 +18,7 @@ use Exception;
 use Doctrine\ORM\Cache\CacheConfiguration as ORMCacheConfiguration;
 use Doctrine\ORM\Cache\DefaultCacheFactory;
 use Doctrine\ORM\Cache\RegionsConfiguration;
+use Doctrine\ORM\Cache\Logging\StatisticsCacheLogger;
 use Symfony\Component\Cache\Adapter\AdapterInterface as Psr6AdapterInterface;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
 use Symfony\Component\Cache\Adapter\MemcachedAdapter;
@@ -136,6 +137,11 @@ class Doctrine
             $slcConfig->setRegionsConfiguration($regionsConfig);
             $cacheFactory = new DefaultCacheFactory($regionsConfig, $psr6Pool);
             $slcConfig->setCacheFactory($cacheFactory);
+
+            // Optional SLC statistics logger (hits/misses/puts)
+            if (!empty($doctrineConfig->secondLevelCacheStatistics)) {
+                $slcConfig->setCacheLogger(new StatisticsCacheLogger());
+            }
 
             $config->setSecondLevelCacheEnabled(true);
             $config->setSecondLevelCacheConfiguration($slcConfig);
@@ -331,6 +337,42 @@ class Doctrine
             case 'array':
             default:
                 return new ArrayAdapter($ttl);
+        }
+    }
+
+    /**
+     * Return Second-Level Cache logger if enabled.
+     * Consumers can inspect the logger for stats.
+     */
+    public function getSecondLevelCacheLogger(): ?\Doctrine\ORM\Cache\Logging\CacheLogger
+    {
+        $cfg = $this->em?->getConfiguration()?->getSecondLevelCacheConfiguration();
+        if ($cfg === null) {
+            return null;
+        }
+        $logger = $cfg->getCacheLogger();
+        return $logger instanceof StatisticsCacheLogger ? $logger : null;
+    }
+
+    /**
+     * Reset Second-Level Cache statistics counters if available.
+     */
+    public function resetSecondLevelCacheStatistics(): void
+    {
+        $logger = $this->getSecondLevelCacheLogger();
+        if ($logger === null) {
+            return;
+        }
+        // Prefer clearStats() in Doctrine ORM 3.x
+        if (method_exists($logger, 'clearStats')) {
+            $logger->clearStats();
+            return;
+        }
+        // Fallback: zero known public properties (legacy stubs)
+        foreach (['cacheHits', 'cacheMisses', 'cachePuts'] as $prop) {
+            if (property_exists($logger, $prop)) {
+                $logger->$prop = 0;
+            }
         }
     }
 }

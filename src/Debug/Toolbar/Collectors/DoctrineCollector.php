@@ -10,6 +10,8 @@ class DoctrineCollector extends BaseCollector
     protected $hasTabContent = true;
     protected $hasVarData    = false;
     protected $title         = 'Doctrine';
+    /** Optional injected SLC logger for testing/override */
+    protected $slcLogger     = null;
 
     /**
      * Queries ejecutadas (estático para compatibilidad con Toolbar)
@@ -21,6 +23,14 @@ class DoctrineCollector extends BaseCollector
     public function addQuery(array $query): void
     {
         static::$queries[] = $query;
+    }
+
+    /**
+     * Allow injecting a Second-Level Cache logger (primarily for testing).
+     */
+    public function setSecondLevelCacheLogger($logger): void
+    {
+        $this->slcLogger = $logger;
     }
 
     public function getQueries(): array
@@ -41,19 +51,100 @@ class DoctrineCollector extends BaseCollector
     public function getTitleDetails(): string
     {
         $queryCount = count(static::$queries);
+        $details = $queryCount > 0 ? "({$queryCount} quer" . ($queryCount > 1 ? 'ies' : 'y') . ')' : '';
 
-        return $queryCount > 0 ? "({$queryCount} quer" . ($queryCount > 1 ? 'ies' : 'y') . ')' : '';
+        // Append compact SLC badge if enabled
+        try {
+            $logger = $this->slcLogger;
+            if ($logger === null && class_exists('Config\\Services') && method_exists(\Config\Services::class, 'doctrine')) {
+                $doctrine = \Config\Services::doctrine();
+                if (method_exists($doctrine, 'getSecondLevelCacheLogger')) {
+                    $logger = $doctrine->getSecondLevelCacheLogger();
+                }
+            }
+            if ($logger !== null) {
+                $hits = null; $misses = null; $puts = null;
+                // Doctrine ORM 3.x StatisticsCacheLogger exposes getHitCount(), getMissCount(), getPutCount()
+                if (method_exists($logger, 'getHitCount')) {
+                    $hits = (int) $logger->getHitCount();
+                }
+                if (method_exists($logger, 'getMissCount')) {
+                    $misses = (int) $logger->getMissCount();
+                }
+                if (method_exists($logger, 'getPutCount')) {
+                    $puts = (int) $logger->getPutCount();
+                }
+                // Fallback legacy names or public properties if any custom stub
+                if ($hits === null && property_exists($logger, 'cacheHits')) { $hits = (int) $logger->cacheHits; }
+                if ($misses === null && property_exists($logger, 'cacheMisses')) { $misses = (int) $logger->cacheMisses; }
+                if ($puts === null && property_exists($logger, 'cachePuts')) { $puts = (int) $logger->cachePuts; }
+                $hits   = $hits   ?? 0;
+                $misses = $misses ?? 0;
+                $puts   = $puts   ?? 0;
+                $total  = $hits + $misses;
+                $ratio  = $total > 0 ? round(($hits / $total) * 100) : 0;
+                $slcBadge = " SLC:" . $hits . '/' . $misses . '/' . $puts . " (" . $ratio . "%)";
+                $details = trim($details . $slcBadge);
+            }
+        } catch (\Throwable $e) {
+            // ignore
+        }
+
+        return $details;
     }
 
     public function isEmpty(): bool
     {
-        return static::$queries === [];
+        // Si hay queries, el colector no está vacío
+        if (!empty(static::$queries)) {
+            return false;
+        }
+        // Sin queries: mostrar panel si SLC activo
+        $data = $this->getData();
+        if (!empty($data['slc']) && $data['slc']['enabled'] === true) {
+            return false;
+        }
+        return true;
     }
 
     public function getData(): array
     {
+        $slc = [
+            'enabled' => false,
+            'hits'    => null,
+            'misses'  => null,
+            'puts'    => null,
+        ];
+
+        // Try to read Second-Level Cache statistics via the Doctrine service
+        try {
+            $logger = $this->slcLogger;
+            if ($logger === null) {
+                $doctrine = \Config\Services::doctrine();
+                if (method_exists($doctrine, 'getSecondLevelCacheLogger')) {
+                    $logger = $doctrine->getSecondLevelCacheLogger();
+                }
+            }
+            if ($logger !== null) {
+                $slc['enabled'] = true;
+                $slc['hits']   = method_exists($logger, 'getHitCount')  ? (int) $logger->getHitCount()  : null;
+                $slc['misses'] = method_exists($logger, 'getMissCount') ? (int) $logger->getMissCount() : null;
+                $slc['puts']   = method_exists($logger, 'getPutCount')  ? (int) $logger->getPutCount()  : null;
+                // Fallback to legacy public properties if still null
+                if ($slc['hits'] === null && property_exists($logger, 'cacheHits')) { $slc['hits'] = (int) $logger->cacheHits; }
+                if ($slc['misses'] === null && property_exists($logger, 'cacheMisses')) { $slc['misses'] = (int) $logger->cacheMisses; }
+                if ($slc['puts'] === null && property_exists($logger, 'cachePuts')) { $slc['puts'] = (int) $logger->cachePuts; }
+                $slc['hits']   = $slc['hits']   ?? 0;
+                $slc['misses'] = $slc['misses'] ?? 0;
+                $slc['puts']   = $slc['puts']   ?? 0;
+            }
+        } catch (\Throwable $e) {
+            // Ignore SLC stats errors; keep toolbar resilient
+        }
+
         return [
             'queries' => $this->getQueries(),
+            'slc'     => $slc,
         ];
     }
 
@@ -63,11 +154,31 @@ class DoctrineCollector extends BaseCollector
     public function display(): string
     {
         $queries = $this->getQueries();
-        if (empty($queries)) {
-            return '<h3>No Doctrine queries executed.</h3>';
+        $html = '';
+
+        // Render SLC statistics if available
+        $data = $this->getData();
+        if (!empty($data['slc']) && $data['slc']['enabled'] === true) {
+            $hits   = $data['slc']['hits'] ?? 0;
+            $misses = $data['slc']['misses'] ?? 0;
+            $puts   = $data['slc']['puts'] ?? 0;
+            $html  .= '<h3>Second-Level Cache</h3>';
+            $html  .= '<table class="debug-bar-table"><thead><tr><th class="debug-bar-width6r">Hits</th><th class="debug-bar-width6r">Misses</th><th class="debug-bar-width6r">Puts</th></tr></thead><tbody>';
+            $html  .= '<tr><td class="narrow">' . (int) $hits . '</td><td class="narrow">' . (int) $misses . '</td><td class="narrow">' . (int) $puts . '</td></tr>';
+            $html  .= '</tbody></table>';
+            if (empty($queries)) {
+                $html .= '<p>All results served from Second-Level Cache (no DB queries executed).</p>';
+            }
         }
 
-        $html = '<table>';
+        if (empty($queries)) {
+            if ($html === '') {
+                return '<h3>No Doctrine queries executed.</h3>';
+            }
+            return $html; // show SLC info only
+        }
+
+        $html .= '<table>';
         $html .= '<thead><tr><th class="debug-bar-width6r">Time</th><th>SQL</th><th>Params</th></tr></thead><tbody>';
 
         foreach ($queries as $i => $query) {

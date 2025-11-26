@@ -22,6 +22,7 @@ Doctrine for Codeigniter 4
 - [DataTables Search Modes](docs/search_modes.md)
 - [Viewing Doctrine Queries in the Debug Toolbar](docs/debug_toolbar.md)
 - [Second-Level Cache (SLC)](docs/second_level_cache.md) — Enable Doctrine entity caching across requests. SLC uses the same cache backend configured in CodeIgniter (`Config\Cache`) and its `ttl`; toggle on/off in `Config\Doctrine`.
+ - [SLC Statistics](docs/second_level_cache_stats.md) — How to enable hits/misses/puts counters and view them in the Debug Toolbar.
 
 ## Installation via composer
 

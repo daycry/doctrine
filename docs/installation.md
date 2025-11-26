@@ -28,3 +28,28 @@ $psr4 = [
 ## Notes
 - Prefer Composer installation to ensure dependencies and autoloading are managed correctly.
 - After installation, run `php spark doctrine:publish` to publish configuration files.
+
+## Debug Toolbar Integration
+
+To view Doctrine queries in the CodeIgniter Debug Toolbar:
+
+1. Register the collector in `app/Config/Toolbar.php`:
+   ```php
+   public $collectors = [
+       // ... other collectors ...
+       \Daycry\Doctrine\Debug\Toolbar\Collectors\DoctrineCollector::class,
+   ];
+   ```
+2. Instantiate Doctrine (service, helper, or direct). Middleware auto-registers.
+3. Optional (development): reset Second-Level Cache counters per request by adding the filter in `app/Config/Filters.php`:
+   ```php
+   public array $globals = [
+       'before' => [
+           // ... other filters ...
+           \Daycry\Doctrine\Debug\Filters\DoctrineSlcReset::class,
+       ],
+       'after' => [],
+   ];
+   ```
+
+If you enable `Config\Doctrine::$secondLevelCacheStatistics = true`, the Doctrine panel shows a badge `SLC:hits/misses/puts (ratio%)` and a small statistics table above the queries.

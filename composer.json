@@ -18,7 +18,6 @@
     "require": {
         "php": ">=8.2",
         "doctrine/orm": "^3",
-        "doctrine/dbal": "^4",
         "symfony/cache": "^7",
         "beberlei/doctrineextensions": "^1.0",
         "jms/serializer-bundle": "^5"

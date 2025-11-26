@@ -7,6 +7,7 @@ This library optionally integrates Doctrine's Second-Level Cache (SLC). When ena
 - Backend: reuses the framework cache backend from `Config\Cache` (file, redis, memcached, array) and its `ttl`.
 - Factory: `DefaultCacheFactory` is set up automatically in `src/Doctrine.php`; no app code changes required.
 - Regions: Doctrine manages regions and invalidation internally when entities change.
+ - Statistics (optional): enable counters with `public bool $secondLevelCacheStatistics = true;` and view them in the Debug Toolbar.
 
 ## Enable and Configure
 
@@ -20,6 +21,7 @@ Then edit `app/Config/Doctrine.php` and set (see also [Configuration](configurat
 
 ```php
 public bool $secondLevelCache = true;
+public bool $secondLevelCacheStatistics = true; // optional: show SLC hits/misses/puts in the Debug Toolbar
 ```
 
 No application code changes are required to wire the factory; `src/Doctrine.php` sets up `DefaultCacheFactory` using the same cache backend configured in `Config\Cache` (file/redis/memcached/array) and its `ttl`.
@@ -77,3 +79,8 @@ Common `usage` values:
 - With `file` adapter, ensure the framework's cache directory is writable.
 - For Redis/Memcached, confirm the PHP extensions are loaded and credentials in `Config\Cache` are correct.
 - To inspect raw keys: list entries filtered by the prefix plus `doctrine_slc`. Avoid manual deletion unless performing a full cache reset.
+
+## See Also
+
+- Debug Toolbar integration and SLC stats badge/table: [Debug Toolbar](debug_toolbar.md)
+- How to enable and view counters programmatically: [SLC Statistics](second_level_cache_stats.md)

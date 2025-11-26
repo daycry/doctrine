@@ -32,4 +32,10 @@ class Doctrine extends BaseConfig
      * When true, SLC uses the framework cache backend configured in `Config\Cache`.
      */
     public bool $secondLevelCache = false;
+
+    /**
+     * Enable Second-Level Cache statistics logging (hits/misses/puts).
+     * When true, Doctrine will collect SLC statistics via a cache logger.
+     */
+    public bool $secondLevelCacheStatistics = false;
 }
