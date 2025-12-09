@@ -28,7 +28,10 @@ No application code changes are required to wire the factory; `src/Doctrine.php`
 
 ## Notes
 - Ensure cache adapters are available (extensions for Redis/Memcached). The service throws descriptive errors if missing.
-- Lifetimes follow the framework `ttl`. Use your cache configuration to tune overall behavior.
+- Lifetimes follow the framework `ttl` by default. You can override specifically for SLC using `public ?int $secondLevelCacheTtl` in `app/Config/Doctrine.php`:
+    - `null`: inherit framework cache `ttl` from `Config\Cache`.
+    - `0`: no expiration (entries persist until invalidated by Doctrine).
+    - `> 0`: set a custom TTL in seconds just for SLC.
 
 ## Cache Key Namespace
 

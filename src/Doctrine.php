@@ -132,12 +132,19 @@ class Doctrine
 
         // Second-Level Cache (SLC): uses the framework cache backend
         if (! empty($doctrineConfig->secondLevelCache)) {
+            $slcTtl = $doctrineConfig->secondLevelCacheTtl;
+            if ($slcTtl === null) {
+                $slcTtl = (int) ($cacheConfig->ttl ?? 3600);
+            }
+
+            // Symfony Cache adapters interpret 0 as no-expiration
+            // Doctrine RegionsConfiguration expects lifetime seconds for regions
             $regionsConfig = new RegionsConfiguration(
-                (int) ($cacheConfig->ttl ?? 3600),
+                (int) $slcTtl,
                 60,
             );
 
-            $psr6Pool = $this->createSecondLevelCachePool($cacheConfig);
+            $psr6Pool = $this->createSecondLevelCachePool($cacheConfig, (int) $slcTtl, $doctrineConfig);
 
             $slcConfig = new ORMCacheConfiguration();
             $slcConfig->setRegionsConfiguration($regionsConfig);
@@ -315,10 +322,8 @@ class Doctrine
     /**
      * Create PSR-6 cache pool for Doctrine SLC based on configured adapter.
      */
-    protected function createSecondLevelCachePool(Cache $cacheConfig): Psr6AdapterInterface
+    protected function createSecondLevelCachePool(Cache $cacheConfig, int $ttl, ?DoctrineConfig $doctrineConfig = null): Psr6AdapterInterface
     {
-        $ttl = $cacheConfig->ttl;
-
         switch ($cacheConfig->handler) {
             case 'file':
                 $dir = $this->sharedFilesystemPath ?? ($cacheConfig->file['storePath'] . DIRECTORY_SEPARATOR . 'doctrine');

@@ -38,4 +38,12 @@ class Doctrine extends BaseConfig
      * When true, Doctrine will collect SLC statistics via a cache logger.
      */
     public bool $secondLevelCacheStatistics = false;
+
+    /**
+     * Second-Level Cache default lifetime (TTL) in seconds.
+     * - null: inherit framework cache TTL from `Config\Cache`.
+     * - 0:    no expiration (entries persist until explicitly invalidated).
+     * - >0:   use this TTL for SLC entries and regions.
+     */
+    public ?int $secondLevelCacheTtl = null;
 }
