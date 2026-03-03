@@ -114,9 +114,17 @@ class Doctrine
 
         $config = new Configuration();
 
-        $config->setProxyDir($doctrineConfig->proxies);
-        $config->setProxyNamespace($doctrineConfig->proxiesNamespace);
-        $config->setAutoGenerateProxyClasses($doctrineConfig->setAutoGenerateProxyClasses);
+        $useNativeLazyObjects = (bool) ($doctrineConfig->proxyFactory ?? true);
+
+        if (\PHP_VERSION_ID >= 80400 && $useNativeLazyObjects) {
+            $config->enableNativeLazyObjects(true);
+        }
+
+        if (! $config->isNativeLazyObjectsEnabled()) {
+            $config->setProxyDir($doctrineConfig->proxies);
+            $config->setProxyNamespace($doctrineConfig->proxiesNamespace);
+            $config->setAutoGenerateProxyClasses($doctrineConfig->setAutoGenerateProxyClasses);
+        }
 
         if ($doctrineConfig->queryCache) {
             $config->setQueryCache($cacheQuery);
