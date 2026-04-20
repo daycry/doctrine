@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests;
 
+use CodeIgniter\HTTP\ResponseInterface;
 use CodeIgniter\HTTP\IncomingRequest;
 use CodeIgniter\HTTP\Response;
 use CodeIgniter\HTTP\SiteURI;
@@ -24,7 +25,7 @@ final class DoctrineSlcResetTest extends TestCase
     public function testBeforeReturnsNull(): void
     {
         $filter  = new DoctrineSlcReset();
-        $request = $this->createMock(IncomingRequest::class);
+        $request = $this->createStub(IncomingRequest::class);
 
         $result = $filter->before($request);
 
@@ -34,11 +35,11 @@ final class DoctrineSlcResetTest extends TestCase
     public function testAfterReturnsNull(): void
     {
         $filter   = new DoctrineSlcReset();
-        $request  = $this->createMock(IncomingRequest::class);
-        $response = $this->createMock(Response::class);
+        $request  = $this->createStub(IncomingRequest::class);
+        $response = $this->createStub(Response::class);
 
         $result = $filter->after($request, $response);
 
-        $this->assertNull($result);
+        $this->assertNotInstanceOf(ResponseInterface::class, $result);
     }
 }

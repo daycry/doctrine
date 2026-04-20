@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests;
 
+use CodeIgniter\Exceptions\ConfigException;
 use Tests\Support\TestCase;
 use Daycry\Doctrine\Doctrine;
 use Daycry\Doctrine\Config\Doctrine as DoctrineConfig;
@@ -50,7 +51,7 @@ final class DoctrineSLCCoverageTest extends TestCase
         $doctrine = new Doctrine($this->config, null, 'tests');
         $logger   = $doctrine->getSecondLevelCacheLogger();
 
-        $this->assertNull($logger);
+        $this->assertNotInstanceOf(StatisticsCacheLogger::class, $logger);
     }
 
     // -----------------------------------------------------------------------
@@ -69,7 +70,7 @@ final class DoctrineSLCCoverageTest extends TestCase
         $logger   = $doctrine->getSecondLevelCacheLogger();
 
         // No StatisticsCacheLogger installed → should be null
-        $this->assertNull($logger);
+        $this->assertNotInstanceOf(StatisticsCacheLogger::class, $logger);
     }
 
     // -----------------------------------------------------------------------
@@ -103,7 +104,7 @@ final class DoctrineSLCCoverageTest extends TestCase
         // Must not throw
         $doctrine->resetSecondLevelCacheStatistics();
 
-        $this->assertNull($doctrine->getSecondLevelCacheLogger());
+        $this->assertNotInstanceOf(StatisticsCacheLogger::class, $doctrine->getSecondLevelCacheLogger());
     }
 
     // -----------------------------------------------------------------------
@@ -174,7 +175,7 @@ final class DoctrineSLCCoverageTest extends TestCase
 
     public function testConstructorThrowsOnNonExistentEntityPath(): void
     {
-        $this->expectException(\CodeIgniter\Exceptions\ConfigException::class);
+        $this->expectException(ConfigException::class);
 
         $this->config->entities = ['/non/existent/path/that/does/not/exist'];
         new Doctrine($this->config, null, 'tests');

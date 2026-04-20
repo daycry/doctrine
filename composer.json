@@ -59,6 +59,7 @@
         "phpstan": "phpstan analyze --memory-limit=512M --ansi",
         "psalm": "psalm --memory-limit=1G --no-progress",
         "rector": "rector process --dry-run --ansi",
+        "rector-fix": "rector process --ansi",
         "analyze": [
             "@phpstan",
             "@psalm",

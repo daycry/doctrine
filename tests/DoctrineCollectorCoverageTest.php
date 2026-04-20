@@ -80,12 +80,12 @@ final class DoctrineCollectorCoverageTest extends TestCase
 
         $this->assertSame('Doctrine Query', $timeline[0]['name']);
         $this->assertSame('Doctrine', $timeline[0]['component']);
-        $this->assertSame(1000.0, $timeline[0]['start']);
-        $this->assertSame(1.5, $timeline[0]['duration']);
-        $this->assertStringContainsString('SELECT', $timeline[0]['query']);
+        $this->assertEqualsWithDelta(1000.0, $timeline[0]['start'], PHP_FLOAT_EPSILON);
+        $this->assertEqualsWithDelta(1.5, $timeline[0]['duration'], PHP_FLOAT_EPSILON);
+        $this->assertStringContainsString('SELECT', (string) $timeline[0]['query']);
 
         $this->assertSame('Doctrine Query', $timeline[1]['name']);
-        $this->assertSame(1001.0, $timeline[1]['start']);
+        $this->assertEqualsWithDelta(1001.0, $timeline[1]['start'], PHP_FLOAT_EPSILON);
     }
 
     public function testFormatTimelineDataWithMissingFields(): void

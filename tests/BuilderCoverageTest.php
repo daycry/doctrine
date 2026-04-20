@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests;
 
+use Throwable;
 use CodeIgniter\Exceptions\InvalidArgumentException;
 use Daycry\Doctrine\Doctrine;
 use Daycry\Doctrine\DataTables\Builder;
@@ -86,7 +87,7 @@ final class BuilderCoverageTest extends TestCase
 
         try {
             $tool->createSchema([$em->getClassMetadata(TestAttribute::class)]);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->markTestSkipped('Unable to create TestAttribute schema: ' . $e->getMessage());
         }
 
@@ -121,7 +122,7 @@ final class BuilderCoverageTest extends TestCase
 
         try {
             $tool->dropSchema([$em->getClassMetadata(TestAttribute::class)]);
-        } catch (\Throwable) {
+        } catch (Throwable) {
             // ignore
         }
     }
@@ -133,7 +134,7 @@ final class BuilderCoverageTest extends TestCase
 
         try {
             $tool->createSchema([$em->getClassMetadata(TestAttribute::class)]);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->markTestSkipped('Unable to create TestAttribute schema: ' . $e->getMessage());
         }
 
@@ -180,7 +181,7 @@ final class BuilderCoverageTest extends TestCase
 
         try {
             $tool->dropSchema([$em->getClassMetadata(TestAttribute::class)]);
-        } catch (\Throwable) {
+        } catch (Throwable) {
             // ignore
         }
     }
@@ -192,7 +193,7 @@ final class BuilderCoverageTest extends TestCase
 
         try {
             $tool->createSchema([$em->getClassMetadata(TestAttribute::class)]);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->markTestSkipped('Unable to create TestAttribute schema: ' . $e->getMessage());
         }
 
@@ -240,7 +241,7 @@ final class BuilderCoverageTest extends TestCase
 
         try {
             $tool->dropSchema([$em->getClassMetadata(TestAttribute::class)]);
-        } catch (\Throwable) {
+        } catch (Throwable) {
             // ignore
         }
     }
@@ -256,7 +257,7 @@ final class BuilderCoverageTest extends TestCase
 
         try {
             $tool->createSchema([$em->getClassMetadata(TestAttribute::class)]);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->markTestSkipped('Unable to create schema: ' . $e->getMessage());
         }
 
@@ -296,7 +297,7 @@ final class BuilderCoverageTest extends TestCase
 
         try {
             $tool->dropSchema([$em->getClassMetadata(TestAttribute::class)]);
-        } catch (\Throwable) {
+        } catch (Throwable) {
             // ignore
         }
     }
@@ -312,7 +313,7 @@ final class BuilderCoverageTest extends TestCase
 
         try {
             $tool->createSchema([$em->getClassMetadata(TestAttribute::class)]);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->markTestSkipped('Unable to create schema: ' . $e->getMessage());
         }
 
@@ -354,7 +355,7 @@ final class BuilderCoverageTest extends TestCase
 
         try {
             $tool->dropSchema([$em->getClassMetadata(TestAttribute::class)]);
-        } catch (\Throwable) {
+        } catch (Throwable) {
             // ignore
         }
     }
@@ -370,7 +371,7 @@ final class BuilderCoverageTest extends TestCase
 
         try {
             $tool->createSchema([$em->getClassMetadata(TestAttribute::class)]);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->markTestSkipped('Unable to create schema: ' . $e->getMessage());
         }
 
@@ -407,7 +408,7 @@ final class BuilderCoverageTest extends TestCase
 
         try {
             $tool->dropSchema([$em->getClassMetadata(TestAttribute::class)]);
-        } catch (\Throwable) {
+        } catch (Throwable) {
             // ignore
         }
     }
@@ -423,7 +424,7 @@ final class BuilderCoverageTest extends TestCase
 
         try {
             $tool->createSchema([$em->getClassMetadata(TestAttribute::class)]);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->markTestSkipped('Unable to create schema: ' . $e->getMessage());
         }
 
@@ -460,7 +461,7 @@ final class BuilderCoverageTest extends TestCase
 
         try {
             $tool->dropSchema([$em->getClassMetadata(TestAttribute::class)]);
-        } catch (\Throwable) {
+        } catch (Throwable) {
             // ignore
         }
     }

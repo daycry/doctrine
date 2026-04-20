@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests;
 
+use Throwable;
 use Tests\Support\TestCase;
 use Tests\Support\Models\Entities\TestAttribute;
 use Daycry\Doctrine\Doctrine;
@@ -47,7 +48,7 @@ final class DoctrineMiddlewareCoverageTest extends TestCase
         try {
             $metadata = $this->doctrine->em->getClassMetadata(TestAttribute::class);
             $tool->dropSchema([$metadata]);
-        } catch (\Throwable) {
+        } catch (Throwable) {
             // ignore cleanup errors
         }
     }
@@ -112,7 +113,7 @@ final class DoctrineMiddlewareCoverageTest extends TestCase
 
         $conn          = $this->doctrine->em->getConnection();
         $collector     = new DoctrineCollector();
-        $countBefore   = count($collector->getQueries());
+        count($collector->getQueries());
 
         // executeStatement routes through exec() on the middleware Connection
         $affected = $conn->executeStatement(
@@ -176,7 +177,7 @@ final class DoctrineMiddlewareCoverageTest extends TestCase
         try {
             $conn->executeQuery('INVALID SQL STATEMENT');
             $this->fail('Expected an exception for invalid SQL');
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->assertNotEmpty($e->getMessage());
         }
     }
