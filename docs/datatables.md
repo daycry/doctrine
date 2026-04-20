@@ -9,6 +9,25 @@ This module integrates DataTables with Doctrine ORM/DBAL, enabling dynamic pagin
 - `searchableColumns`: whitelist of columns used for global LIKE search. When set, only these columns are used in the global OR.
 - `withCaseInsensitive(true)`: enables case-insensitive matching for LIKE (both global and per-column when the operator is LIKE/`%` or `=`). It does not apply to non-LIKE operators (`IN`, `><`, `>`, `<`, `!=`).
 
+## Builder API
+
+| Method | Description |
+|--------|-------------|
+| `Builder::create()` | Static factory. |
+| `withQueryBuilder($qb)` | Set the base DQL `QueryBuilder`. |
+| `withRequestParams(array $params)` | Set the DataTables request parameters. |
+| `withColumnAliases(array $aliases)` | Map DataTables column names to DQL paths. |
+| `withColumnField(string $field)` | DataTables column property used as field name (`data` or `name`). Default: `data`. |
+| `withSearchableColumns(array $cols)` | Whitelist DQL fields for global LIKE search. |
+| `withCaseInsensitive(bool $flag)` | Enable case-insensitive LIKE via `lower()`. |
+| `withIndexColumn(string $col)` | Override the index column used in pagination. |
+| `withMaxFilterValues(int $max)` | Maximum number of values accepted by `[IN]` and `[OR]` filters. Throws `InvalidArgumentException` if `< 1`. Use `PHP_INT_MAX` to disable. Default: 500. |
+| `setUseOutputWalkers(bool $flag)` | Control Doctrine `Paginator` output walkers. Set to `false` when pagination fails with scalar-select queries. |
+| `getData()` | Execute and return the paginated, filtered, ordered result. |
+| `getRecordsFiltered()` | Count of records matching the current filters (without pagination). |
+| `getRecordsTotal()` | Total count of records without any filter applied. |
+| `getResponse()` | Return the full DataTables response array (`draw`, `recordsTotal`, `recordsFiltered`, `data`). |
+
 ## Supported Per-Column Operators
 
 Column filters accept a bracket-prefixed operator in the value. Format: `[OPERATOR]value`. If the operator is not recognized, `%` (LIKE) is used by default.

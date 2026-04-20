@@ -24,11 +24,16 @@ Adjust settings as needed for your project.
 - `entities` (array): Paths to your entity classes.
 - `proxies` (string): Directory for generated proxies.
 - `proxiesNamespace` (string): Namespace for generated proxies.
+- `proxyFactory` (bool): When `true` (default), use PHP 8.4+ native lazy objects as proxy factory if available; falls back to classic proxy generation otherwise.
 - `queryCache` / `resultsCache` / `metadataCache` (bool): Enable Doctrine caches backed by the framework cache.
 - `queryCacheNamespace` / `resultsCacheNamespace` / `metadataCacheNamespace` (string): Namespaces used by caches.
 - `metadataConfigurationMethod` (`attribute`|`xml`): Metadata driver to use.
 - `isXsdValidationEnabled` (bool): Enable XML schema validation when using XML mapping.
-- `secondLevelCache` (bool): Enable Doctrine Second-Level Cache. When true, SLC uses the same cache backend and `ttl` from `Config\\Cache`.
+- `secondLevelCache` (bool): Enable Doctrine Second-Level Cache. When true, SLC uses the same cache backend and `ttl` from `Config\Cache`.
+- `secondLevelCacheStatistics` (bool): Enable SLC hit/miss/put counters. When enabled, counters appear in the Debug Toolbar Doctrine panel and are accessible via `getSecondLevelCacheLogger()`.
+- `secondLevelCacheTtl` (?int): Override the SLC TTL in seconds. `null` = inherit from `Config\Cache::$ttl`; `0` = no expiration; `> 0` = custom TTL.
+- `customStringFunctions` / `customNumericFunctions` / `customDatetimeFunctions` / `customJsonFunctions` (array): Custom DQL functions registered with Doctrine. Pre-filled with `beberlei/doctrineextensions` and `scienta/doctrine-json-functions`.
+- `customTypeMappings` (array): Additional DBAL type mappings.
 
 ### Notes
 - No adapter needs to be configured for SLC in `Config\\Doctrine`; the library wires SLC to the framework cache backend automatically.

@@ -26,10 +26,17 @@ You can also access the logger programmatically:
 
 ```php
 $logger = \Config\Services::doctrine()->getSecondLevelCacheLogger();
-// Inspect properties if available
-$hits = $logger?->cacheHits ?? 0;
-$misses = $logger?->cacheMisses ?? 0;
-$puts = $logger?->cachePuts ?? 0;
+if ($logger !== null) {
+    $hits   = $logger->getHitCount();
+    $misses = $logger->getMissCount();
+    $puts   = $logger->getPutCount();
+}
+```
+
+To reset counters (e.g. at the start of a request):
+
+```php
+\Config\Services::doctrine()->resetSecondLevelCacheStatistics();
 ```
 
 ## Notes

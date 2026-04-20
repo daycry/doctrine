@@ -279,23 +279,28 @@ This library allows you to view all SQL queries executed by Doctrine directly in
 
 ## Second-Level Cache (SLC)
 
-Doctrine's Second-Level Cache caches entities across requests. This library wires SLC based on `Config\Doctrine.php` without requiring app code changes.
+Doctrine's Second-Level Cache caches entities across requests using the same cache backend configured in `Config\Cache` (file, redis, memcached). No extra adapter configuration is required.
 
-- Enable via `secondLevelCache.enabled = true`.
-- Choose adapter: `array` (default), `file`, `redis`, `memcached`, or supply a PSR-6 pool in `secondLevelCache.psr6Pool`.
-- Tune lifetimes with `defaultLifetime` and `defaultLockLifetime`.
-
-Example configuration:
+Enable in `app/Config/Doctrine.php`:
 
 ```php
-public array $secondLevelCache = [
-    'enabled' => true,
-    'adapter' => 'redis',
-    'defaultLifetime' => 3600,
-    'defaultLockLifetime' => 60,
-    'host' => '127.0.0.1',
-    'port' => 6379,
-];
+public bool $secondLevelCache           = true;
+public bool $secondLevelCacheStatistics = true;  // optional: show hits/misses/puts in the Debug Toolbar
+public ?int $secondLevelCacheTtl        = null;   // null = inherit Config\Cache::$ttl; 0 = no expiry
 ```
 
-When enabled, `src\Doctrine.php` sets up a `DefaultCacheFactory` with region lifetimes and a PSR-6 cache pool matching your adapter.
+See [docs/second_level_cache.md](docs/second_level_cache.md) for full details.
+
+## Development
+
+Available composer scripts for contributors:
+
+```bash
+composer test          # Run PHPUnit test suite
+composer phpstan       # PHPStan static analysis (level 6)
+composer psalm         # Psalm static analysis
+composer rector        # Rector dry-run (code quality checks)
+composer analyze       # Run phpstan + psalm + rector
+composer cs            # PHP-CS-Fixer dry-run (check code style)
+composer cs-fix        # PHP-CS-Fixer apply fixes
+```
