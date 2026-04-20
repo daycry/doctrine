@@ -328,12 +328,12 @@ final class DataTablesBuilderTest extends CIUnitTestCase
             public function testSearchableRestriction(array $searchableColumns, string $field): bool
             {
                 $this->searchableColumns = $searchableColumns;
-                
+
                 // Simulate the logic from getFilteredQuery
                 if (!empty($this->searchableColumns) && !in_array($field, $this->searchableColumns, true)) {
                     return false; // Should be skipped
                 }
-                
+
                 return true; // Should be included
             }
         };
