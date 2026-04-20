@@ -56,10 +56,13 @@
         "test": "vendor/bin/phpunit",
         "cs-fix": "php-cs-fixer fix --ansi --verbose --diff",
         "cs": "php-cs-fixer fix --ansi --verbose --dry-run --diff",
+        "phpstan": "phpstan analyze --memory-limit=512M --ansi",
+        "psalm": "psalm --memory-limit=1G --no-progress",
+        "rector": "rector process --dry-run --ansi",
         "analyze": [
-            "phpstan analyze",
-            "psalm",
-            "rector process --dry-run"
+            "@phpstan",
+            "@psalm",
+            "@rector"
         ]
     },
     "minimum-stability": "dev",

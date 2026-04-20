@@ -78,7 +78,7 @@ jobs:
         run: composer update --no-interaction --prefer-dist --ansi
 
       - name: Run PHPUnit with coverage
-        run: vendor/bin/phpunit --color=always --coverage-clover=build/logs/clover.xml
+        run: composer test -- --color=always --coverage-clover=build/logs/clover.xml
 
       - name: Upload coverage to Coveralls
         if: matrix.php-versions == '8.2' && matrix.mysql-versions == '8.0'
