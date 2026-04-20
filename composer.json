@@ -20,7 +20,8 @@
         "doctrine/orm": "^3",
         "symfony/cache": "^7",
         "beberlei/doctrineextensions": "^1.0",
-        "jms/serializer-bundle": "^5"
+        "jms/serializer-bundle": "^5",
+        "scienta/doctrine-json-functions": "^6.5"
     },
     "require-dev":
     {

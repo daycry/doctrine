@@ -11,7 +11,7 @@ use Daycry\Doctrine\DataTables\Builder;
  * Additional edge case tests for DataTables Builder
  * Focuses on specific scenarios that caused the "6 LIKE :search" error
  */
-class DataTablesBuilderEdgeCasesTest extends CIUnitTestCase
+final class DataTablesBuilderEdgeCasesTest extends CIUnitTestCase
 {
     /**
      * Test the exact scenario that caused the original "6 LIKE :search" error
@@ -145,17 +145,14 @@ class DataTablesBuilderEdgeCasesTest extends CIUnitTestCase
             ->withColumnAliases([
                 'name' => 'u.name',
                 'email' => 'u.email',
-                '6' => 'invalid.field',  // Even if aliased, numeric keys should be caught
-                '' => 'empty.field'      // Empty keys
+                'n6' => 'invalid.field',  // Even if aliased, numeric-value keys should be caught
+                '' => 'empty.field'       // Empty keys
             ]);
 
         $testBuilder = new class($builder) extends Builder {
-            private Builder $parentBuilder;
-            
             public function __construct(Builder $parent)
             {
-                $this->parentBuilder = $parent;
-                $this->columnAliases = $parent->columnAliases ?? [];
+                $this->columnAliases = $parent->columnAliases;
             }
             
             public function testResolveAndValidate($columnValue, int $columnIndex): array
@@ -430,7 +427,7 @@ class DataTablesBuilderEdgeCasesTest extends CIUnitTestCase
                 "Processing {$count} columns should be fast");
             
             // Should correctly identify valid vs invalid columns
-            $expectedSkipped = intval($count / 3) + (($count % 3 === 0) ? 0 : 0); // Every 3rd column starting from 0
+            $expectedSkipped = intval($count / 3); // Every 3rd column starting from 0
             $expectedProcessed = $count - $expectedSkipped;
             
             $this->assertGreaterThan(0, $result['processed'], 

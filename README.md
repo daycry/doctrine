@@ -4,7 +4,11 @@
 
 Doctrine for Codeigniter 4
 
-[![Build Status](https://github.com/daycry/doctrine/workflows/PHP%20Tests/badge.svg)](https://github.com/daycry/doctrine/actions?query=workflow%3A%22PHP+Tests%22)
+[![PHPUnit](https://github.com/daycry/doctrine/actions/workflows/phpunit.yml/badge.svg?branch=master)](https://github.com/daycry/doctrine/actions/workflows/phpunit.yml)
+[![PHPStan](https://github.com/daycry/doctrine/actions/workflows/phpstan.yml/badge.svg?branch=master)](https://github.com/daycry/doctrine/actions/workflows/phpstan.yml)
+[![Psalm](https://github.com/daycry/doctrine/actions/workflows/psalm.yml/badge.svg?branch=master)](https://github.com/daycry/doctrine/actions/workflows/psalm.yml)
+[![Rector](https://github.com/daycry/doctrine/actions/workflows/rector.yml/badge.svg?branch=master)](https://github.com/daycry/doctrine/actions/workflows/rector.yml)
+[![Code Style](https://github.com/daycry/doctrine/actions/workflows/cs.yml/badge.svg?branch=master)](https://github.com/daycry/doctrine/actions/workflows/cs.yml)
 [![Coverage Status](https://coveralls.io/repos/github/daycry/doctrine/badge.svg?branch=master)](https://coveralls.io/github/daycry/doctrine?branch=master)
 [![Downloads](https://poser.pugx.org/daycry/doctrine/downloads)](https://packagist.org/packages/daycry/doctrine)
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/daycry/doctrine)](https://packagist.org/packages/daycry/doctrine)

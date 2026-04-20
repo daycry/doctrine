@@ -1,20 +1,17 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests;
 
 use Tests\Support\TestCase;
 use Daycry\Doctrine\Debug\Toolbar\Collectors\DoctrineCollector;
 
-class DoctrineCollectorTest extends TestCase
+final class DoctrineCollectorTest extends TestCase
 {
     protected function setUp(): void
     {
         parent::setUp();
-        // Limpiar queries estáticas antes de cada test
-        $ref = new \ReflectionProperty(DoctrineCollector::class, 'queries');
-        $ref->setAccessible(true);
-        // For static properties, pass null as the object per modern Reflection API
-        $ref->setValue(null, []);
     }
 
     public function testAddQueryAndGetQueries()
@@ -61,8 +58,8 @@ class DoctrineCollectorTest extends TestCase
     public function testGetTitleAndDetails()
     {
         $collector = new DoctrineCollector();
-        $this->assertEquals('Doctrine', $collector->getTitle());
-        $this->assertEquals('', $collector->getTitleDetails());
+        $this->assertSame('Doctrine', $collector->getTitle());
+        $this->assertSame('', $collector->getTitleDetails());
         $collector->addQuery([
             'sql' => 'SELECT 1',
             'params' => [],
@@ -82,13 +79,13 @@ class DoctrineCollectorTest extends TestCase
     public function testGetBadgeValue()
     {
         $collector = new DoctrineCollector();
-        $this->assertEquals(0, $collector->getBadgeValue());
+        $this->assertSame(0, $collector->getBadgeValue());
         $collector->addQuery([
             'sql' => 'SELECT 1',
             'params' => [],
             'duration' => 0.01
         ]);
-        $this->assertEquals(1, $collector->getBadgeValue());
+        $this->assertSame(1, $collector->getBadgeValue());
     }
 
     public function testGetData()

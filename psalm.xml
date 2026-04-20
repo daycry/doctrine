@@ -1,0 +1,65 @@
+<?xml version="1.0"?>
+<psalm
+    errorLevel="6"
+    resolveFromConfigFile="true"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns="https://getpsalm.org/schema/config"
+    xsi:schemaLocation="https://getpsalm.org/schema/config vendor/vimeo/psalm/config.xsd"
+    findUnusedBaselineEntry="true"
+    findUnusedCode="true"
+    allConstantsGlobal="true"
+    allFunctionsGlobal="true"
+    autoloader="vendor/codeigniter4/framework/system/Test/bootstrap.php"
+>
+    <projectFiles>
+        <directory name="src/" />
+        <ignoreFiles>
+            <directory name="vendor" />
+            <file name="src/cli-config.php" />
+        </ignoreFiles>
+    </projectFiles>
+
+    <issueHandlers>
+        <!-- Library public API — classes/methods/properties are used by consumers, not within src/ itself -->
+        <UnusedClass errorLevel="suppress" />
+        <PossiblyUnusedMethod errorLevel="suppress" />
+        <PossiblyUnusedProperty errorLevel="suppress" />
+        <PossiblyUnusedParam errorLevel="suppress" />
+        <PossiblyUnusedReturnValue errorLevel="suppress" />
+
+        <!-- #[Override] was added in PHP 8.3; this project targets PHP >=8.2 -->
+        <MissingOverrideAttribute errorLevel="suppress" />
+
+        <!-- INFO-level items: CI4 framework type limitations + acceptable patterns -->
+        <!-- ClassMustBeFinal: library classes must remain extendable by consumers -->
+        <ClassMustBeFinal errorLevel="suppress" />
+        <!-- Type coercions from CI4 config() returning object -->
+        <ArgumentTypeCoercion errorLevel="suppress" />
+        <!-- DataTables Builder uses nullable requestParams intentionally (set via withRequestParams) -->
+        <PossiblyNullArgument errorLevel="suppress" />
+        <PossiblyNullArrayAccess errorLevel="suppress" />
+        <PossiblyNullIterator errorLevel="suppress" />
+        <PossiblyNullReference errorLevel="suppress" />
+        <!-- DBAL/ORM union types: Builder supports both DBAL and ORM QueryBuilders -->
+        <PossiblyInvalidArgument errorLevel="suppress" />
+        <PossiblyInvalidOperand errorLevel="suppress" />
+        <PossiblyInvalidCast errorLevel="suppress" />
+        <InvalidOperand errorLevel="suppress" />
+        <!-- DBAL QueryBuilder expression methods (orX/andX/between) exist at runtime -->
+        <PossiblyUndefinedMethod errorLevel="suppress" />
+        <PossiblyUndefinedArrayOffset errorLevel="suppress" />
+        <!-- Docblock type refinements that Psalm reads too strictly -->
+        <DocblockTypeContradiction errorLevel="suppress" />
+        <RedundantConditionGivenDocblockType errorLevel="suppress" />
+        <RedundantCondition errorLevel="suppress" />
+        <RedundantCast errorLevel="suppress" />
+        <TypeDoesNotContainType errorLevel="suppress" />
+        <!-- DoctrinePublish command initialises properties lazily -->
+        <PropertyNotSetInConstructor errorLevel="suppress" />
+        <PossiblyFalseArgument errorLevel="suppress" />
+        <PossiblyFalsePropertyAssignmentValue errorLevel="suppress" />
+        <RiskyTruthyFalsyComparison errorLevel="suppress" />
+        <!-- CI4 magic methods (e.g. Services::doctrine()) -->
+        <UndefinedMagicMethod errorLevel="suppress" />
+    </issueHandlers>
+</psalm>

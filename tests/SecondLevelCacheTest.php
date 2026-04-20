@@ -1,5 +1,9 @@
 <?php
 
+declare(strict_types=1);
+
+use Doctrine\ORM\Cache\CacheConfiguration;
+
 use CodeIgniter\Test\CIUnitTestCase;
 use Daycry\Doctrine\Config\Doctrine as DoctrineConfig;
 use Daycry\Doctrine\Doctrine;
@@ -23,7 +27,7 @@ final class SecondLevelCacheTest extends CIUnitTestCase
         $em = $doctrine->em;
 
         $this->assertTrue($em->getConfiguration()->isSecondLevelCacheEnabled());
-        $this->assertNotNull($em->getConfiguration()->getSecondLevelCacheConfiguration());
+        $this->assertInstanceOf(CacheConfiguration::class, $em->getConfiguration()->getSecondLevelCacheConfiguration());
     }
 
     public function testPersistAndFetchCacheableEntityWithoutErrors()
@@ -48,7 +52,7 @@ final class SecondLevelCacheTest extends CIUnitTestCase
         $tool = new SchemaTool($em);
         try {
             $tool->createSchema([$metadata]);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->markTestSkipped('Unable to create schema for CacheableProduct: ' . $e->getMessage());
         }
 
@@ -60,14 +64,14 @@ final class SecondLevelCacheTest extends CIUnitTestCase
         $p1 = $em->find(CacheableProduct::class, $id);
         $p2 = $em->find(CacheableProduct::class, $id);
 
-        $this->assertNotNull($p1);
-        $this->assertNotNull($p2);
+        $this->assertInstanceOf(CacheableProduct::class, $p1);
+        $this->assertInstanceOf(CacheableProduct::class, $p2);
         $this->assertSame($p1->getId(), $p2->getId());
 
         // Cleanup schema
         try {
             $tool->dropSchema([$metadata]);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             // ignore
         }
     }
@@ -89,7 +93,7 @@ final class SecondLevelCacheTest extends CIUnitTestCase
 
         $this->assertTrue($em->getConfiguration()->isSecondLevelCacheEnabled());
         $slc = $em->getConfiguration()->getSecondLevelCacheConfiguration();
-        $this->assertNotNull($slc);
+        $this->assertInstanceOf(CacheConfiguration::class, $slc);
 
         $regions = $slc->getRegionsConfiguration();
         $this->assertSame(0, $regions->getDefaultLifetime());

@@ -1,12 +1,16 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests;
 
+use Doctrine\ORM\EntityManager;
+use Psr\Cache\CacheItemPoolInterface;
 use Daycry\Doctrine\Doctrine;
 use Config\Cache;
 use Tests\Support\TestCase;
 
-class DoctrineCacheRedisTest extends TestCase
+final class DoctrineCacheRedisTest extends TestCase
 {
     public function testDoctrineWithRedisCache()
     {
@@ -14,7 +18,7 @@ class DoctrineCacheRedisTest extends TestCase
         $cacheConf->handler = 'redis';
         $doctrine = new Doctrine($this->config, $cacheConf);
         $this->assertInstanceOf(Doctrine::class, $doctrine);
-        $this->assertInstanceOf(\Doctrine\ORM\EntityManager::class, $doctrine->em);
+        $this->assertInstanceOf(EntityManager::class, $doctrine->em);
     }
 
     public function testDoctrineRedisCachePersistsData()
@@ -25,6 +29,7 @@ class DoctrineCacheRedisTest extends TestCase
         $cache = $doctrine->em->getConfiguration()->getQueryCache();
         $key = 'test_doctrine_redis_cache';
         $value = ['foo' => 'bar', 'baz' => 123];
+        $this->assertInstanceOf(CacheItemPoolInterface::class, $cache);
         $cache->deleteItem($key);
         $cache->save($cache->getItem($key)->set($value));
         $item = $cache->getItem($key);

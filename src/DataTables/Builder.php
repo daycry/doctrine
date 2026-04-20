@@ -14,12 +14,12 @@ use Doctrine\ORM\Tools\Pagination\Paginator;
  * Enables dynamic pagination, filtering, and ordering of results.
  *
  * @property bool                         $caseInsensitive   Case-insensitive search
- * @property array                        $columnAliases     Column aliases DataTables => DB
+ * @property array<string, string>        $columnAliases     Column aliases DataTables => DB
  * @property string                       $columnField       Column field ('data' or 'name')
  * @property string                       $indexColumn       Index column
  * @property ORMQueryBuilder|QueryBuilder $queryBuilder      Doctrine QueryBuilder
- * @property array                        $requestParams     DataTables request parameters
- * @property array                        $searchableColumns Columns allowed for global LIKE search
+ * @property array<string, mixed>|null    $requestParams     DataTables request parameters
+ * @property list<string>                 $searchableColumns Columns allowed for global LIKE search
  * @property bool                         $useOutputWalkers  Use OutputWalkers in paginator
  */
 class Builder
@@ -53,6 +53,8 @@ class Builder
 
     /**
      * DataTables request parameters
+     *
+     * @var array<string, mixed>|null
      */
     protected ?array $requestParams = null;
 
@@ -67,6 +69,12 @@ class Builder
      * @var list<string>
      */
     protected array $searchableColumns = [];
+
+    /**
+     * Maximum number of values allowed for IN and OR filter operators.
+     * Prevents DoS via excessively large filter value lists.
+     */
+    protected int $maxFilterValues = 500;
 
     /**
      * Static factory for fluent usage.
@@ -91,7 +99,24 @@ class Builder
     }
 
     /**
+     * Set the maximum number of values accepted by IN and OR filter operators.
+     * Use PHP_INT_MAX to disable the limit.
+     */
+    public function withMaxFilterValues(int $maxFilterValues): static
+    {
+        if ($maxFilterValues < 1) {
+            throw new InvalidArgumentException('maxFilterValues must be at least 1. Use PHP_INT_MAX to disable the limit.');
+        }
+
+        $this->maxFilterValues = $maxFilterValues;
+
+        return $this;
+    }
+
+    /**
      * Returns paginated, filtered, and ordered data for DataTables.
+     *
+     * @return list<object>
      *
      * @throws InvalidArgumentException
      */
@@ -127,7 +152,8 @@ class Builder
 
         // Search
         if (array_key_exists('search', $this->requestParams)) {
-            if ($value = trim($this->requestParams['search']['value'] ?? '')) {
+            $value = mb_substr(trim($this->requestParams['search']['value'] ?? ''), 0, 255);
+            if ($value !== '') {
                 $orX = $query->expr()->orX();
 
                 for ($i = 0; $i < $c; $i++) {
@@ -164,7 +190,8 @@ class Builder
         for ($i = 0; $i < $c; $i++) {
             $column = $columns[$i];
             $andX   = $query->expr()->andX();
-            if ($this->isColumnSearchable($column) && ($value = trim($column['search']['value'] ?? ''))) {
+            $value  = trim($column['search']['value'] ?? '');
+            if ($this->isColumnSearchable($column) && $value !== '') {
                 $fieldName = $this->resolveFieldName($column[$this->columnField] ?? '', $i);
 
                 // Skip if field is not valid for DQL (prevents numeric indices and invalid identifiers)
@@ -200,7 +227,14 @@ class Builder
 
                     case 'IN':
                         $valueArr = explode(',', $value);
-                        $params   = [];
+                        if (count($valueArr) > $this->maxFilterValues) {
+                            throw new InvalidArgumentException(sprintf(
+                                'IN filter exceeds maximum allowed values (%d). Got %d. Use withMaxFilterValues() to adjust the limit.',
+                                $this->maxFilterValues,
+                                count($valueArr),
+                            ));
+                        }
+                        $params = [];
 
                         for ($j = 0; $j < count($valueArr); $j++) {
                             $params[] = ":filter_{$i}_{$j}";
@@ -214,7 +248,14 @@ class Builder
 
                     case 'OR':
                         $valueArr = explode(',', $value);
-                        $orX      = $query->expr()->orX();
+                        if (count($valueArr) > $this->maxFilterValues) {
+                            throw new InvalidArgumentException(sprintf(
+                                'OR filter exceeds maximum allowed values (%d). Got %d. Use withMaxFilterValues() to adjust the limit.',
+                                $this->maxFilterValues,
+                                count($valueArr),
+                            ));
+                        }
+                        $orX = $query->expr()->orX();
 
                         for ($j = 0; $j < count($valueArr); $j++) {
                             $orX->add($query->expr()->like($fieldName, ":filter_{$i}_{$j}"));
@@ -259,6 +300,8 @@ class Builder
      * Parse a raw filter value extracting the operator and cleaned term.
      * Returns [operator, value] with fallback to '%'.
      * Supported operators: !=, <, >, IN, OR, ><, =, %, LIKE, %% (LIKE/%% normalize to %).
+     *
+     * @return array{0: string, 1: string}
      */
     private function parseFilterOperator(string $raw): array
     {
@@ -303,14 +346,41 @@ class Builder
 
     /**
      * Returns the DataTables response array.
+     *
+     * @return array<string, mixed>
      */
     public function getResponse(): array
     {
+        $this->validate();
+        $filteredQuery = $this->getFilteredQuery();
+        $columns       = $this->requestParams['columns'];
+
+        // Data (with ordering + pagination)
+        $dataQuery = clone $filteredQuery;
+        $this->applyOrdering($dataQuery, $columns);
+        $this->applyPagination($dataQuery);
+        $dataPaginator = new Paginator($dataQuery, true);
+        $dataPaginator->setUseOutputWalkers($this->useOutputWalkers ?? true);
+        $data = [];
+
+        foreach ($dataPaginator as $obj) {
+            $data[] = $obj;
+        }
+
+        // Filtered count (reuses the already-built filtered query)
+        $filteredPaginator = new Paginator($filteredQuery, true);
+        $filteredPaginator->setUseOutputWalkers($this->useOutputWalkers ?? true);
+
+        // Total count (unfiltered)
+        $totalQuery     = clone $this->queryBuilder;
+        $totalPaginator = new Paginator($totalQuery, true);
+        $totalPaginator->setUseOutputWalkers($this->useOutputWalkers ?? true);
+
         return [
-            'data'            => $this->getData(),
+            'data'            => $data,
             'draw'            => $this->requestParams['draw'] ?? 0,
-            'recordsFiltered' => $this->getRecordsFiltered(),
-            'recordsTotal'    => $this->getRecordsTotal(),
+            'recordsFiltered' => $filteredPaginator->count(),
+            'recordsTotal'    => $totalPaginator->count(),
         ];
     }
 
@@ -336,6 +406,8 @@ class Builder
 
     /**
      * Sets column aliases.
+     *
+     * @param array<string, string> $columnAliases
      */
     public function withColumnAliases(array $columnAliases): static
     {
@@ -376,6 +448,8 @@ class Builder
 
     /**
      * Sets the DataTables request parameters.
+     *
+     * @param array<string, mixed> $requestParams
      */
     public function withRequestParams(array $requestParams): static
     {
@@ -389,7 +463,7 @@ class Builder
      */
     protected function validate(): void
     {
-        if (! $this->queryBuilder) {
+        if ($this->queryBuilder === null) {
             throw new InvalidArgumentException('QueryBuilder is not set.');
         }
         if (! is_array($this->requestParams) || empty($this->requestParams['columns'])) {
@@ -399,6 +473,8 @@ class Builder
 
     /**
      * Applies ordering to the query.
+     *
+     * @param array<int|string, mixed> $columns
      */
     protected function applyOrdering(ORMQueryBuilder|QueryBuilder $query, array $columns): void
     {
@@ -408,10 +484,12 @@ class Builder
             foreach ($order as $sort) {
                 $column    = $columns[(int) ($sort['column'])];
                 $fieldName = $this->resolveFieldName($column[$this->columnField] ?? '', (int) ($sort['column']));
+                $dir       = strtoupper($sort['dir'] ?? 'ASC');
+                $dir       = in_array($dir, ['ASC', 'DESC'], true) ? $dir : 'ASC';
 
                 // Only add ordering if field is valid for DQL
                 if ($this->isValidDQLField($fieldName)) {
-                    $query->addOrderBy($fieldName, $sort['dir']);
+                    $query->addOrderBy($fieldName, $dir);
                 }
             }
         }
@@ -436,6 +514,8 @@ class Builder
     /**
      * Helper: Check if a column is searchable.
      * Accepts both boolean true and string 'true'.
+     *
+     * @param array<string, mixed> $column
      */
     protected function isColumnSearchable(array $column): bool
     {
@@ -485,6 +565,6 @@ class Builder
         // Must not be purely numeric
         return ! empty($field)
             && ! is_numeric($field)
-            && preg_match('/^[a-zA-Z_][a-zA-Z0-9_\\.]*$/', $field);
+            && (bool) preg_match('/^[a-zA-Z_]\w*(\.[a-zA-Z_]\w*)*$/', $field);
     }
 }

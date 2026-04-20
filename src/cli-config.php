@@ -36,9 +36,6 @@ defined('ENVIRONMENT') || define('ENVIRONMENT', 'development');
  * and fires up an environment-specific bootstrapping.
  */
 
-// Ensure the current directory is pointing to the front controller's directory
-chdir(__DIR__);
-
 // Load our paths config file
 // This is the line that might need to be changed, depending on your folder structure.
 
@@ -54,9 +51,15 @@ $paths = new Paths();
 require $paths->systemDirectory . '/Boot.php';
 
 // Load environment settings from .env files into $_SERVER and $_ENV
-$response = Boot::bootDoctrine($paths);
+Boot::bootDoctrine($paths);
 
 $doctrine = new Doctrine(config('Doctrine'));
+
+if ($doctrine->em === null) {
+    echo 'EntityManager could not be initialized.' . PHP_EOL;
+
+    exit(1);
+}
 
 $commands = [
     // If you want to add your own custom console commands,

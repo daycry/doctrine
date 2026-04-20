@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Connection;
 
 use Tests\Support\TestCase;
@@ -7,12 +9,11 @@ use Config\Database;
 use Daycry\Doctrine\Doctrine;
 use Doctrine\ORM\EntityManager;
 
-class MysqlTest extends TestCase
+final class MysqlTest extends TestCase
 {
     public function testDSNMysql()
     {
-        /** @var Database $config */
-        $config = $this->getMysqlDSNConfig();
+        $this->getMysqlDSNConfig();
 
         $doctrine = new Doctrine($this->config);
 
@@ -23,8 +24,7 @@ class MysqlTest extends TestCase
 
     public function testMysql()
     {
-        /** @var Database $config */
-        $config = $this->getMysqlConfig();
+        $this->getMysqlConfig();
 
         $doctrine = new Doctrine($this->config);
 

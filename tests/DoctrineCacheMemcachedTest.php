@@ -1,12 +1,15 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests;
 
+use Doctrine\ORM\EntityManager;
 use Daycry\Doctrine\Doctrine;
 use Config\Cache;
 use Tests\Support\TestCase;
 
-class DoctrineCacheMemcachedTest extends TestCase
+final class DoctrineCacheMemcachedTest extends TestCase
 {
     public function testDoctrineWithMemcachedCache()
     {
@@ -17,7 +20,7 @@ class DoctrineCacheMemcachedTest extends TestCase
         $cacheConf->handler = 'memcached';
         $doctrine = new Doctrine($this->config, $cacheConf);
         $this->assertInstanceOf(Doctrine::class, $doctrine);
-        $this->assertInstanceOf(\Doctrine\ORM\EntityManager::class, $doctrine->em);
+        $this->assertInstanceOf(EntityManager::class, $doctrine->em);
     }
 
     public function testDoctrineMemcachedCachePersistsData()

@@ -1,24 +1,38 @@
 <?php
 
+declare(strict_types=1);
+
 use CodeIgniter\Test\CIUnitTestCase;
 use Daycry\Doctrine\Debug\Toolbar\Collectors\DoctrineCollector;
+use Doctrine\ORM\Cache\EntityCacheKey;
+use Doctrine\ORM\Cache\Logging\StatisticsCacheLogger;
 
 final class DoctrineCollectorSlcNoQueriesTest extends CIUnitTestCase
 {
+    private static function makeLogger(int $hits, int $misses, int $puts): StatisticsCacheLogger
+    {
+        $logger = new StatisticsCacheLogger();
+        $key    = new EntityCacheKey(stdClass::class, ['id' => 1]);
+
+        for ($i = 0; $i < $hits; $i++) {
+            $logger->entityCacheHit('test', $key);
+        }
+
+        for ($i = 0; $i < $misses; $i++) {
+            $logger->entityCacheMiss('test', $key);
+        }
+
+        for ($i = 0; $i < $puts; $i++) {
+            $logger->entityCachePut('test', $key);
+        }
+
+        return $logger;
+    }
+
     public function testCollectorNotEmptyWhenOnlySlcStats(): void
     {
-        // Ensure static queries are cleared (they persist across tests)
-        $ref = new \ReflectionProperty(DoctrineCollector::class, 'queries');
-        $ref->setAccessible(true);
-        $ref->setValue(null, []);
-
         $collector = new DoctrineCollector();
-        // Inject SLC logger with counters and NO queries added.
-        $collector->setSecondLevelCacheLogger(new class {
-            public int $cacheHits = 10;
-            public int $cacheMisses = 2;
-            public int $cachePuts = 12;
-        });
+        $collector->setSecondLevelCacheLogger(self::makeLogger(10, 2, 12));
 
         $this->assertFalse($collector->isEmpty(), 'Collector should not be empty when SLC stats are enabled.');
         $html = $collector->display();

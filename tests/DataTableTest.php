@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests;
 
 use CodeIgniter\Test\DatabaseTestTrait;
@@ -10,7 +12,7 @@ use Tests\Support\Models\Entities\TestAttribute;
 use Tests\Support\TestCase;
 use Tests\Support\Database\Seeds\TestSeeder;
 
-class DataTableTest extends TestCase
+final class DataTableTest extends TestCase
 {
     use DatabaseTestTrait;
     use FeatureTestTrait;
@@ -19,7 +21,7 @@ class DataTableTest extends TestCase
 
     public function testDataTableDefault()
     {
-        $config = $this->getMysqlDSNConfig();
+        $this->getMysqlDSNConfig();
 
         $doctrine = new Doctrine($this->config);
 
@@ -40,29 +42,29 @@ class DataTableTest extends TestCase
                     ->from(TestAttribute::class, 't')
             )
             ->withRequestParams(
-                array(
+                [
                     'draw' => 1,
                     'start' => 0,
                     'length' => 10,
-                    'search' => array('value' => 'am', 'regex' => false ),
-                    'columns' => array(
-                        array(
+                    'search' => ['value' => 'am', 'regex' => false ],
+                    'columns' => [
+                        [
                             'data' => 'id',
                             'name' => 'id',
                             'searchable' => true,
                             'orderable' => true,
-                            'search' => array('value' => '', 'regex' => false)
-                        ),
-                        array(
+                            'search' => ['value' => '', 'regex' => false]
+                        ],
+                        [
                             'data' => 'name',
                             'name' => 'name',
                             'searchable' => true,
                             'orderable' => true,
-                            'search' => array('value' => '', 'regex' => false)
-                        )
-                    ),
-                    'order' => array( array( 'column' => 0, 'dir' => 'asc') )
-                )
+                            'search' => ['value' => '', 'regex' => false]
+                        ]
+                    ],
+                    'order' => [ [ 'column' => 0, 'dir' => 'asc'] ]
+                ]
             );
 
         $response = $datatables->getResponse();
@@ -74,7 +76,7 @@ class DataTableTest extends TestCase
 
     public function testDataTableSearchColumn()
     {
-        $config = $this->getMysqlDSNConfig();
+        $this->getMysqlDSNConfig();
 
         $doctrine = new Doctrine($this->config);
 
@@ -95,29 +97,29 @@ class DataTableTest extends TestCase
                     ->from(TestAttribute::class, 't')
             )
             ->withRequestParams(
-                array(
+                [
                     'draw' => 1,
                     'start' => 0,
                     'length' => 10,
-                    'search' => array('value' => '', 'regex' => true ),
-                    'columns' => array(
-                        array(
+                    'search' => ['value' => '', 'regex' => true ],
+                    'columns' => [
+                        [
                             'data' => 'id',
                             'name' => 'id',
                             'searchable' => true,
                             'orderable' => true,
-                            'search' => array('value' => '', 'regex' => false)
-                        ),
-                        array(
+                            'search' => ['value' => '', 'regex' => false]
+                        ],
+                        [
                             'data' => 'name',
                             'name' => 'name',
                             'searchable' => true,
                             'orderable' => true,
-                            'search' => array('value' => 'name1', 'regex' => true)
-                        )
-                    ),
-                    'order' => array( array( 'column' => 0, 'dir' => 'asc') )
-                )
+                            'search' => ['value' => 'name1', 'regex' => true]
+                        ]
+                    ],
+                    'order' => [ [ 'column' => 0, 'dir' => 'asc'] ]
+                ]
             );
 
         $response = $datatables->getResponse();
@@ -128,7 +130,7 @@ class DataTableTest extends TestCase
 
     public function testDataTableSearchColumnWithPercent()
     {
-        $config = $this->getMysqlDSNConfig();
+        $this->getMysqlDSNConfig();
 
         $doctrine = new Doctrine($this->config);
 
@@ -149,29 +151,29 @@ class DataTableTest extends TestCase
                     ->from(TestAttribute::class, 't')
             )
             ->withRequestParams(
-                array(
+                [
                     'draw' => 1,
                     'start' => 0,
                     'length' => 10,
-                    'search' => array('value' => '', 'regex' => true ),
-                    'columns' => array(
-                        array(
+                    'search' => ['value' => '', 'regex' => true ],
+                    'columns' => [
+                        [
                             'data' => 'id',
                             'name' => 'id',
                             'searchable' => true,
                             'orderable' => true,
-                            'search' => array('value' => '', 'regex' => false)
-                        ),
-                        array(
+                            'search' => ['value' => '', 'regex' => false]
+                        ],
+                        [
                             'data' => 'name',
                             'name' => 'name',
                             'searchable' => true,
                             'orderable' => true,
-                            'search' => array('value' => '[%%]am', 'regex' => false)
-                        )
-                    ),
-                    'order' => array( array( 'column' => 0, 'dir' => 'asc') )
-                )
+                            'search' => ['value' => '[%%]am', 'regex' => false]
+                        ]
+                    ],
+                    'order' => [ [ 'column' => 0, 'dir' => 'asc'] ]
+                ]
             );
 
         $response = $datatables->getResponse();
@@ -182,7 +184,7 @@ class DataTableTest extends TestCase
 
     public function testDataTableSearchColumnWithInvalidOperatorFallback()
     {
-        $config = $this->getMysqlDSNConfig();
+        $this->getMysqlDSNConfig();
 
         $doctrine = new Doctrine($this->config);
 
@@ -203,30 +205,30 @@ class DataTableTest extends TestCase
                     ->from(TestAttribute::class, 't')
             )
             ->withRequestParams(
-                array(
+                [
                     'draw' => 1,
                     'start' => 0,
                     'length' => 10,
-                    'search' => array('value' => '', 'regex' => true ),
-                    'columns' => array(
-                        array(
+                    'search' => ['value' => '', 'regex' => true ],
+                    'columns' => [
+                        [
                             'data' => 'id',
                             'name' => 'id',
                             'searchable' => true,
                             'orderable' => true,
-                            'search' => array('value' => '', 'regex' => false)
-                        ),
-                        array(
+                            'search' => ['value' => '', 'regex' => false]
+                        ],
+                        [
                             'data' => 'name',
                             'name' => 'name',
                             'searchable' => true,
                             'orderable' => true,
                             // Unsupported operator should fallback to LIKE
-                            'search' => array('value' => '[XYZ]am', 'regex' => false)
-                        )
-                    ),
-                    'order' => array( array( 'column' => 0, 'dir' => 'asc') )
-                )
+                            'search' => ['value' => '[XYZ]am', 'regex' => false]
+                        ]
+                    ],
+                    'order' => [ [ 'column' => 0, 'dir' => 'asc'] ]
+                ]
             );
 
         $response = $datatables->getResponse();
@@ -238,7 +240,7 @@ class DataTableTest extends TestCase
 
     public function testDataTableSearchColumnWithLikeSynonyms()
     {
-        $config = $this->getMysqlDSNConfig();
+        $this->getMysqlDSNConfig();
 
         $doctrine = new Doctrine($this->config);
 
@@ -332,7 +334,7 @@ class DataTableTest extends TestCase
 
     public function testDataTableGlobalSearchSkipsNumericColumnIdentifier()
     {
-        $config = $this->getMysqlDSNConfig();
+        $this->getMysqlDSNConfig();
 
         $doctrine = new Doctrine($this->config);
 
@@ -386,7 +388,7 @@ class DataTableTest extends TestCase
 
     public function testDataTableCaseInsensitiveWithOperators()
     {
-        $config = $this->getMysqlDSNConfig();
+        $this->getMysqlDSNConfig();
 
         $doctrine = new Doctrine($this->config);
 
@@ -524,7 +526,7 @@ class DataTableTest extends TestCase
 
     public function testDataTableGlobalAndColumnFiltersCombined()
     {
-        $config = $this->getMysqlDSNConfig();
+        $this->getMysqlDSNConfig();
 
         $doctrine = new Doctrine($this->config);
 
@@ -577,7 +579,7 @@ class DataTableTest extends TestCase
 
     public function testDataTableSearchColumnWithDifferent()
     {
-        $config = $this->getMysqlDSNConfig();
+        $this->getMysqlDSNConfig();
 
         $doctrine = new Doctrine($this->config);
 
@@ -598,29 +600,29 @@ class DataTableTest extends TestCase
                     ->from(TestAttribute::class, 't')
             )
             ->withRequestParams(
-                array(
+                [
                     'draw' => 1,
                     'start' => 0,
                     'length' => 10,
-                    'search' => array('value' => '', 'regex' => true ),
-                    'columns' => array(
-                        array(
+                    'search' => ['value' => '', 'regex' => true ],
+                    'columns' => [
+                        [
                             'data' => 'id',
                             'name' => 'id',
                             'searchable' => true,
                             'orderable' => true,
-                            'search' => array('value' => '', 'regex' => false)
-                        ),
-                        array(
+                            'search' => ['value' => '', 'regex' => false]
+                        ],
+                        [
                             'data' => 'name',
                             'name' => 'name',
                             'searchable' => true,
                             'orderable' => true,
-                            'search' => array('value' => '[!=]name1', 'regex' => false)
-                        )
-                    ),
-                    'order' => array( array( 'column' => 0, 'dir' => 'asc') )
-                )
+                            'search' => ['value' => '[!=]name1', 'regex' => false]
+                        ]
+                    ],
+                    'order' => [ [ 'column' => 0, 'dir' => 'asc'] ]
+                ]
             );
 
         $response = $datatables->getResponse();
@@ -631,7 +633,7 @@ class DataTableTest extends TestCase
 
     public function testDataTableSearchColumnWithLessThan()
     {
-        $config = $this->getMysqlDSNConfig();
+        $this->getMysqlDSNConfig();
 
         $doctrine = new Doctrine($this->config);
 
@@ -652,29 +654,29 @@ class DataTableTest extends TestCase
                     ->from(TestAttribute::class, 't')
             )
             ->withRequestParams(
-                array(
+                [
                     'draw' => 1,
                     'start' => 0,
                     'length' => 10,
-                    'search' => array('value' => '', 'regex' => true ),
-                    'columns' => array(
-                        array(
+                    'search' => ['value' => '', 'regex' => true ],
+                    'columns' => [
+                        [
                             'data' => 'id',
                             'name' => 'id',
                             'searchable' => true,
                             'orderable' => true,
-                            'search' => array('value' => '[<]2', 'regex' => false)
-                        ),
-                        array(
+                            'search' => ['value' => '[<]2', 'regex' => false]
+                        ],
+                        [
                             'data' => 'name',
                             'name' => 'name',
                             'searchable' => true,
                             'orderable' => true,
-                            'search' => array('value' => '', 'regex' => false)
-                        )
-                    ),
-                    'order' => array( array( 'column' => 0, 'dir' => 'asc') )
-                )
+                            'search' => ['value' => '', 'regex' => false]
+                        ]
+                    ],
+                    'order' => [ [ 'column' => 0, 'dir' => 'asc'] ]
+                ]
             );
 
         $response = $datatables->getResponse();
@@ -685,7 +687,7 @@ class DataTableTest extends TestCase
 
     public function testDataTableSearchColumnWithMoreThan()
     {
-        $config = $this->getMysqlDSNConfig();
+        $this->getMysqlDSNConfig();
 
         $doctrine = new Doctrine($this->config);
 
@@ -706,29 +708,29 @@ class DataTableTest extends TestCase
                     ->from(TestAttribute::class, 't')
             )
             ->withRequestParams(
-                array(
+                [
                     'draw' => 1,
                     'start' => 0,
                     'length' => 10,
-                    'search' => array('value' => '', 'regex' => true ),
-                    'columns' => array(
-                        array(
+                    'search' => ['value' => '', 'regex' => true ],
+                    'columns' => [
+                        [
                             'data' => 'id',
                             'name' => 'id',
                             'searchable' => true,
                             'orderable' => true,
-                            'search' => array('value' => '[>]1', 'regex' => false)
-                        ),
-                        array(
+                            'search' => ['value' => '[>]1', 'regex' => false]
+                        ],
+                        [
                             'data' => 'name',
                             'name' => 'name',
                             'searchable' => true,
                             'orderable' => true,
-                            'search' => array('value' => '', 'regex' => false)
-                        )
-                    ),
-                    'order' => array( array( 'column' => 0, 'dir' => 'asc') )
-                )
+                            'search' => ['value' => '', 'regex' => false]
+                        ]
+                    ],
+                    'order' => [ [ 'column' => 0, 'dir' => 'asc'] ]
+                ]
             );
 
         $response = $datatables->getResponse();
@@ -739,7 +741,7 @@ class DataTableTest extends TestCase
 
     public function testDataTableSearchColumnWithIn()
     {
-        $config = $this->getMysqlDSNConfig();
+        $this->getMysqlDSNConfig();
 
         $doctrine = new Doctrine($this->config);
 
@@ -760,29 +762,29 @@ class DataTableTest extends TestCase
                     ->from(TestAttribute::class, 't')
             )
             ->withRequestParams(
-                array(
+                [
                     'draw' => 1,
                     'start' => 0,
                     'length' => 10,
-                    'search' => array('value' => '', 'regex' => true ),
-                    'columns' => array(
-                        array(
+                    'search' => ['value' => '', 'regex' => true ],
+                    'columns' => [
+                        [
                             'data' => 'id',
                             'name' => 'id',
                             'searchable' => true,
                             'orderable' => true,
-                            'search' => array('value' => '[IN]2,3', 'regex' => false)
-                        ),
-                        array(
+                            'search' => ['value' => '[IN]2,3', 'regex' => false]
+                        ],
+                        [
                             'data' => 'name',
                             'name' => 'name',
                             'searchable' => true,
                             'orderable' => true,
-                            'search' => array('value' => '', 'regex' => false)
-                        )
-                    ),
-                    'order' => array( array( 'column' => 0, 'dir' => 'asc') )
-                )
+                            'search' => ['value' => '', 'regex' => false]
+                        ]
+                    ],
+                    'order' => [ [ 'column' => 0, 'dir' => 'asc'] ]
+                ]
             );
 
         $response = $datatables->getResponse();
@@ -793,7 +795,7 @@ class DataTableTest extends TestCase
 
     public function testDataTableSearchColumnWithOr()
     {
-        $config = $this->getMysqlDSNConfig();
+        $this->getMysqlDSNConfig();
 
         $doctrine = new Doctrine($this->config);
 
@@ -814,29 +816,29 @@ class DataTableTest extends TestCase
                     ->from(TestAttribute::class, 't')
             )
             ->withRequestParams(
-                array(
+                [
                     'draw' => 1,
                     'start' => 0,
                     'length' => 10,
-                    'search' => array('value' => '', 'regex' => true ),
-                    'columns' => array(
-                        array(
+                    'search' => ['value' => '', 'regex' => true ],
+                    'columns' => [
+                        [
                             'data' => 'id',
                             'name' => 'id',
                             'searchable' => true,
                             'orderable' => true,
-                            'search' => array('value' => '[OR]1,3', 'regex' => false)
-                        ),
-                        array(
+                            'search' => ['value' => '[OR]1,3', 'regex' => false]
+                        ],
+                        [
                             'data' => 'name',
                             'name' => 'name',
                             'searchable' => true,
                             'orderable' => true,
-                            'search' => array('value' => '', 'regex' => false)
-                        )
-                    ),
-                    'order' => array( array( 'column' => 0, 'dir' => 'asc') )
-                )
+                            'search' => ['value' => '', 'regex' => false]
+                        ]
+                    ],
+                    'order' => [ [ 'column' => 0, 'dir' => 'asc'] ]
+                ]
             );
 
         $response = $datatables->getResponse();
@@ -847,7 +849,7 @@ class DataTableTest extends TestCase
 
     public function testDataTableSearchColumnWithBetween()
     {
-        $config = $this->getMysqlDSNConfig();
+        $this->getMysqlDSNConfig();
 
         $doctrine = new Doctrine($this->config);
 
@@ -868,29 +870,29 @@ class DataTableTest extends TestCase
                     ->from(TestAttribute::class, 't')
             )
             ->withRequestParams(
-                array(
+                [
                     'draw' => 1,
                     'start' => 0,
                     'length' => 10,
-                    'search' => array('value' => '', 'regex' => true ),
-                    'columns' => array(
-                        array(
+                    'search' => ['value' => '', 'regex' => true ],
+                    'columns' => [
+                        [
                             'data' => 'id',
                             'name' => 'id',
                             'searchable' => true,
                             'orderable' => true,
-                            'search' => array('value' => '[><]2,3', 'regex' => false)
-                        ),
-                        array(
+                            'search' => ['value' => '[><]2,3', 'regex' => false]
+                        ],
+                        [
                             'data' => 'name',
                             'name' => 'name',
                             'searchable' => true,
                             'orderable' => true,
-                            'search' => array('value' => '', 'regex' => false)
-                        )
-                    ),
-                    'order' => array( array( 'column' => 0, 'dir' => 'asc') )
-                )
+                            'search' => ['value' => '', 'regex' => false]
+                        ]
+                    ],
+                    'order' => [ [ 'column' => 0, 'dir' => 'asc'] ]
+                ]
             );
 
         $response = $datatables->getResponse();
@@ -901,7 +903,7 @@ class DataTableTest extends TestCase
 
     public function testDataTableSearchColumnWithEquals()
     {
-        $config = $this->getMysqlDSNConfig();
+        $this->getMysqlDSNConfig();
 
         $doctrine = new Doctrine($this->config);
 
@@ -922,29 +924,29 @@ class DataTableTest extends TestCase
                     ->from(TestAttribute::class, 't')
             )
             ->withRequestParams(
-                array(
+                [
                     'draw' => 1,
                     'start' => 0,
                     'length' => 10,
-                    'search' => array('value' => '', 'regex' => true ),
-                    'columns' => array(
-                        array(
+                    'search' => ['value' => '', 'regex' => true ],
+                    'columns' => [
+                        [
                             'data' => 'id',
                             'name' => 'id',
                             'searchable' => true,
                             'orderable' => true,
-                            'search' => array('value' => '[=]2', 'regex' => false)
-                        ),
-                        array(
+                            'search' => ['value' => '[=]2', 'regex' => false]
+                        ],
+                        [
                             'data' => 'name',
                             'name' => 'name',
                             'searchable' => true,
                             'orderable' => true,
-                            'search' => array('value' => '', 'regex' => false)
-                        )
-                    ),
-                    'order' => array( array( 'column' => 0, 'dir' => 'asc') )
-                )
+                            'search' => ['value' => '', 'regex' => false]
+                        ]
+                    ],
+                    'order' => [ [ 'column' => 0, 'dir' => 'asc'] ]
+                ]
             );
 
         $response = $datatables->getResponse();

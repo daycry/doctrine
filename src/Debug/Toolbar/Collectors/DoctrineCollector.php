@@ -1,9 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Daycry\Doctrine\Debug\Toolbar\Collectors;
 
 use CodeIgniter\Debug\Toolbar\Collectors\BaseCollector;
 use Config\Services;
+use Doctrine\ORM\Cache\Logging\StatisticsCacheLogger;
 use Throwable;
 
 class DoctrineCollector extends BaseCollector
@@ -16,33 +19,45 @@ class DoctrineCollector extends BaseCollector
     /**
      * Optional injected SLC logger for testing/override
      */
-    protected $slcLogger;
+    protected ?StatisticsCacheLogger $slcLogger = null;
 
     /**
-     * Queries ejecutadas (estático para compatibilidad con Toolbar)
+     * Queries ejecutadas
      *
-     * @var array
+     * @var array<int, array<string, mixed>>
      */
-    protected static $queries = [];
+    protected array $queries = [];
 
+    /**
+     * @param array<string, mixed> $query
+     */
     public function addQuery(array $query): void
     {
-        static::$queries[] = $query;
+        $this->queries[] = $query;
+    }
+
+    /**
+     * Reset all collected queries. Useful in tests and per-request resets.
+     */
+    public function reset(): void
+    {
+        $this->queries = [];
     }
 
     /**
      * Allow injecting a Second-Level Cache logger (primarily for testing).
-     *
-     * @param mixed $logger
      */
-    public function setSecondLevelCacheLogger($logger): void
+    public function setSecondLevelCacheLogger(StatisticsCacheLogger $logger): void
     {
         $this->slcLogger = $logger;
     }
 
+    /**
+     * @return array<int, array<string, mixed>>
+     */
     public function getQueries(): array
     {
-        return static::$queries;
+        return $this->queries;
     }
 
     public function getTitle(bool $safe = false): string
@@ -52,12 +67,12 @@ class DoctrineCollector extends BaseCollector
 
     public function getBadgeValue(): int
     {
-        return count(static::$queries);
+        return count($this->queries);
     }
 
     public function getTitleDetails(): string
     {
-        $queryCount = count(static::$queries);
+        $queryCount = count($this->queries);
         $details    = $queryCount > 0 ? "({$queryCount} quer" . ($queryCount > 1 ? 'ies' : 'y') . ')' : '';
 
         // Append compact SLC badge if enabled
@@ -70,32 +85,9 @@ class DoctrineCollector extends BaseCollector
                 }
             }
             if ($logger !== null) {
-                $hits   = null;
-                $misses = null;
-                $puts   = null;
-                // Doctrine ORM 3.x StatisticsCacheLogger exposes getHitCount(), getMissCount(), getPutCount()
-                if (method_exists($logger, 'getHitCount')) {
-                    $hits = (int) $logger->getHitCount();
-                }
-                if (method_exists($logger, 'getMissCount')) {
-                    $misses = (int) $logger->getMissCount();
-                }
-                if (method_exists($logger, 'getPutCount')) {
-                    $puts = (int) $logger->getPutCount();
-                }
-                // Fallback legacy names or public properties if any custom stub
-                if ($hits === null && property_exists($logger, 'cacheHits')) {
-                    $hits = (int) $logger->cacheHits;
-                }
-                if ($misses === null && property_exists($logger, 'cacheMisses')) {
-                    $misses = (int) $logger->cacheMisses;
-                }
-                if ($puts === null && property_exists($logger, 'cachePuts')) {
-                    $puts = (int) $logger->cachePuts;
-                }
-                $hits ??= 0;
-                $misses ??= 0;
-                $puts ??= 0;
+                $hits     = $logger->getHitCount();
+                $misses   = $logger->getMissCount();
+                $puts     = $logger->getPutCount();
                 $total    = $hits + $misses;
                 $ratio    = $total > 0 ? round(($hits / $total) * 100) : 0;
                 $slcBadge = ' SLC:' . $hits . '/' . $misses . '/' . $puts . ' (' . $ratio . '%)';
@@ -111,7 +103,7 @@ class DoctrineCollector extends BaseCollector
     public function isEmpty(): bool
     {
         // Si hay queries, el colector no está vacío
-        if (! empty(static::$queries)) {
+        if (! empty($this->queries)) {
             return false;
         }
         // Sin queries: mostrar panel si SLC activo
@@ -120,6 +112,9 @@ class DoctrineCollector extends BaseCollector
         return ! (! empty($data['slc']) && $data['slc']['enabled'] === true);
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function getData(): array
     {
         $slc = [
@@ -140,22 +135,9 @@ class DoctrineCollector extends BaseCollector
             }
             if ($logger !== null) {
                 $slc['enabled'] = true;
-                $slc['hits']    = method_exists($logger, 'getHitCount') ? (int) $logger->getHitCount() : null;
-                $slc['misses']  = method_exists($logger, 'getMissCount') ? (int) $logger->getMissCount() : null;
-                $slc['puts']    = method_exists($logger, 'getPutCount') ? (int) $logger->getPutCount() : null;
-                // Fallback to legacy public properties if still null
-                if ($slc['hits'] === null && property_exists($logger, 'cacheHits')) {
-                    $slc['hits'] = (int) $logger->cacheHits;
-                }
-                if ($slc['misses'] === null && property_exists($logger, 'cacheMisses')) {
-                    $slc['misses'] = (int) $logger->cacheMisses;
-                }
-                if ($slc['puts'] === null && property_exists($logger, 'cachePuts')) {
-                    $slc['puts'] = (int) $logger->cachePuts;
-                }
-                $slc['hits'] ??= 0;
-                $slc['misses'] ??= 0;
-                $slc['puts'] ??= 0;
+                $slc['hits']    = $logger->getHitCount();
+                $slc['misses']  = $logger->getMissCount();
+                $slc['puts']    = $logger->getPutCount();
             }
         } catch (Throwable $e) {
             // Ignore SLC stats errors; keep toolbar resilient
@@ -201,12 +183,12 @@ class DoctrineCollector extends BaseCollector
         $html .= '<table>';
         $html .= '<thead><tr><th class="debug-bar-width6r">Time</th><th>SQL</th><th>Params</th></tr></thead><tbody>';
 
-        foreach ($queries as $i => $query) {
+        foreach ($queries as $query) {
             $sql      = $query['sql'] ?? '';
             $shortSql = preg_replace('/(select)(.+?)(from)/is', '$1 ... $3', $sql);
             $params   = htmlspecialchars(json_encode($query['params'] ?? []), ENT_QUOTES, 'UTF-8');
             $time     = isset($query['duration']) ? number_format($query['duration'], 4) : '';
-            $html .= '<tr class="{class}" title="' . $sql . '" data-toggle="' . md5($sql) . '-trace">';
+            $html .= '<tr class="{class}" title="' . htmlspecialchars($sql, ENT_QUOTES, 'UTF-8') . '" data-toggle="' . md5($sql) . '-trace">';
             $html .= '<td class="narrow">' . $time . ' ms</td>';
             // Shorten SQL if too long (over 120 chars), show full SQL in tooltip
             $maxLen     = 120;
@@ -215,22 +197,24 @@ class DoctrineCollector extends BaseCollector
             $html .= '<td>' . $params . '</td>';
             $html .= '</tr>';
         }
-        $html .= '</tbody></table>';
 
-        return $html;
+        return $html . '</tbody></table>';
     }
 
+    /**
+     * @return array<int, array<string, mixed>>
+     */
     protected function formatTimelineData(): array
     {
         $data = [];
 
-        foreach (static::$queries as $query) {
+        foreach ($this->queries as $query) {
             $data[] = [
                 'name'      => 'Doctrine Query',
                 'component' => 'Doctrine',
                 'start'     => $query['start'] ?? 0,
                 'duration'  => $query['duration'] ?? 0,
-                'query'     => $this->debugToolbarDisplay($query['sql']) ?? '',
+                'query'     => $this->debugToolbarDisplay((string) ($query['sql'] ?? '')),
             ];
         }
 
@@ -294,7 +278,7 @@ class DoctrineCollector extends BaseCollector
          */
         $search = '/\b(?:' . implode('|', $highlight) . ')\b(?![^(&#039;)]*&#039;(?:(?:[^(&#039;)]*&#039;){2})*[^(&#039;)]*$)/';
 
-        return preg_replace_callback($search, static fn ($matches): string => '<strong>' . str_replace(' ', '&nbsp;', $matches[0]) . '</strong>', $sql);
+        return preg_replace_callback($search, static fn ($matches): string => '<strong>' . str_replace(' ', '&nbsp;', $matches[0]) . '</strong>', $sql) ?? $sql;
     }
 
     /**

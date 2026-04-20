@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Daycry\Doctrine\Tests;
 
+use Doctrine\ORM\QueryBuilder;
 use CodeIgniter\Exceptions\InvalidArgumentException;
 use CodeIgniter\Test\CIUnitTestCase;
 use Daycry\Doctrine\DataTables\Builder;
@@ -12,7 +13,7 @@ use Daycry\Doctrine\DataTables\Builder;
  * Comprehensive tests for DataTables Builder
  * Tests the fix for "6 LIKE :search" error and all edge cases
  */
-class DataTablesBuilderTest extends CIUnitTestCase
+final class DataTablesBuilderTest extends CIUnitTestCase
 {
     private Builder $builder;
 
@@ -44,7 +45,7 @@ class DataTablesBuilderTest extends CIUnitTestCase
         };
 
         $result = $builder->testResolveFieldName('name', 0);
-        $this->assertEquals('name', $result);
+        $this->assertSame('name', $result);
     }
 
     /**
@@ -102,14 +103,14 @@ class DataTablesBuilderTest extends CIUnitTestCase
         $builder->withColumnAliases(['name' => 'p.name', 'email' => 'u.email']);
         
         $result = $builder->testResolveFieldName('name', 0);
-        $this->assertEquals('p.name', $result);
+        $this->assertSame('p.name', $result);
         
         $result = $builder->testResolveFieldName('email', 1);
-        $this->assertEquals('u.email', $result);
+        $this->assertSame('u.email', $result);
         
         // Non-aliased field should remain unchanged
         $result = $builder->testResolveFieldName('company', 2);
-        $this->assertEquals('company', $result);
+        $this->assertSame('company', $result);
     }
 
     /**
@@ -244,7 +245,7 @@ class DataTablesBuilderTest extends CIUnitTestCase
      */
     public function testValidationMissingColumns(): void
     {
-        $queryBuilder = $this->createMock(\Doctrine\ORM\QueryBuilder::class);
+        $queryBuilder = $this->createStub(QueryBuilder::class);
         
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Request parameters or columns are not set.');
@@ -260,7 +261,7 @@ class DataTablesBuilderTest extends CIUnitTestCase
      */
     public function testValidationEmptyColumns(): void
     {
-        $queryBuilder = $this->createMock(\Doctrine\ORM\QueryBuilder::class);
+        $queryBuilder = $this->createStub(QueryBuilder::class);
         
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Request parameters or columns are not set.');
@@ -297,25 +298,25 @@ class DataTablesBuilderTest extends CIUnitTestCase
         };
 
         // Test valid operators
-        $this->assertEquals('=', $builder->testParseOperator('[=]test'));
-        $this->assertEquals('!=', $builder->testParseOperator('[!=]test'));
-        $this->assertEquals('<', $builder->testParseOperator('[<]10'));
-        $this->assertEquals('>', $builder->testParseOperator('[>]10'));
-        $this->assertEquals('%', $builder->testParseOperator('[%]test'));
-        $this->assertEquals('IN', $builder->testParseOperator('[IN]val1,val2'));
-        $this->assertEquals('OR', $builder->testParseOperator('[OR]val1,val2'));
-        $this->assertEquals('><', $builder->testParseOperator('[><]1,10'));
+        $this->assertSame('=', $builder->testParseOperator('[=]test'));
+        $this->assertSame('!=', $builder->testParseOperator('[!=]test'));
+        $this->assertSame('<', $builder->testParseOperator('[<]10'));
+        $this->assertSame('>', $builder->testParseOperator('[>]10'));
+        $this->assertSame('%', $builder->testParseOperator('[%]test'));
+        $this->assertSame('IN', $builder->testParseOperator('[IN]val1,val2'));
+        $this->assertSame('OR', $builder->testParseOperator('[OR]val1,val2'));
+        $this->assertSame('><', $builder->testParseOperator('[><]1,10'));
 
         // Test operator normalization
-        $this->assertEquals('%', $builder->testParseOperator('[LIKE]test'));
-        $this->assertEquals('%', $builder->testParseOperator('[%%]test'));
+        $this->assertSame('%', $builder->testParseOperator('[LIKE]test'));
+        $this->assertSame('%', $builder->testParseOperator('[%%]test'));
         
         // Test invalid operators default to %
-        $this->assertEquals('%', $builder->testParseOperator('[INVALID]test'));
-        $this->assertEquals('%', $builder->testParseOperator('[XYZ]test'));
+        $this->assertSame('%', $builder->testParseOperator('[INVALID]test'));
+        $this->assertSame('%', $builder->testParseOperator('[XYZ]test'));
         
         // Test no operator defaults to %
-        $this->assertEquals('%', $builder->testParseOperator('test'));
+        $this->assertSame('%', $builder->testParseOperator('test'));
     }
 
     /**
@@ -365,13 +366,8 @@ class DataTablesBuilderTest extends CIUnitTestCase
                 if (!empty($this->searchableColumns) && !in_array($fieldName, $this->searchableColumns, true)) {
                     return false;
                 }
-                
                 // Step 3: Validate DQL field (this prevents "6 LIKE :search")
-                if (!$this->isValidDQLField($fieldName)) {
-                    return false;
-                }
-                
-                return true;
+                return $this->isValidDQLField($fieldName);
             }
         };
 

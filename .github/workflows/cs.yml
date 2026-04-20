@@ -1,0 +1,41 @@
+name: Code Style
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch:
+
+jobs:
+  cs:
+    name: PHP CS Fixer (dry-run)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          tools: composer
+          coverage: none
+
+      - name: Get composer cache directory
+        id: composercache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composercache.outputs.dir }}
+          key: ${{ runner.os }}-php8.2-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-php8.2-composer-
+
+      - name: Install dependencies
+        run: composer update --no-interaction --prefer-dist --ansi
+
+      - name: Check code style
+        run: composer cs

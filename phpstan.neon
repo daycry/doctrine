@@ -1,0 +1,90 @@
+parameters:
+    level: 6
+    tmpDir: build/phpstan
+
+    paths:
+        - src/
+        - tests/
+
+    bootstrapFiles:
+        - vendor/codeigniter4/framework/system/Test/bootstrap.php
+
+    scanDirectories:
+        - vendor/codeigniter4/framework/system/Helpers
+
+    excludePaths:
+        - src/cli-config.php
+
+    # CI4 dynamic constants
+    dynamicConstantNames:
+        - APP_NAMESPACE
+        - CI_DEBUG
+        - ENVIRONMENT
+
+    # CI4 entity classes use magic properties
+    universalObjectCratesClasses:
+        - CodeIgniter\Entity\Entity
+
+    # Avoid false positives from CI4 PHPDoc-only types (e.g. config() never-null PHPDocs)
+    treatPhpDocTypesAsCertain: false
+
+    # Tell phpstan-codeigniter where custom configs live
+    codeigniter:
+        additionalConfigNamespaces:
+            - Daycry\Doctrine\Config\
+        checkArgumentTypeOfFactories: true
+        # Our services live in Daycry\Doctrine\Config\Services, not Config\Services
+        checkArgumentTypeOfServices: false
+
+    # Strict-rules overrides
+    strictRules:
+        # Anonymous classes in DoctrineQueryMiddleware pass $this indirectly
+        closureUsesThis: false
+        # DataTables Builder uses empty() on mixed request data
+        disallowedEmpty: false
+        # Short ternary used in safe spots
+        disallowedShortTernary: false
+        # PHPUnit tests call $this->assert*() which maps to static methods
+        dynamicCallOnStaticMethod: false
+
+    ignoreErrors:
+        # Our Redis/Memcached libs extend CI4 handlers to expose native client — intentional
+        - identifier: codeigniter.cacheHandlerInstance
+          path: src/Doctrine.php
+
+        # CI4 dynamic database group property access ($dbConfig->{$dbGroup})
+        - message: '#Variable property access on Config\\Database#'
+          path: src/Doctrine.php
+
+        # CI4 dynamic service resolution: doctrine() lives in Daycry\Doctrine\Config\Services
+        - '#Call to an undefined static method (CodeIgniter\\Config\\Services|Config\\Services)::doctrine\(\)#'
+
+        # __call() magic forwarding on DBAL Connection — variable method call is intentional
+        - identifier: method.dynamicName
+          path: src/Debug/Toolbar/Collectors/DoctrineQueryMiddleware.php
+
+        # getSharedInstance() return type is mixed — @var annotation ensures proper type narrowing
+        - identifier: varTag.type
+          path: src/Config/Services.php
+
+        # ── Test-only relaxations ──────────────────────────────────────────────
+
+        # PHPUnit test methods don't require explicit ": void" return types
+        - identifier: missingType.return
+          path: tests/
+
+        # assertInstanceOf() after a typed "new Foo()" is redundant but common PHPUnit style
+        - identifier: method.alreadyNarrowedType
+          path: tests/
+
+        # Anonymous test-helper class methods don't need strict parameter types
+        - identifier: missingType.parameter
+          path: tests/
+
+        # Anonymous test-helper class methods don't need iterable value types
+        - identifier: missingType.iterableValue
+          path: tests/
+
+        # Doctrine writes entity IDs via reflection — PHP code never assigns the int
+        - identifier: property.unusedType
+          path: tests/

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Support;
 
 use CodeIgniter\Test\CIUnitTestCase;
@@ -9,7 +11,7 @@ use Daycry\Doctrine\Config\Doctrine as DoctrineConfig;
 
 abstract class TestCase extends CIUnitTestCase
 {
-    protected Doctrine $config;
+    protected DoctrineConfig $config;
     /**
      * Sets up the ArrayHandler for faster & easier tests.
      */
@@ -17,7 +19,6 @@ abstract class TestCase extends CIUnitTestCase
     {
         parent::setUp();
 
-        /** @var DoctrineConfig $config */
         $this->config = config('Doctrine');
         $this->config->entities = [SUPPORTPATH . 'Models/Entities'];
         $this->config->proxies = SUPPORTPATH . 'Models/Proxies';
@@ -38,26 +39,16 @@ abstract class TestCase extends CIUnitTestCase
 
     protected function getSQLite3Config(bool $memory = true): Database
     {
-        /** @var Database $config*/
         $config = $this->_getDatabaseConfig();
         $config->tests['DBDriver'] = 'SQLite3';
-        if($memory) {
-            $config->tests['database'] = ':memory:';
-        } else {
-            $config->tests['database'] = SUPPORTPATH . 'db.sqlite';
-        }
+        $config->tests['database'] = $memory ? ':memory:' : SUPPORTPATH . 'db.sqlite';
         return $config;
     }
 
     protected function getSQLite3DSNConfig(bool $memory = true): Database
     {
-        /** @var Database $config*/
         $config = $this->_getDatabaseConfig();
-        if($memory) {
-            $config->tests['DSN'] = 'SQLite3:///:memory:';
-        } else {
-            $config->tests['DSN'] = 'SQLite3:' . SUPPORTPATH . 'db.sqlite';
-        }
+        $config->tests['DSN'] = $memory ? 'SQLite3:///:memory:' : 'SQLite3:' . SUPPORTPATH . 'db.sqlite';
 
         return $config;
     }
@@ -65,7 +56,6 @@ abstract class TestCase extends CIUnitTestCase
 
     protected function getMysqlConfig(): Database
     {
-        /** @var Database $config*/
         $config = $this->_getDatabaseConfig();
         $config->tests['DBDriver'] = 'MySQLi';
 
@@ -74,7 +64,6 @@ abstract class TestCase extends CIUnitTestCase
 
     protected function getMysqlDSNConfig(): Database
     {
-        /** @var Database $config*/
         $config = $this->_getDatabaseConfig();
         $config->tests['DSN'] = 'MySQLi://root:@127.0.0.1:3306/doctrine_tests';
 

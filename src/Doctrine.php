@@ -1,10 +1,15 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Daycry\Doctrine;
 
+use CodeIgniter\Cache\Exceptions\CacheException;
+use CodeIgniter\Exceptions\ConfigException;
 use Config\Cache;
 use Config\Database;
 use Daycry\Doctrine\Config\Doctrine as DoctrineConfig;
+use Daycry\Doctrine\Debug\Toolbar\Collectors\DoctrineCollector;
 use Daycry\Doctrine\Debug\Toolbar\Collectors\DoctrineQueryMiddleware;
 use Daycry\Doctrine\Libraries\Memcached;
 use Daycry\Doctrine\Libraries\Redis;
@@ -12,14 +17,12 @@ use Doctrine\DBAL\DriverManager;
 use Doctrine\DBAL\Tools\DsnParser;
 use Doctrine\ORM\Cache\CacheConfiguration as ORMCacheConfiguration;
 use Doctrine\ORM\Cache\DefaultCacheFactory;
-use Doctrine\ORM\Cache\Logging\CacheLogger;
 use Doctrine\ORM\Cache\Logging\StatisticsCacheLogger;
 use Doctrine\ORM\Cache\RegionsConfiguration;
 use Doctrine\ORM\Configuration;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\Mapping\Driver\AttributeDriver;
 use Doctrine\ORM\Mapping\Driver\XmlDriver;
-use Exception;
 use Symfony\Component\Cache\Adapter\AdapterInterface as Psr6AdapterInterface;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
 use Symfony\Component\Cache\Adapter\MemcachedAdapter;
@@ -38,9 +41,6 @@ class Doctrine
     public ?EntityManager $em = null;
 
     /**
-     * Shared cache backend clients to avoid duplicate connections.
-     */
-    /**
      * @var object|null Redis client instance if available
      */
     protected $sharedRedisClient;
@@ -53,13 +53,8 @@ class Doctrine
     protected ?string $sharedFilesystemPath = null;
 
     /**
-     * Doctrine constructor.
-     *
-     * @param DoctrineConfig|null $doctrineConfig Doctrine configuration
-     * @param Cache|null          $cacheConfig    Cache configuration
-     * @param string|null         $dbGroup        Database group name
-     *
-     * @throws Exception
+     * @throws CacheException
+     * @throws ConfigException
      */
     public function __construct(?DoctrineConfig $doctrineConfig = null, ?Cache $cacheConfig = null, ?string $dbGroup = null)
     {
@@ -73,13 +68,9 @@ class Doctrine
             $cacheConfig = config('Cache');
         }
 
-        $devMode = (ENVIRONMENT === 'development');
-
-        // Validate entity paths exist (prevent silent misconfiguration)
         foreach ($doctrineConfig->entities as $entityPath) {
             if (! is_dir($entityPath)) {
-                // Throwing helps surface misconfiguration early; adjust to log() if preferred
-                throw new Exception('Doctrine entity path does not exist: ' . $entityPath);
+                throw new ConfigException('Doctrine entity path does not exist: ' . $entityPath);
             }
         }
 
@@ -94,10 +85,9 @@ class Doctrine
             case 'redis':
                 $redisLib                = new Redis($cacheConfig);
                 $this->sharedRedisClient = $redisLib->getInstance();
-                $this->sharedRedisClient->select($cacheConfig->redis['database']);
-                $cacheQuery    = new RedisAdapter($this->sharedRedisClient, $cacheConfig->prefix . $doctrineConfig->queryCacheNamespace, $cacheConfig->ttl);
-                $cacheResult   = new RedisAdapter($this->sharedRedisClient, $cacheConfig->prefix . $doctrineConfig->resultsCacheNamespace, $cacheConfig->ttl);
-                $cacheMetadata = new RedisAdapter($this->sharedRedisClient, $cacheConfig->prefix . $doctrineConfig->metadataCacheNamespace, $cacheConfig->ttl);
+                $cacheQuery              = new RedisAdapter($this->sharedRedisClient, $cacheConfig->prefix . $doctrineConfig->queryCacheNamespace, $cacheConfig->ttl);
+                $cacheResult             = new RedisAdapter($this->sharedRedisClient, $cacheConfig->prefix . $doctrineConfig->resultsCacheNamespace, $cacheConfig->ttl);
+                $cacheMetadata           = new RedisAdapter($this->sharedRedisClient, $cacheConfig->prefix . $doctrineConfig->metadataCacheNamespace, $cacheConfig->ttl);
                 break;
 
             case 'memcached':
@@ -114,7 +104,7 @@ class Doctrine
 
         $config = new Configuration();
 
-        $useNativeLazyObjects = (bool) ($doctrineConfig->proxyFactory ?? true);
+        $useNativeLazyObjects = $doctrineConfig->proxyFactory;
 
         if (\PHP_VERSION_ID >= 80400 && $useNativeLazyObjects) {
             $config->enableNativeLazyObjects(true);
@@ -139,10 +129,10 @@ class Doctrine
         }
 
         // Second-Level Cache (SLC): uses the framework cache backend
-        if (! empty($doctrineConfig->secondLevelCache)) {
+        if ($doctrineConfig->secondLevelCache) {
             $slcTtl = $doctrineConfig->secondLevelCacheTtl;
             if ($slcTtl === null) {
-                $slcTtl = (int) ($cacheConfig->ttl ?? 3600);
+                $slcTtl = $cacheConfig->ttl > 0 ? $cacheConfig->ttl : 3600;
             }
 
             // Symfony Cache adapters interpret 0 as no-expiration
@@ -160,7 +150,7 @@ class Doctrine
             $slcConfig->setCacheFactory($cacheFactory);
 
             // Optional SLC statistics logger (hits/misses/puts)
-            if (! empty($doctrineConfig->secondLevelCacheStatistics)) {
+            if ($doctrineConfig->secondLevelCacheStatistics) {
                 $slcConfig->setCacheLogger(new StatisticsCacheLogger());
             }
 
@@ -179,8 +169,27 @@ class Doctrine
                 break;
         }
 
+        // Register custom DQL functions (beberlei/doctrineextensions + user-defined)
+        foreach ($doctrineConfig->customStringFunctions as $name => $class) {
+            $config->addCustomStringFunction($name, $class);
+        }
+
+        foreach ($doctrineConfig->customNumericFunctions as $name => $class) {
+            $config->addCustomNumericFunction($name, $class);
+        }
+
+        foreach ($doctrineConfig->customDatetimeFunctions as $name => $class) {
+            $config->addCustomDatetimeFunction($name, $class);
+        }
+
+        // Register JSON DQL functions (scienta/doctrine-json-functions)
+        foreach ($doctrineConfig->customJsonFunctions as $name => $class) {
+            $config->addCustomStringFunction($name, $class);
+        }
+
         // INTEGRACIÓN DEL COLLECTOR Y MIDDLEWARE
-        $collector  = service('doctrineCollector');
+        /** @var DoctrineCollector $collector */
+        $collector  = service('doctrineCollector') ?? new DoctrineCollector();
         $dbalConfig = new \Doctrine\DBAL\Configuration();
         $middleware = new DoctrineQueryMiddleware($collector);
         $dbalConfig->setMiddlewares([$middleware]);
@@ -196,40 +205,43 @@ class Doctrine
         // Create EntityManager con la conexión original (middleware ya captura queries)
         $this->em = new EntityManager($connection, $config);
 
-        $this->em->getConnection()->getDatabasePlatform()->registerDoctrineTypeMapping('set', 'string');
-        $this->em->getConnection()->getDatabasePlatform()->registerDoctrineTypeMapping('enum', 'string');
-
-        // Si la Toolbar está activa, registra el collector manualmente
-        // (El método addCollector no existe, así que se elimina esta línea)
-        // if (function_exists('service') && service('toolbar')) {
-        //     service('toolbar')->addCollector($collector);
-        // }
+        $this->registerTypeMappings($doctrineConfig);
     }
 
     /**
      * Reopen the EntityManager with the current connection and configuration.
-     *
-     * @return void
      */
-    public function reOpen()
+    public function reOpen(): void
     {
-        $this->em = new EntityManager($this->em->getConnection(), $this->em->getConfiguration(), $this->em->getEventManager());
+        $this->em = new EntityManager($this->em->getConnection(), $this->em->getConfiguration());
+        $this->registerTypeMappings(config('Doctrine'));
     }
 
     /**
-     * Convert CodeIgniter database config array to Doctrine's connection options.
-     *
-     * @param object $db
-     *
-     * @return array
-     *
-     * @throws Exception
+     * Register custom DBAL type mappings on the current connection's platform.
      */
-    public function convertDbConfig($db)
+    protected function registerTypeMappings(DoctrineConfig $doctrineConfig): void
     {
-        $connectionOptions = [];
-        $db                = (is_array($db)) ? json_decode(json_encode($db)) : $db;
-        if ($db->DSN) {
+        $platform = $this->em->getConnection()->getDatabasePlatform();
+
+        foreach ($doctrineConfig->customTypeMappings as $dbType => $doctrineType) {
+            $platform->registerDoctrineTypeMapping($dbType, $doctrineType);
+        }
+    }
+
+    /**
+     * Convert CodeIgniter database config to Doctrine's connection options.
+     *
+     * @param array<string, mixed>|object $db
+     *
+     * @return array<string, mixed>
+     *
+     * @throws ConfigException
+     */
+    public function convertDbConfig(array|object $db): array
+    {
+        $db = (is_array($db)) ? (object) $db : $db;
+        if (! empty($db->DSN)) {
             $driverMapper = ['MySQLi' => 'mysqli', 'Postgre' => 'pgsql', 'OCI8' => 'oci8', 'SQLSRV' => 'sqlsrv', 'SQLite3' => 'sqlite3'];
             if (str_contains($db->DSN, 'SQLite')) {
                 $db->DSN = strtolower($db->DSN);
@@ -253,8 +265,14 @@ class Doctrine
                     break;
 
                 default:
+                    $driverMap = [
+                        'mysqli'  => 'mysqli',
+                        'postgre' => 'pdo_pgsql',
+                        'oci8'    => 'oci8',
+                        'sqlsrv'  => 'sqlsrv',
+                    ];
                     $connectionOptions = [
-                        'driver'   => strtolower($db->DBDriver),
+                        'driver'   => $driverMap[strtolower($db->DBDriver)] ?? strtolower($db->DBDriver),
                         'user'     => $db->username,
                         'password' => $db->password,
                         'host'     => $db->hostname,
@@ -285,17 +303,13 @@ class Doctrine
     /**
      * Convert CodeIgniter PDO config to Doctrine's connection options.
      *
-     * @param mixed $db
+     * @return array<string, mixed>
      *
-     * @return array
-     *
-     * @throws Exception
+     * @throws ConfigException
      * @codeCoverageIgnore
      */
-    protected function convertDbConfigPdo($db)
+    protected function convertDbConfigPdo(mixed $db): array
     {
-        $connectionOptions = [];
-
         if (substr($db->hostname, 0, 7) === 'sqlite:') {
             $connectionOptions = [
                 'driver'   => 'pdo_sqlite',
@@ -321,7 +335,7 @@ class Doctrine
                 'port'     => $db->port,
             ];
         } else {
-            throw new Exception('Your Database Configuration is not confirmed by CodeIgniter Doctrine');
+            throw new ConfigException('Your Database Configuration is not confirmed by CodeIgniter Doctrine');
         }
 
         return $connectionOptions;
@@ -341,9 +355,8 @@ class Doctrine
             case 'redis':
                 $client = $this->sharedRedisClient;
                 if ($client === null) {
-                    $redisLib = new Redis($cacheConfig);
-                    $client   = $redisLib->getInstance();
-                    $client->select($cacheConfig->redis['database']);
+                    $redisLib                = new Redis($cacheConfig);
+                    $client                  = $redisLib->getInstance();
                     $this->sharedRedisClient = $client;
                 }
 
@@ -369,7 +382,7 @@ class Doctrine
      * Return Second-Level Cache logger if enabled.
      * Consumers can inspect the logger for stats.
      */
-    public function getSecondLevelCacheLogger(): ?CacheLogger
+    public function getSecondLevelCacheLogger(): ?StatisticsCacheLogger
     {
         $cfg = $this->em?->getConfiguration()?->getSecondLevelCacheConfiguration();
         if ($cfg === null) {
@@ -389,18 +402,7 @@ class Doctrine
         if ($logger === null) {
             return;
         }
-        // Prefer clearStats() in Doctrine ORM 3.x
-        if (method_exists($logger, 'clearStats')) {
-            $logger->clearStats();
 
-            return;
-        }
-
-        // Fallback: zero known public properties (legacy stubs)
-        foreach (['cacheHits', 'cacheMisses', 'cachePuts'] as $prop) {
-            if (property_exists($logger, $prop)) {
-                $logger->{$prop} = 0;
-            }
-        }
+        $logger->clearStats();
     }
 }

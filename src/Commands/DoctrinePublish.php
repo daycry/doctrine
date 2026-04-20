@@ -1,11 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Daycry\Doctrine\Commands;
 
 use CodeIgniter\CLI\BaseCommand;
 use CodeIgniter\CLI\CLI;
 use Config\Autoload;
-use Exception;
+use Throwable;
 
 class DoctrinePublish extends BaseCommand
 {
@@ -24,7 +26,7 @@ class DoctrinePublish extends BaseCommand
     /**
      * Copy config file
      */
-    public function run(array $params)
+    public function run(array $params): void
     {
         $this->determineSourcePath();
         $this->publishCliConfig();
@@ -36,7 +38,7 @@ class DoctrinePublish extends BaseCommand
     /**
      * Determines the current source path from which all other files are located.
      */
-    protected function determineSourcePath()
+    protected function determineSourcePath(): void
     {
         $this->sourcePath = realpath(__DIR__ . '/../');
         if ($this->sourcePath === '/' || empty($this->sourcePath)) {
@@ -50,10 +52,15 @@ class DoctrinePublish extends BaseCommand
     /**
      * Publish cli config file.
      */
-    protected function publishCliConfig()
+    protected function publishCliConfig(): void
     {
         $path    = "{$this->sourcePath}/cli-config.php";
         $content = file_get_contents($path);
+        if ($content === false) {
+            CLI::error("Unable to read source file: {$path}");
+
+            exit();
+        }
         $this->writeFile('../cli-config.php', $content);
     }
 
@@ -61,11 +68,16 @@ class DoctrinePublish extends BaseCommand
     /**
      * Publish config file.
      */
-    protected function publishConfig()
+    protected function publishConfig(): void
     {
         $path    = "{$this->sourcePath}/Config/Doctrine.php";
         $content = file_get_contents($path);
-        $content = str_replace('namespace Daycry\Doctrine\Config', 'namespace Config', $content);
+        if ($content === false) {
+            CLI::error("Unable to read source file: {$path}");
+
+            exit();
+        }
+        $content = str_replace('namespace Daycry\\Doctrine\\Config', 'namespace Config', $content);
         $content = str_replace('extends BaseConfig', 'extends \\Daycry\\Doctrine\\Config\\Doctrine', $content);
         $this->writeFile('Config/Doctrine.php', $content);
     }
@@ -74,13 +86,16 @@ class DoctrinePublish extends BaseCommand
     /**
      * Write a file, catching any exceptions and showing a nicely formatted error.
      */
-    protected function writeFile(string $path, string $content)
+    protected function writeFile(string $path, string $content): void
     {
         $config = new Autoload();
 
-        // realpath(APPPATH . '../vendor/autoload.php');
+        $appPath = $config->psr4[APP_NAMESPACE] ?? null;
+        if ($appPath === null) {
+            CLI::error('APP_NAMESPACE "' . APP_NAMESPACE . '" not found in autoload psr4 configuration.');
 
-        $appPath   = $config->psr4[APP_NAMESPACE];
+            exit();
+        }
         $directory = dirname($appPath . $path);
         if (! is_dir($directory)) {
             mkdir($directory, 0777, true);
@@ -92,8 +107,9 @@ class DoctrinePublish extends BaseCommand
         }
 
         try {
+            /** @psalm-suppress UndefinedFunction CI4 filesystem helper */
             write_file($appPath . $path, $content);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->showError($e);
 
             exit();

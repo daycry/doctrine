@@ -2,9 +2,7 @@
 
 use Rector\CodeQuality\Rector\BooleanAnd\SimplifyEmptyArrayCheckRector;
 use Rector\CodeQuality\Rector\Expression\InlineIfToExplicitIfRector;
-use Rector\CodeQuality\Rector\For_\ForToForeachRector;
 use Rector\CodeQuality\Rector\Foreach_\UnusedForeachValueToArrayKeysRector;
-use Rector\CodeQuality\Rector\FuncCall\AddPregQuoteDelimiterRector;
 use Rector\CodeQuality\Rector\FuncCall\ChangeArrayPushToArrayAssignRector;
 use Rector\CodeQuality\Rector\FuncCall\SimplifyRegexPatternRector;
 use Rector\CodeQuality\Rector\FuncCall\SimplifyStrposLowerRector;
@@ -18,25 +16,20 @@ use Rector\CodingStyle\Rector\ClassMethod\FuncGetArgsToVariadicParamRector;
 use Rector\CodingStyle\Rector\ClassMethod\MakeInheritedMethodVisibilitySameAsParentRector;
 use Rector\CodingStyle\Rector\FuncCall\CountArrayToEmptyArrayComparisonRector;
 use Rector\Config\RectorConfig;
-use Rector\Core\ValueObject\PhpVersion;
 use Rector\DeadCode\Rector\ClassMethod\RemoveUnusedPromotedPropertyRector;
-use Rector\DeadCode\Rector\MethodCall\RemoveEmptyMethodCallRector;
 use Rector\EarlyReturn\Rector\Foreach_\ChangeNestedForeachIfsToEarlyContinueRector;
 use Rector\EarlyReturn\Rector\If_\ChangeIfElseValueAssignToEarlyReturnRector;
 use Rector\EarlyReturn\Rector\If_\RemoveAlwaysElseRector;
 use Rector\EarlyReturn\Rector\Return_\PreparedValueToEarlyReturnRector;
 use Rector\Php55\Rector\String_\StringClassNameToClassConstantRector;
-use Rector\Php56\Rector\FunctionLike\AddDefaultValueForUndefinedVariableRector;
-use Rector\Php73\Rector\FuncCall\JsonThrowOnErrorRector;
 use Rector\Php73\Rector\FuncCall\StringifyStrNeedlesRector;
-use Rector\Php74\Rector\Property\TypedPropertyRector;
 use Rector\PHPUnit\Set\PHPUnitSetList;
-use Rector\PSR4\Rector\FileWithoutNamespace\NormalizeNamespaceByPSR4ComposerAutoloadRector;
 use Rector\Set\ValueObject\LevelSetList;
 use Rector\Set\ValueObject\SetList;
+use Rector\ValueObject\PhpVersion;
 
 return static function (RectorConfig $rectorConfig): void {
-    $rectorConfig->sets([SetList::DEAD_CODE, LevelSetList::UP_TO_PHP_74, PHPUnitSetList::PHPUNIT_SPECIFIC_METHOD, PHPUnitSetList::PHPUNIT_80]);
+    $rectorConfig->sets([SetList::DEAD_CODE, LevelSetList::UP_TO_PHP_74, PHPUnitSetList::PHPUNIT_CODE_QUALITY, PHPUnitSetList::PHPUNIT_80]);
     $rectorConfig->parallel();
     // The paths to refactor (can also be supplied with CLI arguments)
     $rectorConfig->paths([
@@ -68,33 +61,25 @@ return static function (RectorConfig $rectorConfig): void {
     $rectorConfig->skip([
         __DIR__ . '/src/Views',
 
-        JsonThrowOnErrorRector::class,
         StringifyStrNeedlesRector::class,
 
         // Note: requires php 8
         RemoveUnusedPromotedPropertyRector::class,
 
         // Ignore tests that might make calls without a result
-        RemoveEmptyMethodCallRector::class => [
-            __DIR__ . '/tests',
-        ],
+        // RemoveEmptyMethodCallRector removed in current Rector version
 
         // Ignore files that should not be namespaced
-        NormalizeNamespaceByPSR4ComposerAutoloadRector::class => [
-            __DIR__ . '/src/Helpers',
-            __DIR__ . '/tests/_support',
-        ],
+        // NormalizeNamespaceByPSR4ComposerAutoloadRector removed in current Rector version
 
         // May load view files directly when detecting classes
         StringClassNameToClassConstantRector::class,
 
-        // May be uninitialized on purpose
-        AddDefaultValueForUndefinedVariableRector::class,
+        // May be uninitialized on purpose — AddDefaultValueForUndefinedVariableRector removed in current Rector version
     ]);
     $rectorConfig->rule(SimplifyUselessVariableRector::class);
     $rectorConfig->rule(RemoveAlwaysElseRector::class);
     $rectorConfig->rule(CountArrayToEmptyArrayComparisonRector::class);
-    $rectorConfig->rule(ForToForeachRector::class);
     $rectorConfig->rule(ChangeNestedForeachIfsToEarlyContinueRector::class);
     $rectorConfig->rule(ChangeIfElseValueAssignToEarlyReturnRector::class);
     $rectorConfig->rule(SimplifyStrposLowerRector::class);
@@ -107,15 +92,8 @@ return static function (RectorConfig $rectorConfig): void {
     $rectorConfig->rule(UnusedForeachValueToArrayKeysRector::class);
     $rectorConfig->rule(ChangeArrayPushToArrayAssignRector::class);
     $rectorConfig->rule(UnnecessaryTernaryExpressionRector::class);
-    $rectorConfig->rule(AddPregQuoteDelimiterRector::class);
     $rectorConfig->rule(SimplifyRegexPatternRector::class);
     $rectorConfig->rule(FuncGetArgsToVariadicParamRector::class);
     $rectorConfig->rule(MakeInheritedMethodVisibilitySameAsParentRector::class);
     $rectorConfig->rule(SimplifyEmptyArrayCheckRector::class);
-    $rectorConfig->rule(NormalizeNamespaceByPSR4ComposerAutoloadRector::class);
-    $rectorConfig
-        ->ruleWithConfiguration(TypedPropertyRector::class, [
-            // Set to false if you use in libraries, or it does create breaking changes.
-            TypedPropertyRector::INLINE_PUBLIC => false,
-        ]);
 };

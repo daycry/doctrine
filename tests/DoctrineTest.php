@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests;
 
+use Config\Services;
 use CodeIgniter\Test\DatabaseTestTrait;
 use Tests\Support\Database\Seeds\TestSeeder;
 use Doctrine\ORM\EntityManager;
@@ -10,7 +13,7 @@ use Daycry\Doctrine\Config\Doctrine as DoctrineConfig;
 use Tests\Support\TestCase;
 use Config\Cache;
 
-class DoctrineTest extends TestCase
+final class DoctrineTest extends TestCase
 {
     use DatabaseTestTrait;
 
@@ -24,7 +27,7 @@ class DoctrineTest extends TestCase
     {
         parent::setUp();
 
-        $config = $this->getMysqlDSNConfig();
+        $this->getMysqlDSNConfig();
     }
 
     public function testInstanceDoctrine()
@@ -59,7 +62,7 @@ class DoctrineTest extends TestCase
         $cacheConf = config('Cache');
         $cacheConf->handler = 'redis';
 
-        $cache = \Config\Services::cache($cacheConf);
+        $cache = Services::cache($cacheConf);
 
         if ($cache->isSupported()) {
             $doctrine = new Doctrine($this->config, $cacheConf);
@@ -111,12 +114,12 @@ class DoctrineTest extends TestCase
 
     public function testDoctrineReOpen()
     {
-        $doctrine = new \Daycry\Doctrine\Doctrine($this->config);
+        $doctrine = new Doctrine($this->config);
 
-        $this->assertInstanceOf(\Doctrine\ORM\EntityManager::class, $doctrine->em);
+        $this->assertInstanceOf(EntityManager::class, $doctrine->em);
         $doctrine->reOpen();
-        $this->assertInstanceOf(\Daycry\Doctrine\Doctrine::class, $doctrine);
-        $this->assertInstanceOf(\Doctrine\ORM\EntityManager::class, $doctrine->em);
+        $this->assertInstanceOf(Doctrine::class, $doctrine);
+        $this->assertInstanceOf(EntityManager::class, $doctrine->em);
     }
 
     public function testDoctrineWithCustomDbGroup()
@@ -125,9 +128,9 @@ class DoctrineTest extends TestCase
         // Crea un objeto temporal con el grupo custom
         $customConfig = clone $dbConfig;
         $customConfig->tests = $dbConfig->tests;
-        $doctrine = new \Daycry\Doctrine\Doctrine($this->config, null, 'tests');
-        $this->assertInstanceOf(\Daycry\Doctrine\Doctrine::class, $doctrine);
-        $this->assertInstanceOf(\Doctrine\ORM\EntityManager::class, $doctrine->em);
+        $doctrine = new Doctrine($this->config, null, 'tests');
+        $this->assertInstanceOf(Doctrine::class, $doctrine);
+        $this->assertInstanceOf(EntityManager::class, $doctrine->em);
     }
 
     public function testDoctrineWithSSLOptions()
@@ -137,7 +140,7 @@ class DoctrineTest extends TestCase
         $dbConfig->tests['sslcert'] = '/path/to/cert.pem';
         $dbConfig->tests['sslkey'] = '/path/to/key.pem';
         $dbConfig->tests['sslca'] = '/path/to/ca.pem';
-        $doctrine = new \Daycry\Doctrine\Doctrine($this->config, null, 'tests');
+        $doctrine = new Doctrine($this->config, null, 'tests');
         $options = $doctrine->em->getConnection()->getParams();
         if (!isset($options['sslmode']) || !isset($options['sslcert']) || !isset($options['sslkey']) || !isset($options['sslca'])) {
             $this->markTestSkipped('SSL options not available in this environment/config.');
@@ -155,7 +158,7 @@ class DoctrineTest extends TestCase
             'foo' => 'bar',
             'baz' => 123
         ];
-        $doctrine = new \Daycry\Doctrine\Doctrine($this->config, null, 'tests');
+        $doctrine = new Doctrine($this->config, null, 'tests');
         $options = $doctrine->em->getConnection()->getParams();
         if (!isset($options['foo']) || !isset($options['baz'])) {
             $this->markTestSkipped('Custom options not available in this environment/config.');

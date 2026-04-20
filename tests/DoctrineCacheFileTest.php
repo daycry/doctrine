@@ -1,12 +1,15 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests;
 
+use Doctrine\ORM\EntityManager;
 use Daycry\Doctrine\Doctrine;
 use Config\Cache;
 use Tests\Support\TestCase;
 
-class DoctrineCacheFileTest extends TestCase
+final class DoctrineCacheFileTest extends TestCase
 {
     public function testDoctrineWithFileCache()
     {
@@ -14,7 +17,7 @@ class DoctrineCacheFileTest extends TestCase
         $cacheConf->handler = 'file';
         $doctrine = new Doctrine($this->config, $cacheConf);
         $this->assertInstanceOf(Doctrine::class, $doctrine);
-        $this->assertInstanceOf(\Doctrine\ORM\EntityManager::class, $doctrine->em);
+        $this->assertInstanceOf(EntityManager::class, $doctrine->em);
     }
 
     public function testDoctrineFileCachePersistsData()
