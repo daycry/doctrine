@@ -7,6 +7,9 @@ use Daycry\Doctrine\Debug\Toolbar\Collectors\DoctrineCollector;
 use Doctrine\ORM\Cache\EntityCacheKey;
 use Doctrine\ORM\Cache\Logging\StatisticsCacheLogger;
 
+/**
+ * @internal
+ */
 final class DoctrineCollectorSlcNoQueriesTest extends CIUnitTestCase
 {
     private static function makeLogger(int $hits, int $misses, int $puts): StatisticsCacheLogger

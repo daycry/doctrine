@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace Tests;
 
-use Tests\Support\TestCase;
 use Daycry\Doctrine\Debug\Toolbar\Collectors\DoctrineCollector;
+use Tests\Support\TestCase;
 
+/**
+ * @internal
+ */
 final class DoctrineCollectorTest extends TestCase
 {
     protected function setUp(): void
@@ -17,26 +20,26 @@ final class DoctrineCollectorTest extends TestCase
     public function testAddQueryAndGetQueries()
     {
         $collector = new DoctrineCollector();
-        $query = [
-            'sql' => 'SELECT * FROM users WHERE id = ?',
-            'params' => [1],
-            'duration' => 0.1234
+        $query     = [
+            'sql'      => 'SELECT * FROM users WHERE id = ?',
+            'params'   => [1],
+            'duration' => 0.1234,
         ];
         $collector->addQuery($query);
         $queries = $collector->getQueries();
         $this->assertNotEmpty($queries);
-        $this->assertEquals($query['sql'], $queries[0]['sql']);
-        $this->assertEquals($query['params'], $queries[0]['params']);
-        $this->assertEquals($query['duration'], $queries[0]['duration']);
+        $this->assertSame($query['sql'], $queries[0]['sql']);
+        $this->assertSame($query['params'], $queries[0]['params']);
+        $this->assertSame($query['duration'], $queries[0]['duration']);
     }
 
     public function testDisplayReturnsHtml()
     {
         $collector = new DoctrineCollector();
         $collector->addQuery([
-            'sql' => 'SELECT * FROM users',
-            'params' => [],
-            'duration' => 0.1
+            'sql'      => 'SELECT * FROM users',
+            'params'   => [],
+            'duration' => 0.1,
         ]);
         $html = $collector->display();
         $this->assertStringContainsString('<table>', $html);
@@ -48,9 +51,9 @@ final class DoctrineCollectorTest extends TestCase
         $collector = new DoctrineCollector();
         $this->assertTrue($collector->isEmpty());
         $collector->addQuery([
-            'sql' => 'SELECT 1',
-            'params' => [],
-            'duration' => 0.01
+            'sql'      => 'SELECT 1',
+            'params'   => [],
+            'duration' => 0.01,
         ]);
         $this->assertFalse($collector->isEmpty());
     }
@@ -61,9 +64,9 @@ final class DoctrineCollectorTest extends TestCase
         $this->assertSame('Doctrine', $collector->getTitle());
         $this->assertSame('', $collector->getTitleDetails());
         $collector->addQuery([
-            'sql' => 'SELECT 1',
-            'params' => [],
-            'duration' => 0.01
+            'sql'      => 'SELECT 1',
+            'params'   => [],
+            'duration' => 0.01,
         ]);
         $this->assertStringContainsString('query', $collector->getTitleDetails());
     }
@@ -71,9 +74,17 @@ final class DoctrineCollectorTest extends TestCase
     public function testDebugToolbarDisplayHighlightsKeywords()
     {
         $collector = new DoctrineCollector();
-        $sql = 'SELECT * FROM users WHERE id = 1';
-        $highlighted = $collector->debugToolbarDisplayPublic($sql);
-        $this->assertStringContainsString('<strong>', $highlighted);
+        $sql       = 'SELECT * FROM users WHERE id = 1';
+
+        // The highlighter is a protected method; verify via display() output.
+        $collector->addQuery([
+            'sql'      => $sql,
+            'params'   => [],
+            'duration' => 0.01,
+        ]);
+        $html = $collector->display();
+        $this->assertStringContainsString('<strong>', $html);
+        $this->assertStringContainsString('SELECT', $html);
     }
 
     public function testGetBadgeValue()
@@ -81,9 +92,9 @@ final class DoctrineCollectorTest extends TestCase
         $collector = new DoctrineCollector();
         $this->assertSame(0, $collector->getBadgeValue());
         $collector->addQuery([
-            'sql' => 'SELECT 1',
-            'params' => [],
-            'duration' => 0.01
+            'sql'      => 'SELECT 1',
+            'params'   => [],
+            'duration' => 0.01,
         ]);
         $this->assertSame(1, $collector->getBadgeValue());
     }
@@ -92,9 +103,9 @@ final class DoctrineCollectorTest extends TestCase
     {
         $collector = new DoctrineCollector();
         $collector->addQuery([
-            'sql' => 'SELECT 1',
-            'params' => [],
-            'duration' => 0.01
+            'sql'      => 'SELECT 1',
+            'params'   => [],
+            'duration' => 0.01,
         ]);
         $data = $collector->getData();
         $this->assertArrayHasKey('queries', $data);
@@ -104,7 +115,7 @@ final class DoctrineCollectorTest extends TestCase
     public function testDisplayWithNoQueries()
     {
         $collector = new DoctrineCollector();
-        $html = $collector->display();
+        $html      = $collector->display();
         $this->assertStringContainsString('No Doctrine queries executed', $html);
     }
 }

@@ -4,13 +4,15 @@ declare(strict_types=1);
 
 namespace Tests;
 
-use Tests\Support\TestCase;
 use Daycry\Doctrine\Debug\Toolbar\Collectors\DoctrineCollector;
 use Doctrine\ORM\Cache\Logging\StatisticsCacheLogger;
+use Tests\Support\TestCase;
 
 /**
  * Covers previously untested DoctrineCollector methods:
  * reset(), formatTimelineData() via getTimeline(), icon(), getData() SLC path.
+ *
+ * @internal
  */
 final class DoctrineCollectorCoverageTest extends TestCase
 {
@@ -52,8 +54,10 @@ final class DoctrineCollectorCoverageTest extends TestCase
 
     public function testFormatTimelineDataViaSubclass(): void
     {
-        $collector = new class extends DoctrineCollector {
-            /** @return array<int, array<string, mixed>> */
+        $collector = new class () extends DoctrineCollector {
+            /**
+             * @return array<int, array<string, mixed>>
+             */
             public function exposeFormatTimeline(): array
             {
                 return $this->formatTimelineData();
@@ -90,8 +94,10 @@ final class DoctrineCollectorCoverageTest extends TestCase
 
     public function testFormatTimelineDataWithMissingFields(): void
     {
-        $collector = new class extends DoctrineCollector {
-            /** @return array<int, array<string, mixed>> */
+        $collector = new class () extends DoctrineCollector {
+            /**
+             * @return array<int, array<string, mixed>>
+             */
             public function exposeFormatTimeline(): array
             {
                 return $this->formatTimelineData();

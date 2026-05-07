@@ -5,20 +5,23 @@ declare(strict_types=1);
 namespace Tests;
 
 use CodeIgniter\Exceptions\ConfigException;
-use Tests\Support\TestCase;
 use Daycry\Doctrine\Doctrine;
-use Daycry\Doctrine\Config\Doctrine as DoctrineConfig;
 use Doctrine\ORM\Cache\Logging\StatisticsCacheLogger;
+use Tests\Support\TestCase;
 
 /**
  * Covers previously untested Doctrine methods:
  * - getSecondLevelCacheLogger() — null, non-stats-logger, and stats-logger branches
  * - resetSecondLevelCacheStatistics() — null-logger and clearStats branches
  * - createSecondLevelCachePool() — file and dummy(default) branches
+ *
+ * @internal
  */
 final class DoctrineSLCCoverageTest extends TestCase
 {
-    /** @var string Original cache handler to restore after each test */
+    /**
+     * @var string Original cache handler to restore after each test
+     */
     private string $originalCacheHandler = 'file';
 
     protected function setUp(): void
@@ -144,7 +147,7 @@ final class DoctrineSLCCoverageTest extends TestCase
         $cacheConfig->prefix  = 'ci_';
 
         // Use sys_get_temp_dir() so the path is writable in CI
-        $tmpDir                     = sys_get_temp_dir();
+        $tmpDir                         = sys_get_temp_dir();
         $cacheConfig->file['storePath'] = $tmpDir;
 
         $doctrine = new Doctrine($this->config, $cacheConfig, 'tests');
