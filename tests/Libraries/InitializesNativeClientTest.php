@@ -46,7 +46,7 @@ final class InitializesNativeClientTest extends TestCase
         $fixture = new class () {
             use InitializesNativeClient;
 
-            public function initialize(): void
+            public function initialize(): never
             {
                 throw new RuntimeException('boom');
             }

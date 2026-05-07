@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests;
 
 use Daycry\Doctrine\Doctrine;
+use Doctrine\ORM\Cache\Logging\StatisticsCacheLogger;
 use ReflectionProperty;
 use RuntimeException;
 use Tests\Support\TestCase;
@@ -65,7 +66,7 @@ final class DoctrineNullGuardsTest extends TestCase
 
         $doctrine = new Doctrine($this->config, config('Cache'), 'tests');
 
-        $this->assertNull($doctrine->getSecondLevelCacheLogger());
+        $this->assertNotInstanceOf(StatisticsCacheLogger::class, $doctrine->getSecondLevelCacheLogger());
     }
 
     public function testGetSecondLevelCacheLoggerReturnsNullWhenSlcDisabled(): void
@@ -74,7 +75,7 @@ final class DoctrineNullGuardsTest extends TestCase
         $this->config->secondLevelCache = false;
         $doctrine                       = new Doctrine($this->config, config('Cache'), 'tests');
 
-        $this->assertNull($doctrine->getSecondLevelCacheLogger());
+        $this->assertNotInstanceOf(StatisticsCacheLogger::class, $doctrine->getSecondLevelCacheLogger());
     }
 
     public function testResetSecondLevelCacheStatisticsIsNoOpWhenLoggerMissing(): void
@@ -86,6 +87,6 @@ final class DoctrineNullGuardsTest extends TestCase
         // Must not throw even though there is no logger to reset.
         $doctrine->resetSecondLevelCacheStatistics();
 
-        $this->assertNull($doctrine->getSecondLevelCacheLogger());
+        $this->assertNotInstanceOf(StatisticsCacheLogger::class, $doctrine->getSecondLevelCacheLogger());
     }
 }

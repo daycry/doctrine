@@ -89,13 +89,13 @@ final class DoctrinePublishTest extends CIUnitTestCase
         $this->assertFileExists($this->configDest);
 
         // The CLI config is copied verbatim from the package.
-        $this->assertStringContainsString('ConsoleRunner::run', file_get_contents($this->cliConfigDest));
+        $this->assertStringContainsString('ConsoleRunner::run', (string) file_get_contents($this->cliConfigDest));
 
         // The Config\Doctrine class is rewritten with the host namespace and parent.
         $configContent = file_get_contents($this->configDest);
-        $this->assertStringContainsString('namespace Config', $configContent);
-        $this->assertStringContainsString('extends \\Daycry\\Doctrine\\Config\\Doctrine', $configContent);
-        $this->assertStringNotContainsString('namespace Daycry\\Doctrine\\Config', $configContent);
-        $this->assertStringNotContainsString('extends BaseConfig', $configContent);
+        $this->assertStringContainsString('namespace Config', (string) $configContent);
+        $this->assertStringContainsString('extends \\Daycry\\Doctrine\\Config\\Doctrine', (string) $configContent);
+        $this->assertStringNotContainsString('namespace Daycry\\Doctrine\\Config', (string) $configContent);
+        $this->assertStringNotContainsString('extends BaseConfig', (string) $configContent);
     }
 }
