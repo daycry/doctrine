@@ -9,7 +9,7 @@ use CodeIgniter\Exceptions\ConfigException;
 use Config\Cache;
 use Config\Database;
 use Daycry\Doctrine\Config\Doctrine as DoctrineConfig;
-use Daycry\Doctrine\Debug\Toolbar\Collectors\DoctrineCollector;
+use Daycry\Doctrine\Config\Services;
 use Daycry\Doctrine\Debug\Toolbar\Collectors\DoctrineQueryMiddleware;
 use Daycry\Doctrine\Libraries\Memcached;
 use Daycry\Doctrine\Libraries\Redis;
@@ -23,6 +23,7 @@ use Doctrine\ORM\Configuration;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\Mapping\Driver\AttributeDriver;
 use Doctrine\ORM\Mapping\Driver\XmlDriver;
+use RuntimeException;
 use Symfony\Component\Cache\Adapter\AdapterInterface as Psr6AdapterInterface;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
 use Symfony\Component\Cache\Adapter\MemcachedAdapter;
@@ -158,16 +159,10 @@ class Doctrine
             $config->setSecondLevelCacheConfiguration($slcConfig);
         }
 
-        switch ($doctrineConfig->metadataConfigurationMethod) {
-            case 'xml':
-                $config->setMetadataDriverImpl(new XmlDriver($doctrineConfig->entities, XmlDriver::DEFAULT_FILE_EXTENSION, $doctrineConfig->isXsdValidationEnabled));
-                break;
-
-            case 'attribute':
-            default:
-                $config->setMetadataDriverImpl(new AttributeDriver($doctrineConfig->entities));
-                break;
-        }
+        match ($doctrineConfig->metadataConfigurationMethod) {
+            'xml'   => $config->setMetadataDriverImpl(new XmlDriver($doctrineConfig->entities, XmlDriver::DEFAULT_FILE_EXTENSION, $doctrineConfig->isXsdValidationEnabled)),
+            default => $config->setMetadataDriverImpl(new AttributeDriver($doctrineConfig->entities)),
+        };
 
         // Register custom DQL functions (beberlei/doctrineextensions + user-defined)
         foreach ($doctrineConfig->customStringFunctions as $name => $class) {
@@ -187,9 +182,8 @@ class Doctrine
             $config->addCustomStringFunction($name, $class);
         }
 
-        // INTEGRACIÓN DEL COLLECTOR Y MIDDLEWARE
-        /** @var DoctrineCollector $collector */
-        $collector  = service('doctrineCollector') ?? new DoctrineCollector();
+        // Collector and middleware integration: capture every DBAL query for the toolbar.
+        $collector  = Services::doctrineCollector();
         $dbalConfig = new \Doctrine\DBAL\Configuration();
         $middleware = new DoctrineQueryMiddleware($collector);
         $dbalConfig->setMiddlewares([$middleware]);
@@ -209,11 +203,24 @@ class Doctrine
     }
 
     /**
+     * Get the EntityManager. Throws if it has not been initialized.
+     */
+    public function getEm(): EntityManager
+    {
+        if ($this->em === null) {
+            throw new RuntimeException('EntityManager has not been initialized.');
+        }
+
+        return $this->em;
+    }
+
+    /**
      * Reopen the EntityManager with the current connection and configuration.
      */
     public function reOpen(): void
     {
-        $this->em = new EntityManager($this->em->getConnection(), $this->em->getConfiguration());
+        $em       = $this->getEm();
+        $this->em = new EntityManager($em->getConnection(), $em->getConfiguration());
         $this->registerTypeMappings(config('Doctrine'));
     }
 
@@ -222,7 +229,7 @@ class Doctrine
      */
     protected function registerTypeMappings(DoctrineConfig $doctrineConfig): void
     {
-        $platform = $this->em->getConnection()->getDatabasePlatform();
+        $platform = $this->getEm()->getConnection()->getDatabasePlatform();
 
         foreach ($doctrineConfig->customTypeMappings as $dbType => $doctrineType) {
             $platform->registerDoctrineTypeMapping($dbType, $doctrineType);
@@ -243,8 +250,8 @@ class Doctrine
         $db = (is_array($db)) ? (object) $db : $db;
         if (! empty($db->DSN)) {
             $driverMapper = ['MySQLi' => 'mysqli', 'Postgre' => 'pgsql', 'OCI8' => 'oci8', 'SQLSRV' => 'sqlsrv', 'SQLite3' => 'sqlite3'];
-            if (str_contains($db->DSN, 'SQLite')) {
-                $db->DSN = strtolower($db->DSN);
+            if (str_contains((string) $db->DSN, 'SQLite')) {
+                $db->DSN = strtolower((string) $db->DSN);
             }
             $dsnParser         = new DsnParser($driverMapper);
             $connectionOptions = $dsnParser->parse($db->DSN);
@@ -295,47 +302,6 @@ class Doctrine
                         }
                     }
             }
-        }
-
-        return $connectionOptions;
-    }
-
-    /**
-     * Convert CodeIgniter PDO config to Doctrine's connection options.
-     *
-     * @return array<string, mixed>
-     *
-     * @throws ConfigException
-     * @codeCoverageIgnore
-     */
-    protected function convertDbConfigPdo(mixed $db): array
-    {
-        if (substr($db->hostname, 0, 7) === 'sqlite:') {
-            $connectionOptions = [
-                'driver'   => 'pdo_sqlite',
-                'user'     => $db->username,
-                'password' => $db->password,
-                'path'     => preg_replace('/\Asqlite:/', '', $db->hostname),
-            ];
-        } elseif (substr($db->dsn, 0, 7) === 'sqlite:') {
-            $connectionOptions = [
-                'driver'   => 'pdo_sqlite',
-                'user'     => $db->username,
-                'password' => $db->password,
-                'path'     => preg_replace('/\Asqlite:/', '', $db->dsn),
-            ];
-        } elseif (substr($db->dsn, 0, 6) === 'mysql:') {
-            $connectionOptions = [
-                'driver'   => 'pdo_mysql',
-                'user'     => $db->username,
-                'password' => $db->password,
-                'host'     => $db->hostname,
-                'dbname'   => $db->database,
-                'charset'  => $db->charset,
-                'port'     => $db->port,
-            ];
-        } else {
-            throw new ConfigException('Your Database Configuration is not confirmed by CodeIgniter Doctrine');
         }
 
         return $connectionOptions;

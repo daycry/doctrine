@@ -16,8 +16,6 @@ use Daycry\Doctrine\Doctrine;
 use Doctrine\ORM\Tools\Console\ConsoleRunner;
 use Doctrine\ORM\Tools\Console\EntityManagerProvider\SingleManagerProvider;
 
-error_reporting(E_ALL);
-
 // Path to the front controller (this file)
 define('FCPATH', __DIR__ . DIRECTORY_SEPARATOR);
 
@@ -27,6 +25,10 @@ if (getcwd() . DIRECTORY_SEPARATOR !== FCPATH) {
 }
 
 defined('ENVIRONMENT') || define('ENVIRONMENT', 'development');
+
+// Surface warnings and notices in non-production environments. Production keeps
+// CodeIgniter's own error handling (set up via Boot::bootDoctrine below).
+error_reporting(E_ALL);
 /*
  *---------------------------------------------------------------
  * BOOTSTRAP THE APPLICATION
