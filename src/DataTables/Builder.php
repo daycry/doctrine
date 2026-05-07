@@ -150,6 +150,17 @@ class Builder
         $columns = $this->requestParams['columns'];
         $c       = count($columns);
 
+        // Reject regex search mode — bracket-prefix operators must be used instead.
+        if (! empty($this->requestParams['search']['regex'])) {
+            throw new InvalidArgumentException('Regex search is not supported. Use bracket-prefix operators like [IN], [OR], [><] instead.');
+        }
+
+        foreach ($columns as $column) {
+            if (! empty($column['search']['regex'] ?? null)) {
+                throw new InvalidArgumentException('Regex per-column search is not supported. Use bracket-prefix operators like [IN], [OR], [><] instead.');
+            }
+        }
+
         // Search
         if (array_key_exists('search', $this->requestParams)) {
             $value = mb_substr(trim($this->requestParams['search']['value'] ?? ''), 0, 255);
@@ -269,11 +280,15 @@ class Builder
 
                     case '><':
                         $valueArr = explode(',', $value);
-                        if (count($valueArr) === 2) {
-                            $andX->add($query->expr()->between($fieldName, ":filter_{$i}_0", ":filter_{$i}_1"));
-                            $query->setParameter("filter_{$i}_0", trim($valueArr[0]));
-                            $query->setParameter("filter_{$i}_1", trim($valueArr[1]));
+                        if (count($valueArr) !== 2) {
+                            throw new InvalidArgumentException(sprintf(
+                                'BETWEEN operator [><] requires exactly 2 comma-separated values, got %d.',
+                                count($valueArr),
+                            ));
                         }
+                        $andX->add($query->expr()->between($fieldName, ":filter_{$i}_0", ":filter_{$i}_1"));
+                        $query->setParameter("filter_{$i}_0", trim($valueArr[0]));
+                        $query->setParameter("filter_{$i}_1", trim($valueArr[1]));
                         break;
 
                     case '=':
@@ -305,18 +320,15 @@ class Builder
      */
     private function parseFilterOperator(string $raw): array
     {
-        $operator = preg_match('~^\[(?<operator>[A-Z!=%<>•]+)\]~i', $raw, $m) ? strtoupper($m['operator']) : '%';
-        $value    = preg_replace('~^\[[A-Z!=%<>•]+\]~i', '', $raw);
+        $pattern  = '~^\[(?<operator>!=|><|>|<|=|%%|%|IN|OR|LIKE)\]~i';
+        $operator = preg_match($pattern, $raw, $m) ? strtoupper($m['operator']) : '%';
+        $value    = preg_replace($pattern, '', $raw);
         // Normalize synonyms
-        if (in_array($operator, ['LIKE', '%%'], true)) {
-            $operator = '%';
-        }
-        $valid = ['!=', '<', '>', 'IN', 'OR', '><', '=', '%'];
-        if (! in_array($operator, $valid, true)) {
+        if ($operator === 'LIKE' || $operator === '%%') {
             $operator = '%';
         }
 
-        return [$operator, trim($value)];
+        return [$operator, trim($value ?? $raw)];
     }
 
     /**

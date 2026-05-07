@@ -4,14 +4,16 @@ declare(strict_types=1);
 
 namespace Daycry\Doctrine\Tests;
 
-use Doctrine\ORM\QueryBuilder;
 use CodeIgniter\Exceptions\InvalidArgumentException;
 use CodeIgniter\Test\CIUnitTestCase;
 use Daycry\Doctrine\DataTables\Builder;
+use Doctrine\ORM\QueryBuilder;
 
 /**
  * Comprehensive tests for DataTables Builder
  * Tests the fix for "6 LIKE :search" error and all edge cases
+ *
+ * @internal
  */
 final class DataTablesBuilderTest extends CIUnitTestCase
 {
@@ -37,7 +39,7 @@ final class DataTablesBuilderTest extends CIUnitTestCase
      */
     public function testResolveFieldNameWithValidField(): void
     {
-        $builder = new class extends Builder {
+        $builder = new class () extends Builder {
             public function testResolveFieldName($columnValue, int $columnIndex): string
             {
                 return $this->resolveFieldName($columnValue, $columnIndex);
@@ -54,7 +56,7 @@ final class DataTablesBuilderTest extends CIUnitTestCase
      */
     public function testResolveFieldNameWithNumericValue(): void
     {
-        $builder = new class extends Builder {
+        $builder = new class () extends Builder {
             public function testResolveFieldName($columnValue, int $columnIndex): string
             {
                 return $this->resolveFieldName($columnValue, $columnIndex);
@@ -63,10 +65,10 @@ final class DataTablesBuilderTest extends CIUnitTestCase
 
         // Numeric values should return the column index as string
         $result = $builder->testResolveFieldName(6, 2);
-        $this->assertEquals('2', $result);
-        
+        $this->assertSame('2', $result);
+
         $result = $builder->testResolveFieldName('123', 1);
-        $this->assertEquals('1', $result);
+        $this->assertSame('1', $result);
     }
 
     /**
@@ -74,7 +76,7 @@ final class DataTablesBuilderTest extends CIUnitTestCase
      */
     public function testResolveFieldNameWithEmptyValue(): void
     {
-        $builder = new class extends Builder {
+        $builder = new class () extends Builder {
             public function testResolveFieldName($columnValue, int $columnIndex): string
             {
                 return $this->resolveFieldName($columnValue, $columnIndex);
@@ -82,10 +84,10 @@ final class DataTablesBuilderTest extends CIUnitTestCase
         };
 
         $result = $builder->testResolveFieldName('', 3);
-        $this->assertEquals('3', $result);
-        
+        $this->assertSame('3', $result);
+
         $result = $builder->testResolveFieldName(null, 4);
-        $this->assertEquals('4', $result);
+        $this->assertSame('4', $result);
     }
 
     /**
@@ -93,7 +95,7 @@ final class DataTablesBuilderTest extends CIUnitTestCase
      */
     public function testResolveFieldNameWithAlias(): void
     {
-        $builder = new class extends Builder {
+        $builder = new class () extends Builder {
             public function testResolveFieldName($columnValue, int $columnIndex): string
             {
                 return $this->resolveFieldName($columnValue, $columnIndex);
@@ -101,13 +103,13 @@ final class DataTablesBuilderTest extends CIUnitTestCase
         };
 
         $builder->withColumnAliases(['name' => 'p.name', 'email' => 'u.email']);
-        
+
         $result = $builder->testResolveFieldName('name', 0);
         $this->assertSame('p.name', $result);
-        
+
         $result = $builder->testResolveFieldName('email', 1);
         $this->assertSame('u.email', $result);
-        
+
         // Non-aliased field should remain unchanged
         $result = $builder->testResolveFieldName('company', 2);
         $this->assertSame('company', $result);
@@ -118,7 +120,7 @@ final class DataTablesBuilderTest extends CIUnitTestCase
      */
     public function testIsValidDQLFieldWithValidFields(): void
     {
-        $builder = new class extends Builder {
+        $builder = new class () extends Builder {
             public function testIsValidDQLField(string $field): bool
             {
                 return $this->isValidDQLField($field);
@@ -139,7 +141,7 @@ final class DataTablesBuilderTest extends CIUnitTestCase
      */
     public function testIsValidDQLFieldWithInvalidFields(): void
     {
-        $builder = new class extends Builder {
+        $builder = new class () extends Builder {
             public function testIsValidDQLField(string $field): bool
             {
                 return $this->isValidDQLField($field);
@@ -162,7 +164,7 @@ final class DataTablesBuilderTest extends CIUnitTestCase
      */
     public function testIsColumnSearchable(): void
     {
-        $builder = new class extends Builder {
+        $builder = new class () extends Builder {
             public function testIsColumnSearchable(array $column): bool
             {
                 return $this->isColumnSearchable($column);
@@ -172,41 +174,41 @@ final class DataTablesBuilderTest extends CIUnitTestCase
         // Valid searchable column with boolean true
         $this->assertTrue($builder->testIsColumnSearchable([
             'searchable' => true,
-            'data' => 'name'
+            'data'       => 'name',
         ]));
 
         // Valid searchable column with string 'true' (DataTables sends this)
         $this->assertTrue($builder->testIsColumnSearchable([
             'searchable' => 'true',
-            'data' => 'name'
+            'data'       => 'name',
         ]));
 
         // Not searchable (boolean false)
         $this->assertFalse($builder->testIsColumnSearchable([
             'searchable' => false,
-            'data' => 'name'
+            'data'       => 'name',
         ]));
 
         // Not searchable (string 'false')
         $this->assertFalse($builder->testIsColumnSearchable([
             'searchable' => 'false',
-            'data' => 'name'
+            'data'       => 'name',
         ]));
 
         // Missing searchable field
         $this->assertFalse($builder->testIsColumnSearchable([
-            'data' => 'name'
+            'data' => 'name',
         ]));
 
         // Missing data field
         $this->assertFalse($builder->testIsColumnSearchable([
-            'searchable' => true
+            'searchable' => true,
         ]));
 
         // Empty data field
         $this->assertFalse($builder->testIsColumnSearchable([
             'searchable' => true,
-            'data' => ''
+            'data'       => '',
         ]));
     }
 
@@ -222,7 +224,7 @@ final class DataTablesBuilderTest extends CIUnitTestCase
             ->withColumnField('data')
             ->withIndexColumn('id')
             ->setUseOutputWalkers(false);
-        
+
         $this->assertSame($this->builder, $result);
     }
 
@@ -234,7 +236,7 @@ final class DataTablesBuilderTest extends CIUnitTestCase
         // Test missing QueryBuilder
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('QueryBuilder is not set.');
-        
+
         $this->builder
             ->withRequestParams(['columns' => [['data' => 'name']]])
             ->getData();
@@ -246,10 +248,10 @@ final class DataTablesBuilderTest extends CIUnitTestCase
     public function testValidationMissingColumns(): void
     {
         $queryBuilder = $this->createStub(QueryBuilder::class);
-        
+
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Request parameters or columns are not set.');
-        
+
         $this->builder
             ->withQueryBuilder($queryBuilder)
             ->withRequestParams([])
@@ -262,10 +264,10 @@ final class DataTablesBuilderTest extends CIUnitTestCase
     public function testValidationEmptyColumns(): void
     {
         $queryBuilder = $this->createStub(QueryBuilder::class);
-        
+
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Request parameters or columns are not set.');
-        
+
         $this->builder
             ->withQueryBuilder($queryBuilder)
             ->withRequestParams(['columns' => []])
@@ -277,22 +279,22 @@ final class DataTablesBuilderTest extends CIUnitTestCase
      */
     public function testFilterOperatorParsing(): void
     {
-        $builder = new class extends Builder {
+        $builder = new class () extends Builder {
             public function testParseOperator(string $value): string
             {
                 // Simulate the operator parsing logic from getFilteredQuery
                 $operator = preg_match('~^\[(?<operator>[A-Z!=%<>•]+)\].*$~i', $value, $matches) ? strtoupper($matches['operator']) : '%•';
-                
+
                 // Normalize operator
                 if (in_array($operator, ['LIKE', '%%'], true)) {
                     $operator = '%';
                 }
-                
+
                 $validOperators = ['!=', '<', '>', 'IN', 'OR', '><', '=', '%'];
-                if (!in_array($operator, $validOperators, true)) {
+                if (! in_array($operator, $validOperators, true)) {
                     $operator = '%';
                 }
-                
+
                 return $operator;
             }
         };
@@ -310,11 +312,11 @@ final class DataTablesBuilderTest extends CIUnitTestCase
         // Test operator normalization
         $this->assertSame('%', $builder->testParseOperator('[LIKE]test'));
         $this->assertSame('%', $builder->testParseOperator('[%%]test'));
-        
+
         // Test invalid operators default to %
         $this->assertSame('%', $builder->testParseOperator('[INVALID]test'));
         $this->assertSame('%', $builder->testParseOperator('[XYZ]test'));
-        
+
         // Test no operator defaults to %
         $this->assertSame('%', $builder->testParseOperator('test'));
     }
@@ -324,17 +326,14 @@ final class DataTablesBuilderTest extends CIUnitTestCase
      */
     public function testSearchableColumnsRestriction(): void
     {
-        $builder = new class extends Builder {
+        $builder = new class () extends Builder {
             public function testSearchableRestriction(array $searchableColumns, string $field): bool
             {
                 $this->searchableColumns = $searchableColumns;
 
                 // Simulate the logic from getFilteredQuery
-                if (!empty($this->searchableColumns) && !in_array($field, $this->searchableColumns, true)) {
-                    return false; // Should be skipped
-                }
-
-                return true; // Should be included
+                return ! (! empty($this->searchableColumns) && ! in_array($field, $this->searchableColumns, true));
+                // Should be skipped// Should be included
             }
         };
 
@@ -354,18 +353,19 @@ final class DataTablesBuilderTest extends CIUnitTestCase
      */
     public function testCompleteFieldValidationPipeline(): void
     {
-        $builder = new class extends Builder {
+        $builder = new class () extends Builder {
             public function testFieldValidationPipeline($columnValue, int $columnIndex, array $searchableColumns = []): bool
             {
                 $this->searchableColumns = $searchableColumns;
-                
+
                 // Step 1: Resolve field name
                 $fieldName = $this->resolveFieldName($columnValue, $columnIndex);
-                
+
                 // Step 2: Check searchable columns restriction
-                if (!empty($this->searchableColumns) && !in_array($fieldName, $this->searchableColumns, true)) {
+                if (! empty($this->searchableColumns) && ! in_array($fieldName, $this->searchableColumns, true)) {
                     return false;
                 }
+
                 // Step 3: Validate DQL field (this prevents "6 LIKE :search")
                 return $this->isValidDQLField($fieldName);
             }
@@ -393,7 +393,7 @@ final class DataTablesBuilderTest extends CIUnitTestCase
      */
     public function testEdgeCasesThatCausedOriginalError(): void
     {
-        $builder = new class extends Builder {
+        $builder = new class () extends Builder {
             public function testIsValidDQLField(string $field): bool
             {
                 return $this->isValidDQLField($field);
@@ -404,7 +404,7 @@ final class DataTablesBuilderTest extends CIUnitTestCase
         $problematicValues = [
             '6',      // The original problem case
             '0',      // First column index
-            '1',      // Second column index  
+            '1',      // Second column index
             '10',     // Double digit
             '123',    // Multi-digit
         ];
@@ -412,7 +412,7 @@ final class DataTablesBuilderTest extends CIUnitTestCase
         foreach ($problematicValues as $value) {
             $this->assertFalse(
                 $builder->testIsValidDQLField($value),
-                "Field '{$value}' should be invalid to prevent DQL syntax errors"
+                "Field '{$value}' should be invalid to prevent DQL syntax errors",
             );
         }
     }
