@@ -1,132 +1,151 @@
 # DataTables + Doctrine: Filtering and Search
 
-This module integrates DataTables with Doctrine ORM/DBAL, enabling dynamic pagination, ordering, and filtering on DQL queries.
+`Daycry\Doctrine\DataTables\Builder` provides server-side pagination, ordering
+and filtering for DataTables, built on top of a Doctrine `QueryBuilder`.
+
+For the canonical operator reference (modes, validation, exceptions) see
+[`search_modes.md`](search_modes.md). This document focuses on the Builder API
+and end-to-end examples.
 
 ## Key Concepts
 
-- `columnField`: which DataTables column property contains the identifier. Typical values: `data` or `name`.
-- `columnAliases`: maps DataTables columns to DQL fields (e.g., `name` → `t.name`).
-- `searchableColumns`: whitelist of columns used for global LIKE search. When set, only these columns are used in the global OR.
-- `withCaseInsensitive(true)`: enables case-insensitive matching for LIKE (both global and per-column when the operator is LIKE/`%` or `=`). It does not apply to non-LIKE operators (`IN`, `><`, `>`, `<`, `!=`).
+- `columnField` — which DataTables column property carries the field name.
+  Use `'data'` (default) when columns look like `{"data": "name"}`, or
+  `'name'` when they use `{"name": "name"}`.
+- `columnAliases` — maps DataTables identifiers to DQL paths
+  (`'name' => 't.name'`).
+- `searchableColumns` — whitelist of DQL fields used for the global LIKE
+  search. When set, only these columns participate in the global OR.
+- `withCaseInsensitive(true)` — wraps both the column and the parameter in
+  `lower()`. Applies only to LIKE-based searches (default `[%]`, `[OR]`)
+  and equality `[=]`. Operators `[IN]`, `[><]`, `[>]`, `[<]`, `[!=]` are
+  always case-sensitive.
 
 ## Builder API
 
 | Method | Description |
 |--------|-------------|
-| `Builder::create()` | Static factory. |
-| `withQueryBuilder($qb)` | Set the base DQL `QueryBuilder`. |
-| `withRequestParams(array $params)` | Set the DataTables request parameters. |
-| `withColumnAliases(array $aliases)` | Map DataTables column names to DQL paths. |
-| `withColumnField(string $field)` | DataTables column property used as field name (`data` or `name`). Default: `data`. |
-| `withSearchableColumns(array $cols)` | Whitelist DQL fields for global LIKE search. |
-| `withCaseInsensitive(bool $flag)` | Enable case-insensitive LIKE via `lower()`. |
+| `Builder::create()` | Static factory; equivalent to `new Builder()`. |
+| `withQueryBuilder($qb)` | Set the base DQL `QueryBuilder` (ORM or DBAL). |
+| `withRequestParams(array $params)` | Set the DataTables request payload. |
+| `withColumnAliases(array $aliases)` | Map DataTables column identifiers to DQL paths. |
+| `withColumnField(string $field)` | DataTables column property used as field name (`'data'` or `'name'`). |
+| `withSearchableColumns(array $cols)` | Whitelist DQL fields for the global LIKE search. |
+| `withCaseInsensitive(bool $flag)` | Enable case-insensitive LIKE / equality via `lower()`. |
 | `withIndexColumn(string $col)` | Override the index column used in pagination. |
-| `withMaxFilterValues(int $max)` | Maximum number of values accepted by `[IN]` and `[OR]` filters. Throws `InvalidArgumentException` if `< 1`. Use `PHP_INT_MAX` to disable. Default: 500. |
-| `setUseOutputWalkers(bool $flag)` | Control Doctrine `Paginator` output walkers. Set to `false` when pagination fails with scalar-select queries. |
+| `withMaxFilterValues(int $max)` | Cap the values accepted by `[IN]` and `[OR]`. Throws `InvalidArgumentException` if `< 1`. Use `PHP_INT_MAX` to disable. **Default: 500**, intended as a DoS guard. |
+| `setUseOutputWalkers(bool $flag)` | Toggle Doctrine `Paginator` output walkers. Set `false` when pagination fails with scalar-select queries (eg. *"Not all identifier properties can be found in the ResultSetMapping"*). |
 | `getData()` | Execute and return the paginated, filtered, ordered result. |
-| `getRecordsFiltered()` | Count of records matching the current filters (without pagination). |
-| `getRecordsTotal()` | Total count of records without any filter applied. |
+| `getRecordsFiltered()` | Count records matching the current filters (no pagination). |
+| `getRecordsTotal()` | Count records with no filter applied. |
 | `getResponse()` | Return the full DataTables response array (`draw`, `recordsTotal`, `recordsFiltered`, `data`). |
 
-## Supported Per-Column Operators
+## Per-Column Operators
 
-Column filters accept a bracket-prefixed operator in the value. Format: `[OPERATOR]value`. If the operator is not recognized, `%` (LIKE) is used by default.
+Column filters accept a bracket-prefixed operator: `[OPERATOR]value`. The
+canonical reference, including limits, exceptions and case-insensitivity
+rules, lives in **[`search_modes.md`](search_modes.md)**.
 
-| Mode                   | Pattern             | Description                                                                                 |
-|------------------------|---------------------|---------------------------------------------------------------------------------------------|
-| LIKE '%…%' (default)   | `[%]term` or `term` | LIKE '%term%'; any part of the term may match a value in the column.                        |
-| Equality               | `[=]term`           | Exact match: column = term.                                                                 |
-| Not Equal              | `[!=]term`          | Not equal: column != term.                                                                  |
-| Greater Than           | `[>]number`         | Greater than: column > number.                                                              |
-| Less Than              | `[<]number`         | Less than: column < number.                                                                 |
-| IN list                | `[IN]a,b,c`         | IN list: one of the comma-separated terms must exactly match.                               |
-| OR (LIKE-group)        | `[OR]a,b,c`         | OR of LIKE '%…%' for each term: column LIKE '%a%' OR '%b%' OR '%c%'.                        |
-| BETWEEN range          | `[><]min,max`       | Range: column BETWEEN min AND max.                                                          |
-| LIKE synonyms          | `[LIKE]term`, `[%%]term` | Synonyms for LIKE '%term%'.                                                             |
+Quick recap of the operators supported by the Builder:
 
-Notes:
-- For `[OR]`, the builder uses one LIKE per term; if `withCaseInsensitive(true)` is enabled, `lower()` is applied to the column and to the corresponding parameter.
-- Operators that do not use LIKE (`IN`, `><`, `>`, `<`, `!=`) are unaffected by `withCaseInsensitive(true)`.
+```
+[%]   (LIKE, default)   [=]   [!=]   [>]   [<]   [IN]   [OR]   [><]
+```
+
+Synonyms `[LIKE]` and `[%%]` map to `[%]`. Unknown prefixes silently fall
+back to `[%]`.
+
+> **Important.** The DataTables `regex` flag (both `search.regex: true` and
+> `columns[N].search.regex: true`) is **not supported** and raises
+> `InvalidArgumentException: 'Regex search is not supported.'`. Use the
+> bracket operators instead.
+
+> **`[><]` strict arity.** `[><]min,max` requires *exactly* two
+> comma-separated values; sending one or three throws
+> `InvalidArgumentException` (it no longer fails silently).
 
 ## Column Validation
 
-- If a column value is numeric or does not match a valid DQL identifier, it is ignored to avoid errors (e.g., `data='0'`).
-- Use `columnAliases` to map friendly DataTables names to DQL paths: `{ 'id': 't.id', 'name': 't.name' }`.
+- A column whose `data` is numeric or doesn't match
+  `^[A-Za-z_][\w.]*$` is dropped from `WHERE` and `ORDER BY` to prevent
+  malformed DQL (this is the historic *"6 LIKE :search"* failure).
+- Use `columnAliases` to map friendly DataTables identifiers to DQL paths.
 
 ## Examples
 
 ### Global Search (LIKE)
+
 ```php
 $builder
-  ->withSearchableColumns(['t.name'])
-  ->withCaseInsensitive(true)
-  ->withColumnField('data')
-  ->withRequestParams([
-    'search' => ['value' => 'am', 'regex' => false],
+    ->withSearchableColumns(['t.name'])
+    ->withCaseInsensitive(true)
+    ->withColumnField('data')
+    ->withRequestParams([
+        'search'  => ['value' => 'am', 'regex' => false],
+        'columns' => [
+            ['data' => 'id',   'searchable' => true],
+            ['data' => 'name', 'searchable' => true],
+        ],
+    ]);
+```
+
+Returns rows where `t.name` contains `"am"` (case-insensitive).
+
+### Per-Column `[IN]`
+
+```php
+$builder->withRequestParams([
     'columns' => [
-      ['data' => 'id', 'searchable' => true],
-      ['data' => 'name', 'searchable' => true]
+        ['data' => 'id',   'searchable' => true, 'search' => ['value' => '[IN]1,2,3']],
+        ['data' => 'name', 'searchable' => true, 'search' => ['value' => '']],
     ],
-  ]);
-```
-Returns rows where `t.name` contains "am".
-
-### Per-Column Filter with `IN`
-```php
-$builder->withRequestParams([
-  'columns' => [
-    ['data' => 'id', 'searchable' => true, 'search' => ['value' => '[IN]1,2'] ],
-    ['data' => 'name', 'searchable' => true, 'search' => ['value' => ''] ],
-  ]
 ]);
 ```
 
-### Per-Column Filter with `OR`
+### Per-Column `[OR]`
+
 ```php
 $builder->withRequestParams([
-  'columns' => [
-    ['data' => 'name', 'searchable' => true, 'search' => ['value' => '[OR]name1,name2'] ],
-  ]
+    'columns' => [
+        ['data' => 'name', 'searchable' => true, 'search' => ['value' => '[OR]alpha,beta']],
+    ],
 ]);
 ```
 
-### Filter with `BETWEEN`
+### `[><]` BETWEEN
+
 ```php
 $builder->withRequestParams([
-  'columns' => [
-    ['data' => 'id', 'searchable' => true, 'search' => ['value' => '[><]1,2'] ],
-  ]
+    'columns' => [
+        ['data' => 'price', 'searchable' => true, 'search' => ['value' => '[><]10,99']],
+    ],
 ]);
+// Sending '[><]10' or '[><]1,2,3' raises InvalidArgumentException.
 ```
 
-### Invalid Operator → Fallback to LIKE
+### Invalid Operator Falls Back to LIKE (silent)
+
 ```php
 $builder->withRequestParams([
-  'columns' => [
-    ['data' => 'name', 'searchable' => true, 'search' => ['value' => '[XYZ]am'] ],
-  ]
+    'columns' => [
+        ['data' => 'name', 'searchable' => true, 'search' => ['value' => '[XYZ]am']],
+    ],
 ]);
-// Interpreted as LIKE "%am%"
+// Equivalent to LIKE '%[XYZ]am%' — useful to know when debugging silent matches.
 ```
 
 ## Best Practices
 
-- Configure `columnAliases` and ensure entities/joins are properly defined so DQL identifiers are valid.
-- Define `searchableColumns` to constrain global search and avoid LIKE on unintended columns.
+- Configure `columnAliases` and ensure entities/joins are properly defined
+  so DQL identifiers are valid.
+- Define `searchableColumns` to constrain global search to safe text columns.
 - Avoid sending numeric indices in `data` as column identifiers.
-- Use `withCaseInsensitive(true)` when you expect mixed capitalization in search terms.
+- Use `withCaseInsensitive(true)` only when you actually want case-insensitive
+  matching — it does not affect `[IN]`, `[><]`, `[!=]`, `[>]`, `[<]`.
+- Tune `withMaxFilterValues()` to a value matching your business rules; the
+  default 500 prevents accidental DoS via huge `[IN]` lists.
 
-## Test References
-
-Tests in `tests/DataTableTest.php` cover:
-- Global and per-column search.
-- Operators `[IN]`, `[OR]`, `[><]`, `[=]`, `[!=]`, `[%]` and synonyms.
-- Fallback to `[%]` for invalid operators.
-- Ignoring columns with invalid (numeric) identifiers.
-
-Doctrine integrates smoothly with DataTables to provide server-side pagination, ordering, and filtering using Doctrine ORM/DBAL.
-
-## Basic Usage
+## Full Example
 
 ```php
 use Daycry\Doctrine\DataTables\Builder;
@@ -134,14 +153,13 @@ use Doctrine\ORM\Query\Expr\Join;
 
 $qb = $this->doctrine->em->createQueryBuilder();
 $qb->select('p.uuid AS id, p.name AS name, p.companyName AS companyName, ps.name AS status, p.version AS version')
-   ->from(App\Models\Entity\WebProjects::class, 'p')
-   ->innerJoin(App\Models\Entity\WebProjectsStatuses::class, 'ps', Join::WITH, 'p.webProjectStatus = ps.id')
+   ->from(\App\Models\Entity\WebProjects::class, 'p')
+   ->innerJoin(\App\Models\Entity\WebProjectsStatuses::class, 'ps', Join::WITH, 'p.webProjectStatus = ps.id')
    ->andWhere('p.deletedAt IS NULL');
 
 $builder = Builder::create()
     ->withQueryBuilder($qb)
     ->withRequestParams($this->request->getGet())
-    // Map DataTables column names to DQL fields used in select
     ->withColumnAliases([
         'id'          => 'p.uuid',
         'name'        => 'p.name',
@@ -149,38 +167,27 @@ $builder = Builder::create()
         'status'      => 'ps.name',
         'version'     => 'p.version',
     ])
-    // Restrict global LIKE search to safe text columns
     ->withSearchableColumns(['p.name', 'p.companyName', 'ps.name'])
-    // Optional: case-insensitive matching
     ->withCaseInsensitive(true)
-    // Optional: disable OutputWalkers if your query includes complex selects
     ->setUseOutputWalkers(false);
 
-$response = $builder->getResponse();
-return $this->response->setJSON($response);
+return $this->response->setJSON($builder->getResponse());
 ```
 
 ## Troubleshooting
 
-- Error: `Not all identifier properties can be found in the ResultSetMapping`
-  - Use `->setUseOutputWalkers(false)` when your select includes scalar mappings or complex joins.
+- *"Not all identifier properties can be found in the ResultSetMapping"* —
+  scalar-select queries don't expose entity identifiers. Call
+  `setUseOutputWalkers(false)` on the Builder.
+- *"Expected =, <, <=, <>, >, >=, !=, got 'LIKE'"* — caused by an invalid
+  column identifier (eg. a numeric index `6`) leaking into the global
+  search. Always provide `withColumnAliases([...])` and
+  `withSearchableColumns([...])` so only valid DQL fields participate in
+  LIKE conditions.
 
-- Error: `Expected =, <, <=, <>, >, >=, !=, got 'LIKE'`
-  - This happens when an invalid column (e.g., numeric index `6`) is used in global search.
-  - Ensure you provide `->withColumnAliases([...])` and `->withSearchableColumns([...])` so only valid DQL fields participate in LIKE conditions.
-  - See `docs/DATATABLES_FIX.md` for the detailed explanation and the implemented fix.
+## Test References
 
-## Filtering Operators (per-column)
-
-In the per-column search box, you can prefix your term to apply an operator. Prefixes are case-insensitive and terms are trimmed.
-
-- `[=]value` : exact match
-- `[!=]value` : not equal
-- `[>]10` : greater than
-- `[<]10` : less than
-- `[%]term` : LIKE `'%term%'` (default if no operator)
-- `[IN]a,b,c` : `IN (a,b,c)` exact match list
-- `[OR]a,b,c` : `LIKE '%a%' OR LIKE '%b%' OR LIKE '%c%'`
-- `[><]min,max` : `BETWEEN min AND max`
-
-For the full matrix of search modes, see `docs/search_modes.md`.
+`tests/DataTableTest.php` and `tests/DataTablesBuilderEdgeCasesTest.php`
+cover global and per-column searches, every supported operator, fallback to
+`[%]` for unknown prefixes, the `[><]` arity validation, the regex rejection,
+and the numeric-column dropout.

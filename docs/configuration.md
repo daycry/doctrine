@@ -1,74 +1,109 @@
 # Configuration
 
 ## Key Concepts
+
 - Config file: `app/Config/Doctrine.php` holds Doctrine integration settings.
-- Publish step: copies the config and CLI file into your app namespace.
-- Cache wiring: Query/Results/Metadata caches use the framework cache backend.
-- Second-Level Cache (SLC): toggled via a simple boolean; shares backend and TTL with `Config\Cache`.
+- Publish step: copies the config and CLI bootstrap into your app namespace.
+- Cache wiring: query / results / metadata caches share the framework cache backend (`Config\Cache`).
+- Second-Level Cache (SLC): toggled via a single boolean; reuses backend and TTL.
+- Multi-database: every `Config\Database` group maps to its own cached Doctrine instance — see [`usage.md`](usage.md#multi-database-groups).
 
-## Publish Configuration
+## Publishing the configuration
 
-After installation, publish the configuration files by running:
-
-```
+```bash
 php spark doctrine:publish
 ```
 
-This command copies the config file to your app namespace and a `cli-config.php` file for Doctrine CLI usage. By default, the config file is placed at `app/Config/Doctrine.php`.
+This copies `Config/Doctrine.php` into your app namespace and `cli-config.php`
+into the project root. Re-running the command prompts before overwriting
+existing files; choose `n` to abort safely.
 
-Adjust settings as needed for your project.
+## Options reference
 
-## Options overview
+### Proxies
 
-- `setAutoGenerateProxyClasses` (bool): Auto-generate proxies in development.
-- `entities` (array): Paths to your entity classes.
-- `proxies` (string): Directory for generated proxies.
-- `proxiesNamespace` (string): Namespace for generated proxies.
-- `proxyFactory` (bool): When `true` (default), use PHP 8.4+ native lazy objects as proxy factory if available; falls back to classic proxy generation otherwise.
-- `queryCache` / `resultsCache` / `metadataCache` (bool): Enable Doctrine caches backed by the framework cache.
-- `queryCacheNamespace` / `resultsCacheNamespace` / `metadataCacheNamespace` (string): Namespaces used by caches.
-- `metadataConfigurationMethod` (`attribute`|`xml`): Metadata driver to use.
-- `isXsdValidationEnabled` (bool): Enable XML schema validation when using XML mapping.
-- `secondLevelCache` (bool): Enable Doctrine Second-Level Cache. When true, SLC uses the same cache backend and `ttl` from `Config\Cache`.
-- `secondLevelCacheStatistics` (bool): Enable SLC hit/miss/put counters. When enabled, counters appear in the Debug Toolbar Doctrine panel and are accessible via `getSecondLevelCacheLogger()`.
-- `secondLevelCacheTtl` (?int): Override the SLC TTL in seconds. `null` = inherit from `Config\Cache::$ttl`; `0` = no expiration; `> 0` = custom TTL.
-- `customStringFunctions` / `customNumericFunctions` / `customDatetimeFunctions` / `customJsonFunctions` (array): Custom DQL functions registered with Doctrine. Pre-filled with `beberlei/doctrineextensions` and `scienta/doctrine-json-functions`.
-- `customTypeMappings` (array): Additional DBAL type mappings.
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `setAutoGenerateProxyClasses` | `bool` | `ENVIRONMENT === 'development'` | Auto-regenerates Doctrine proxies in development. |
+| `proxies` | `string` | `APPPATH . 'Models/Proxies'` | Filesystem path for generated proxies. |
+| `proxiesNamespace` | `string` | `'DoctrineProxies'` | Namespace assigned to generated proxies. |
+| `proxyFactory` | `bool` | `true` | On PHP ≥ 8.4 enables the engine's **native lazy objects** as proxy factory (skipping proxy class generation entirely). On PHP < 8.4 the flag has no effect — Doctrine falls back to generated proxies. Set to `false` to keep generated proxies even on PHP 8.4+ when running tools that don't yet support native lazy objects. |
 
-### Notes
-- No adapter needs to be configured for SLC in `Config\\Doctrine`; the library wires SLC to the framework cache backend automatically.
-- Ensure `entities` paths exist and are readable; misconfigured paths are validated early.
-- For Redis/Memcached, PHP extensions must be present; the service throws descriptive errors if missing.
+### Caches
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `queryCache` / `resultsCache` / `metadataCache` | `bool` | `true` | Toggle each Doctrine cache backed by `Config\Cache`. |
+| `queryCacheNamespace` / `resultsCacheNamespace` / `metadataCacheNamespace` | `string` | `doctrine_queries` / `doctrine_results` / `doctrine_metadata` | Namespace prefix for each cache pool. |
+
+### Metadata driver
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `metadataConfigurationMethod` | `'attribute'\|'xml'` | `'attribute'` | Which Doctrine metadata driver to use. |
+| `isXsdValidationEnabled` | `bool` | `false` | Enable XSD validation when `metadataConfigurationMethod = 'xml'`. |
+
+### Second-Level Cache (SLC)
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `secondLevelCache` | `bool` | `false` | Enable Doctrine SLC. Reuses `Config\Cache` backend and TTL. |
+| `secondLevelCacheStatistics` | `bool` | `false` | Collect hits/misses/puts via `StatisticsCacheLogger`. Surface them in the toolbar (and reset per request via the filter — see [`debug_toolbar.md`](debug_toolbar.md)). |
+| `secondLevelCacheTtl` | `?int` | `null` | Per-cache TTL override in seconds. `null` = inherit `Config\Cache::$ttl`. `0` = no expiration (entries persist until Doctrine invalidates them). `> 0` = custom TTL just for SLC. |
+
+### Custom DQL functions
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `customStringFunctions`, `customNumericFunctions`, `customDatetimeFunctions`, `customJsonFunctions` | `array<string, class-string>` | DQL extensions registered with Doctrine. Pre-filled with `beberlei/doctrineextensions` and `scienta/doctrine-json-functions`. Override or remove entries to disable specific functions. |
+
+### Type mappings
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `customTypeMappings` | `array<string, string>` | Native DBAL type → Doctrine type mappings registered on the database platform. Default: `['enum' => 'string', 'set' => 'string']`. Re-applied automatically on `Doctrine::reOpen()`. |
 
 ## Quick example
-
-Enable SLC in your `app/Config/Doctrine.php`:
 
 ```php
 <?php
 
 namespace App\Config;
 
-use CodeIgniter\Config\BaseConfig;
+use Daycry\Doctrine\Config\Doctrine as DoctrineBase;
 
-class Doctrine extends BaseConfig
+class Doctrine extends DoctrineBase
 {
-	public bool $setAutoGenerateProxyClasses = ENVIRONMENT === 'development';
-	public array $entities = [APPPATH . 'Models/Entity'];
-	public string $proxies = APPPATH . 'Models/Proxies';
-	public string $proxiesNamespace = 'DoctrineProxies';
+    public bool   $setAutoGenerateProxyClasses = ENVIRONMENT === 'development';
+    public array  $entities                    = [APPPATH . 'Models/Entity'];
+    public string $proxies                     = APPPATH . 'Models/Proxies';
+    public string $proxiesNamespace            = 'DoctrineProxies';
 
-	public bool $queryCache = true;
-	public string $queryCacheNamespace = 'doctrine_queries';
-	public bool $resultsCache = true;
-	public string $resultsCacheNamespace = 'doctrine_results';
-	public bool $metadataCache = true;
-	public string $metadataCacheNamespace = 'doctrine_metadata';
+    public bool   $queryCache              = true;
+    public bool   $resultsCache             = true;
+    public bool   $metadataCache            = true;
 
-	public string $metadataConfigurationMethod = 'attribute';
-	public bool $isXsdValidationEnabled = false;
+    public string $metadataConfigurationMethod = 'attribute';
+    public bool   $isXsdValidationEnabled      = false;
 
-	// Turn on Second-Level Cache; uses Config\Cache backend/ttl
-	public bool $secondLevelCache = true;
+    // SLC: enable + collect stats (separate booleans)
+    public bool $secondLevelCache           = true;
+    public bool $secondLevelCacheStatistics = true;  // optional
+
+    // Add a custom enum→Doctrine mapping if your DB uses enum columns
+    public array $customTypeMappings = [
+        'enum' => 'string',
+        'set'  => 'string',
+    ];
 }
 ```
+
+## Notes
+
+- No PSR-6 adapter has to be configured for SLC — the library wires the same
+  backend used by `Config\Cache` automatically.
+- If a Redis or Memcached extension is missing, the Doctrine service throws
+  `CacheException` with a descriptive message at construction.
+- For multi-database setups (`Services::doctrine(true, 'reporting')`), the
+  same `Config\Doctrine` is used for every group; each group resolves its own
+  Doctrine instance from `Config\Database->{$dbGroup}`.
