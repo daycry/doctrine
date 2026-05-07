@@ -11,8 +11,11 @@ supported by `Daycry\Doctrine\DataTables\Builder`. Other docs (`README.md`,
 - Operators not listed below silently fall back to `[%]` (LIKE `'%term%'`) — see
   [Unknown Operators](#unknown-operators) for the recognised list.
 - The DataTables `regex` flag is **not supported**. Sending `regex: true`
-  (global or per column) raises `InvalidArgumentException`. Use the bracket
-  operators below instead.
+  *together with a non-empty search value* (global or per-column) raises
+  `InvalidArgumentException`. The flag is tolerated when the value is
+  empty, since DataTables clients commonly send the flag as part of every
+  request payload regardless of whether they intend to filter. Use the
+  bracket operators below for any actual filtering.
 
 ## Operator Matrix
 
@@ -39,9 +42,13 @@ supported by `Daycry\Doctrine\DataTables\Builder`. Other docs (`README.md`,
   comma-separated values (`[><]min,max`). Sending `[><]50` or `[><]1,2,3`
   raises `InvalidArgumentException` — previously this failed silently.
 
-- **No regex.** Both `search.regex: true` (global) and `columns[N].search.regex: true`
-  (per column) raise `InvalidArgumentException`. The exception message points the
-  caller to the bracket-prefix alternatives.
+- **No regex.** `search.regex: true` (global) and `columns[N].search.regex: true`
+  (per-column) raise `InvalidArgumentException` **only when the matching
+  search value is non-empty** — i.e. when the regex flag would actually be
+  applied. The flag is tolerated alongside an empty value so the typical
+  DataTables client payload (which sends the flag for every column) does
+  not need to be sanitised. Use the bracket-prefix alternatives below for
+  any real filtering.
 
 - **DQL-safe field names.** Field identifiers go through `isValidDQLField()`. Numeric
   indices and identifiers with characters outside `[A-Za-z_][\w.]*` are silently
@@ -59,9 +66,9 @@ Recognised tokens:
 =    !=    <    >    %    %%    LIKE    IN    OR    ><
 ```
 
-A typo such as `[XYZ]term` or `[*%]term` is therefore treated as
-`LIKE '%[XYZ]term%'` or `LIKE '%[*%]term%'` — useful to know when debugging
-silent matches that look wrong.
+A typo such as `[XYZ]term` is therefore treated as `LIKE '%term%'` (the
+unknown bracket prefix is stripped before the LIKE is applied). The legacy
+`[*%]` mode behaves the same way — it falls back to `LIKE '%term%'`.
 
 ## Case-Insensitivity Rules
 

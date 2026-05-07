@@ -57,8 +57,10 @@ back to `[%]`.
 
 > **Important.** The DataTables `regex` flag (both `search.regex: true` and
 > `columns[N].search.regex: true`) is **not supported** and raises
-> `InvalidArgumentException: 'Regex search is not supported.'`. Use the
-> bracket operators instead.
+> `InvalidArgumentException: 'Regex search is not supported.'` whenever the
+> matching search value is non-empty. The flag is tolerated alongside an
+> empty value, since DataTables clients commonly include it in every
+> payload regardless of intent. Use the bracket operators instead.
 
 > **`[><]` strict arity.** `[><]min,max` requires *exactly* two
 > comma-separated values; sending one or three throws

@@ -33,13 +33,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - `Daycry\Doctrine\DataTables\Builder::parseFilterOperator()` regex now matches
   only documented operators (`!=, ><, >, <, =, %%, %, IN, OR, LIKE`); accidental
-  `•` (U+2022) matches are no longer accepted.
+  `•` (U+2022) matches are no longer accepted. Unknown bracket prefixes
+  (e.g. `[XYZ]term`) still fall back to `LIKE '%term%'` — the prefix is
+  stripped before the LIKE is applied, preserving the legacy typo-tolerant
+  behaviour.
 - `Daycry\Doctrine\DataTables\Builder` — operator `[><]` now throws
   `InvalidArgumentException` if the value count is not exactly 2 (it previously
   failed silently).
 - `Daycry\Doctrine\DataTables\Builder` — DataTables `search.regex: true` and
-  per-column `regex: true` now raise `InvalidArgumentException` (they were
-  silently ignored before). Use bracket-prefix operators instead.
+  per-column `regex: true` raise `InvalidArgumentException` **only when the
+  matching search value is non-empty**. The flag is tolerated alongside an
+  empty value so existing payloads that include `regex` for every column
+  keep working. Use bracket-prefix operators for any actual filtering.
 - `Daycry\Doctrine\Debug\Filters\DoctrineSlcReset::before()` now actually
   resets SLC statistics by calling
   `Services::doctrine()->resetSecondLevelCacheStatistics()`. Previously it

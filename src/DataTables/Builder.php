@@ -150,13 +150,17 @@ class Builder
         $columns = $this->requestParams['columns'];
         $c       = count($columns);
 
-        // Reject regex search mode — bracket-prefix operators must be used instead.
-        if (! empty($this->requestParams['search']['regex'])) {
+        // Reject regex search mode only when it would actually be applied (non-empty value).
+        // DataTables clients commonly send `regex` keys for every column even when the value is
+        // empty; raising on empty values would force callers to strip noise from their payload.
+        $globalSearchValue = trim((string) ($this->requestParams['search']['value'] ?? ''));
+        if ($globalSearchValue !== '' && ! empty($this->requestParams['search']['regex'])) {
             throw new InvalidArgumentException('Regex search is not supported. Use bracket-prefix operators like [IN], [OR], [><] instead.');
         }
 
         foreach ($columns as $column) {
-            if (! empty($column['search']['regex'] ?? null)) {
+            $columnSearchValue = trim((string) ($column['search']['value'] ?? ''));
+            if ($columnSearchValue !== '' && ! empty($column['search']['regex'] ?? null)) {
                 throw new InvalidArgumentException('Regex per-column search is not supported. Use bracket-prefix operators like [IN], [OR], [><] instead.');
             }
         }
@@ -320,9 +324,19 @@ class Builder
      */
     private function parseFilterOperator(string $raw): array
     {
-        $pattern  = '~^\[(?<operator>!=|><|>|<|=|%%|%|IN|OR|LIKE)\]~i';
-        $operator = preg_match($pattern, $raw, $m) ? strtoupper($m['operator']) : '%';
-        $value    = preg_replace($pattern, '', $raw);
+        $validPattern  = '~^\[(?<operator>!=|><|>|<|=|%%|%|IN|OR|LIKE)\]~i';
+        $bracketPrefix = '~^\[[^\]]+\]~';
+
+        if (preg_match($validPattern, $raw, $m)) {
+            $operator = strtoupper($m['operator']);
+            $value    = preg_replace($validPattern, '', $raw);
+        } else {
+            // Unknown bracket prefixes (typos like "[XYZ]") fall back to LIKE; the
+            // prefix itself is stripped so the user-facing search term works as-is.
+            $operator = '%';
+            $value    = preg_replace($bracketPrefix, '', $raw);
+        }
+
         // Normalize synonyms
         if ($operator === 'LIKE' || $operator === '%%') {
             $operator = '%';

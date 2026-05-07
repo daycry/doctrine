@@ -117,7 +117,7 @@ final class DataTableTest extends TestCase
                             'name'       => 'name',
                             'searchable' => true,
                             'orderable'  => true,
-                            'search'     => ['value' => 'name1', 'regex' => true],
+                            'search'     => ['value' => 'name1', 'regex' => false],
                         ],
                     ],
                     'order' => [['column' => 0, 'dir' => 'asc']],

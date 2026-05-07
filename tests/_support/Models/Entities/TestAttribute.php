@@ -11,7 +11,7 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\UniqueConstraint(name: 'name', columns: ['name'])]
 class TestAttribute
 {
-    #[ ORM\Column(name: 'id', type: 'integer', nullable: false), ORM\GeneratedValue(strategy: 'IDENTITY'),ORM\Id]
+    #[ORM\Column(name: 'id', type: 'integer', nullable: false), ORM\GeneratedValue(strategy: 'IDENTITY'),ORM\Id]
     private ?int $id = null;
 
     #[ORM\Column(name: 'name', type: 'string', nullable: false)]
