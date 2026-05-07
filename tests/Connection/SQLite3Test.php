@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace Tests\Connection;
 
-use Tests\Support\TestCase;
-use Config\Database;
 use Daycry\Doctrine\Doctrine;
 use Doctrine\ORM\EntityManager;
+use Tests\Support\TestCase;
 
+/**
+ * @internal
+ */
 final class SQLite3Test extends TestCase
 {
     public function testDSNSQLite3()
@@ -50,5 +52,4 @@ final class SQLite3Test extends TestCase
         $this->assertInstanceOf(Doctrine::class, $doctrine);
         $this->assertInstanceOf(EntityManager::class, $doctrine->em);
     }
-
 }

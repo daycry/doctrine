@@ -4,18 +4,20 @@ declare(strict_types=1);
 
 namespace Tests;
 
-use Throwable;
 use CodeIgniter\Exceptions\InvalidArgumentException;
-use Daycry\Doctrine\Doctrine;
 use Daycry\Doctrine\DataTables\Builder;
+use Daycry\Doctrine\Doctrine;
+use Doctrine\ORM\Tools\SchemaTool;
 use Tests\Support\Models\Entities\TestAttribute;
 use Tests\Support\TestCase;
-use Doctrine\ORM\Tools\SchemaTool;
+use Throwable;
 
 /**
  * Covers previously untested Builder methods:
  * - withMaxFilterValues() — exception branch and fluent-return branch
  * - getData() — with a live SQLite :memory: QueryBuilder
+ *
+ * @internal
  */
 final class BuilderCoverageTest extends TestCase
 {
@@ -113,7 +115,7 @@ final class BuilderCoverageTest extends TestCase
                         'search'     => ['value' => '', 'regex' => false],
                     ],
                 ],
-                'order'   => [['column' => 0, 'dir' => 'asc']],
+                'order' => [['column' => 0, 'dir' => 'asc']],
             ])
             ->getData();
 
@@ -169,7 +171,7 @@ final class BuilderCoverageTest extends TestCase
                         'search'     => ['value' => '', 'regex' => false],
                     ],
                 ],
-                'order'   => [['column' => 0, 'dir' => 'asc']],
+                'order' => [['column' => 0, 'dir' => 'asc']],
             ])
             ->getData();
 
@@ -231,7 +233,7 @@ final class BuilderCoverageTest extends TestCase
                         'search'     => ['value' => '', 'regex' => false],
                     ],
                 ],
-                'order'   => [['column' => 0, 'dir' => 'asc']],
+                'order' => [['column' => 0, 'dir' => 'asc']],
             ])
             ->getData();
 
@@ -289,7 +291,7 @@ final class BuilderCoverageTest extends TestCase
                         'search'     => ['value' => '', 'regex' => false],
                     ],
                 ],
-                'order'   => [['column' => 0, 'dir' => 'asc']],
+                'order' => [['column' => 0, 'dir' => 'asc']],
             ])
             ->getRecordsFiltered();
 
@@ -347,7 +349,7 @@ final class BuilderCoverageTest extends TestCase
                         'search'     => ['value' => '', 'regex' => false],
                     ],
                 ],
-                'order'   => [['column' => 0, 'dir' => 'asc']],
+                'order' => [['column' => 0, 'dir' => 'asc']],
             ])
             ->getRecordsTotal();
 
@@ -399,10 +401,10 @@ final class BuilderCoverageTest extends TestCase
                         'searchable' => true,
                         'orderable'  => true,
                         // IN: with 3 values, exceeds maxFilterValues of 2
-                        'search'     => ['value' => '[IN]a,b,c', 'regex' => false],
+                        'search' => ['value' => '[IN]a,b,c', 'regex' => false],
                     ],
                 ],
-                'order'   => [['column' => 0, 'dir' => 'asc']],
+                'order' => [['column' => 0, 'dir' => 'asc']],
             ])
             ->getData();
 
@@ -452,10 +454,10 @@ final class BuilderCoverageTest extends TestCase
                         'searchable' => true,
                         'orderable'  => true,
                         // OR: with 3 values, exceeds maxFilterValues of 2
-                        'search'     => ['value' => '[OR]x,y,z', 'regex' => false],
+                        'search' => ['value' => '[OR]x,y,z', 'regex' => false],
                     ],
                 ],
-                'order'   => [['column' => 0, 'dir' => 'asc']],
+                'order' => [['column' => 0, 'dir' => 'asc']],
             ])
             ->getData();
 

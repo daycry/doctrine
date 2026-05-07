@@ -22,7 +22,26 @@ class DoctrineCollector extends BaseCollector
     protected ?StatisticsCacheLogger $slcLogger = null;
 
     /**
-     * Queries ejecutadas
+     * Cached resolved SLC logger (separate sentinel: false = not yet resolved).
+     */
+    private false|StatisticsCacheLogger|null $resolvedLogger = false;
+
+    /**
+     * Cached payload returned by getData() to avoid duplicate Service lookups
+     * during a single render (isEmpty() then display() call it).
+     *
+     * @var array<string, mixed>|null
+     */
+    private ?array $cachedData = null;
+
+    /**
+     * Maximum number of queries to keep in memory. Older entries are dropped
+     * (FIFO) once the cap is reached. Use 0 to disable the cap.
+     */
+    protected int $maxQueries = 1000;
+
+    /**
+     * Queries collected during the request.
      *
      * @var array<int, array<string, mixed>>
      */
@@ -33,7 +52,16 @@ class DoctrineCollector extends BaseCollector
      */
     public function addQuery(array $query): void
     {
-        $this->queries[] = $query;
+        if ($this->maxQueries > 0 && count($this->queries) >= $this->maxQueries) {
+            array_shift($this->queries);
+        }
+        $this->queries[]  = $query;
+        $this->cachedData = null;
+    }
+
+    public function setMaxQueries(int $maxQueries): void
+    {
+        $this->maxQueries = max(0, $maxQueries);
     }
 
     /**
@@ -41,7 +69,9 @@ class DoctrineCollector extends BaseCollector
      */
     public function reset(): void
     {
-        $this->queries = [];
+        $this->queries        = [];
+        $this->cachedData     = null;
+        $this->resolvedLogger = false;
     }
 
     /**
@@ -49,7 +79,9 @@ class DoctrineCollector extends BaseCollector
      */
     public function setSecondLevelCacheLogger(StatisticsCacheLogger $logger): void
     {
-        $this->slcLogger = $logger;
+        $this->slcLogger      = $logger;
+        $this->resolvedLogger = false;
+        $this->cachedData     = null;
     }
 
     /**
@@ -75,38 +107,55 @@ class DoctrineCollector extends BaseCollector
         $queryCount = count($this->queries);
         $details    = $queryCount > 0 ? "({$queryCount} quer" . ($queryCount > 1 ? 'ies' : 'y') . ')' : '';
 
-        // Append compact SLC badge if enabled
-        try {
-            $logger = $this->slcLogger;
-            if ($logger === null && class_exists('Config\\Services') && method_exists(Services::class, 'doctrine')) {
-                $doctrine = Services::doctrine();
-                if (method_exists($doctrine, 'getSecondLevelCacheLogger')) {
-                    $logger = $doctrine->getSecondLevelCacheLogger();
-                }
-            }
-            if ($logger !== null) {
-                $hits     = $logger->getHitCount();
-                $misses   = $logger->getMissCount();
-                $puts     = $logger->getPutCount();
-                $total    = $hits + $misses;
-                $ratio    = $total > 0 ? round(($hits / $total) * 100) : 0;
-                $slcBadge = ' SLC:' . $hits . '/' . $misses . '/' . $puts . ' (' . $ratio . '%)';
-                $details  = trim($details . $slcBadge);
-            }
-        } catch (Throwable $e) {
-            // ignore
+        $logger = $this->resolveSlcLogger();
+        if ($logger !== null) {
+            $hits     = $logger->getHitCount();
+            $misses   = $logger->getMissCount();
+            $puts     = $logger->getPutCount();
+            $total    = $hits + $misses;
+            $ratio    = $total > 0 ? round(($hits / $total) * 100) : 0;
+            $slcBadge = ' SLC:' . $hits . '/' . $misses . '/' . $puts . ' (' . $ratio . '%)';
+            $details  = trim($details . $slcBadge);
         }
 
         return $details;
     }
 
+    /**
+     * Resolve and memoize the Second-Level Cache logger.
+     * Returns null when SLC stats are not enabled or not yet wired up.
+     */
+    private function resolveSlcLogger(): ?StatisticsCacheLogger
+    {
+        if ($this->resolvedLogger !== false) {
+            return $this->resolvedLogger;
+        }
+
+        try {
+            if ($this->slcLogger !== null) {
+                return $this->resolvedLogger = $this->slcLogger;
+            }
+
+            if (class_exists('Config\\Services') && method_exists(Services::class, 'doctrine')) {
+                $doctrine = Services::doctrine();
+                if (method_exists($doctrine, 'getSecondLevelCacheLogger')) {
+                    return $this->resolvedLogger = $doctrine->getSecondLevelCacheLogger();
+                }
+            }
+        } catch (Throwable) {
+            // Toolbar must never break the app.
+        }
+
+        return $this->resolvedLogger = null;
+    }
+
     public function isEmpty(): bool
     {
-        // Si hay queries, el colector no está vacío
+        // If we collected queries, the panel must render.
         if (! empty($this->queries)) {
             return false;
         }
-        // Sin queries: mostrar panel si SLC activo
+        // No queries: still render the panel if SLC stats are enabled.
         $data = $this->getData();
 
         return ! (! empty($data['slc']) && $data['slc']['enabled'] === true);
@@ -117,6 +166,10 @@ class DoctrineCollector extends BaseCollector
      */
     public function getData(): array
     {
+        if ($this->cachedData !== null) {
+            return $this->cachedData;
+        }
+
         $slc = [
             'enabled' => false,
             'hits'    => null,
@@ -124,26 +177,15 @@ class DoctrineCollector extends BaseCollector
             'puts'    => null,
         ];
 
-        // Try to read Second-Level Cache statistics via the Doctrine service
-        try {
-            $logger = $this->slcLogger;
-            if ($logger === null) {
-                $doctrine = Services::doctrine();
-                if (method_exists($doctrine, 'getSecondLevelCacheLogger')) {
-                    $logger = $doctrine->getSecondLevelCacheLogger();
-                }
-            }
-            if ($logger !== null) {
-                $slc['enabled'] = true;
-                $slc['hits']    = $logger->getHitCount();
-                $slc['misses']  = $logger->getMissCount();
-                $slc['puts']    = $logger->getPutCount();
-            }
-        } catch (Throwable $e) {
-            // Ignore SLC stats errors; keep toolbar resilient
+        $logger = $this->resolveSlcLogger();
+        if ($logger !== null) {
+            $slc['enabled'] = true;
+            $slc['hits']    = $logger->getHitCount();
+            $slc['misses']  = $logger->getMissCount();
+            $slc['puts']    = $logger->getPutCount();
         }
 
-        return [
+        return $this->cachedData = [
             'queries' => $this->getQueries(),
             'slc'     => $slc,
         ];
@@ -188,7 +230,7 @@ class DoctrineCollector extends BaseCollector
             $shortSql = preg_replace('/(select)(.+?)(from)/is', '$1 ... $3', $sql);
             $params   = htmlspecialchars(json_encode($query['params'] ?? []), ENT_QUOTES, 'UTF-8');
             $time     = isset($query['duration']) ? number_format($query['duration'], 4) : '';
-            $html .= '<tr class="{class}" title="' . htmlspecialchars($sql, ENT_QUOTES, 'UTF-8') . '" data-toggle="' . md5($sql) . '-trace">';
+            $html .= '<tr class="{class}" title="' . htmlspecialchars((string) $sql, ENT_QUOTES, 'UTF-8') . '" data-toggle="' . md5((string) $sql) . '-trace">';
             $html .= '<td class="narrow">' . $time . ' ms</td>';
             // Shorten SQL if too long (over 120 chars), show full SQL in tooltip
             $maxLen     = 120;
@@ -279,13 +321,5 @@ class DoctrineCollector extends BaseCollector
         $search = '/\b(?:' . implode('|', $highlight) . ')\b(?![^(&#039;)]*&#039;(?:(?:[^(&#039;)]*&#039;){2})*[^(&#039;)]*$)/';
 
         return preg_replace_callback($search, static fn ($matches): string => '<strong>' . str_replace(' ', '&nbsp;', $matches[0]) . '</strong>', $sql) ?? $sql;
-    }
-
-    /**
-     * Método público para testear debugToolbarDisplay
-     */
-    public function debugToolbarDisplayPublic(string $sql): string
-    {
-        return $this->debugToolbarDisplay($sql);
     }
 }

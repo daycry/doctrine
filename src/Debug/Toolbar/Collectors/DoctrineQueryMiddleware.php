@@ -16,11 +16,8 @@ use Doctrine\DBAL\ServerVersionProvider;
 
 class DoctrineQueryMiddleware implements Middleware
 {
-    protected DoctrineCollector $collector;
-
-    public function __construct(DoctrineCollector $collector)
+    public function __construct(protected DoctrineCollector $collector)
     {
-        $this->collector = $collector;
     }
 
     public function wrap(Driver $driver): Driver
@@ -28,13 +25,8 @@ class DoctrineQueryMiddleware implements Middleware
         $collector = $this->collector;
 
         return new class ($driver, $collector) implements Driver {
-            private Driver $driver;
-            private DoctrineCollector $collector;
-
-            public function __construct(Driver $driver, DoctrineCollector $collector)
+            public function __construct(private readonly Driver $driver, private readonly DoctrineCollector $collector)
             {
-                $this->driver    = $driver;
-                $this->collector = $collector;
             }
 
             public function connect(array $params): Connection
@@ -43,13 +35,8 @@ class DoctrineQueryMiddleware implements Middleware
                 $collector = $this->collector;
 
                 return new class ($conn, $collector) implements Connection {
-                    private Connection $conn;
-                    private DoctrineCollector $collector;
-
-                    public function __construct(Connection $conn, DoctrineCollector $collector)
+                    public function __construct(private readonly Connection $conn, private readonly DoctrineCollector $collector)
                     {
-                        $this->conn      = $conn;
-                        $this->collector = $collector;
                     }
 
                     public function prepare(string $sql): Statement
@@ -58,20 +45,13 @@ class DoctrineQueryMiddleware implements Middleware
                         $collector = $this->collector;
 
                         return new class ($innerStmt, $sql, $collector) implements Statement {
-                            private Statement $innerStmt;
-                            private string $sql;
-                            private DoctrineCollector $collector;
-
                             /**
                              * @var array<int|string, mixed>
                              */
                             private array $params = [];
 
-                            public function __construct(Statement $innerStmt, string $sql, DoctrineCollector $collector)
+                            public function __construct(private readonly Statement $innerStmt, private readonly string $sql, private readonly DoctrineCollector $collector)
                             {
-                                $this->innerStmt = $innerStmt;
-                                $this->sql       = $sql;
-                                $this->collector = $collector;
                             }
 
                             public function bindValue(int|string $param, mixed $value, ParameterType $type): void

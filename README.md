@@ -2,7 +2,7 @@
 
 # Doctrine
 
-Doctrine for Codeigniter 4
+Doctrine ORM 3 integration for CodeIgniter 4.
 
 [![PHPUnit](https://github.com/daycry/doctrine/actions/workflows/phpunit.yml/badge.svg?branch=master)](https://github.com/daycry/doctrine/actions/workflows/phpunit.yml)
 [![PHPStan](https://github.com/daycry/doctrine/actions/workflows/phpstan.yml/badge.svg?branch=master)](https://github.com/daycry/doctrine/actions/workflows/phpstan.yml)
@@ -15,292 +15,233 @@ Doctrine for Codeigniter 4
 [![GitHub stars](https://img.shields.io/github/stars/daycry/doctrine)](https://packagist.org/packages/daycry/doctrine)
 [![GitHub license](https://img.shields.io/github/license/daycry/doctrine)](https://github.com/daycry/doctrine/blob/master/LICENSE)
 
+## Features
+
+- ORM integration via `\Daycry\Doctrine\Doctrine` and `\Config\Services::doctrine()`.
+- Server-side **DataTables Builder** with safe operator parsing, whitelisted columns, and `[><]` / `[IN]` / `[OR]` validation.
+- **CodeIgniter Debug Toolbar** collector with optional Second-Level Cache (SLC) statistics badge.
+- **Doctrine Second-Level Cache** wired to the framework cache backend (file, Redis, Memcached, array).
+- `getFromCacheOrQuery()` cache-aside helper backed by the configured PSR-6 result cache.
+- **Multi-database group support** — get a separate Doctrine instance per `Config\Database` group.
+
+## Requirements
+
+- PHP **≥ 8.2**
+- CodeIgniter **^4**
+- Doctrine ORM **^3**, DBAL **^4**
+- Symfony Cache **^7**
+
+See [`composer.json`](composer.json) for the complete dependency graph.
+
 ## Documentation Index
 
 - [Installation](docs/installation.md)
 - [Configuration](docs/configuration.md)
-- [Usage](docs/usage.md)
+- [Usage](docs/usage.md) — service, helper, multi-DB, `getFromCacheOrQuery`, advanced API
 - [CLI Commands](docs/cli_commands.md)
-- [Using DataTables](docs/datatables.md)
-    - Filtering operators and search behavior documented in `docs/datatables.md`.
-- [DataTables Search Modes](docs/search_modes.md)
-- [Viewing Doctrine Queries in the Debug Toolbar](docs/debug_toolbar.md)
-- [Second-Level Cache (SLC)](docs/second_level_cache.md) — Enable Doctrine entity caching across requests. SLC uses the same cache backend configured in CodeIgniter (`Config\Cache`) and its `ttl`; toggle on/off in `Config\Doctrine`.
- - [SLC Statistics](docs/second_level_cache_stats.md) — How to enable hits/misses/puts counters and view them in the Debug Toolbar.
+- [DataTables Builder](docs/datatables.md)
+- [DataTables Search Modes](docs/search_modes.md) — canonical operator reference
+- [Debug Toolbar](docs/debug_toolbar.md) — query log + SLC stats + per-request reset filter
+- [Second-Level Cache (SLC)](docs/second_level_cache.md)
+- [SLC Statistics](docs/second_level_cache_stats.md)
+- [Changelog](CHANGELOG.md)
 
-## Installation via composer
+## Installation
 
-Use the package with composer install
-
-	> composer require daycry/doctrine
-
-## Configuration
-
-Run command:
-
-	> php spark doctrine:publish
-
-This command will copy a config file to your app namespace and "cli-config.php" file for doctrine cli.
-Then you can adjust it to your needs. By default file will be present in `app/Config/Doctrine.php`.
-
-
-## Usage Loading Library
-
-```php
-$doctrine = new \Daycry\Doctrine\Doctrine();
-$data = $doctrine->em->getRepository( 'App\Models\Entity\Class' )->findOneBy( array( 'id' => 1 ) );
-var_dump( $data );
-
+```bash
+composer require daycry/doctrine
 ```
 
-## Usage as a Service
+Then publish the configuration:
+
+```bash
+php spark doctrine:publish
+```
+
+This copies `Config/Doctrine.php` into your app namespace and `cli-config.php`
+into the project root for use with the Doctrine ORM CLI.
+
+## Quick Start
+
+### As a service
 
 ```php
 $doctrine = \Config\Services::doctrine();
-$data = $doctrine->em->getRepository( 'App\Models\Entity\Class' )->findOneBy( array( 'id' => 1 ) );
-var_dump( $data );
-
+$user     = $doctrine->em->getRepository(\App\Models\Entity\User::class)->find(1);
 ```
 
-## Usage as a Helper
+### As a helper
 
-In your BaseController - $helpers array, add an element with your helper filename.
+Add `doctrine_helper` to your `BaseController::$helpers`:
 
 ```php
-protected $helpers = [ 'doctrine_helper' ];
-
+protected $helpers = ['doctrine_helper'];
 ```
 
-And then, you can use the helper
-
 ```php
-
-$doctrine = doctrine_instance();
-$data = $doctrine->em->getRepository( 'App\Models\Entity\Class' )->findOneBy( array( 'id' => 1 ) );
-var_dump( $data );
-
+$doctrine  = doctrine_instance();             // default DB group
+$reporting = doctrine_instance('reporting');  // alternate DB group
 ```
 
-## Cli Commands
+### Constructing manually
 
 ```php
+$doctrine = new \Daycry\Doctrine\Doctrine();
+$user     = $doctrine->em->getRepository(\App\Models\Entity\User::class)->find(1);
+```
 
-//Mapping de database to entities classes
-php cli-config.php orm:convert-mapping --namespace="App\Models\Entity\" --force --from-database annotation .
+## Manual Result Caching
 
-//Generate getters & setters
+`getFromCacheOrQuery()` is autoloaded as a global function (no `use` is needed
+beyond the function import). It looks up `$cacheKey` in the configured result
+cache pool and falls back to the closure on miss.
+
+```php
+use function Daycry\Doctrine\Helpers\getFromCacheOrQuery;
+
+$rows = getFromCacheOrQuery(
+    cacheKey: 'projects_list_v1',
+    ttl: 300,
+    queryFn: fn () => $doctrine->em
+        ->createQueryBuilder()
+        ->select('p')
+        ->from(\App\Models\Entity\Project::class, 'p')
+        ->getQuery()
+        ->getArrayResult(),
+);
+```
+
+When the result cache is disabled (`Config\Doctrine::$resultsCache = false`)
+the closure runs every time. PSR-6 reserves the characters
+`{}()/\@:` in cache keys — avoid them.
+
+See [docs/usage.md](docs/usage.md) for advanced API: `getEm()`, `reOpen()`,
+multi-database groups, `Services::resetDoctrine()`, and more.
+
+## Doctrine ORM CLI
+
+Use the generated `cli-config.php` from the project root:
+
+```bash
+php cli-config.php orm:convert-mapping --namespace="App\Models\Entity\\" --force --from-database annotation .
 php cli-config.php orm:generate-entities .
-
-//Generate proxy classes
 php cli-config.php orm:generate-proxies app/Models/Proxies
-
 ```
-If you receive the followrin error:
-**[Semantical Error] The annotation "@JMS\Serializer\Annotation\ExclusionPolicy" in class App\Models\Entity\Secret was never imported. Did you maybe forget to add a "use" statement for this annotation?**
 
+If you encounter the JMS Serializer error *"The annotation
+@JMS\Serializer\Annotation\ExclusionPolicy was never imported"*, run
+`composer dump-autoload` to refresh annotation discovery.
 
-You must execute the following command
+## DataTables
 
 ```php
-    composer dump-autoload
+$datatables = (new \Daycry\Doctrine\DataTables\Builder())
+    ->withColumnAliases([
+        'id'   => 'p.id',
+        'name' => 'p.name',
+    ])
+    ->withSearchableColumns(['p.name'])
+    ->withCaseInsensitive(true)
+    ->withMaxFilterValues(500) // cap [IN] / [OR] value lists; default 500
+    ->withQueryBuilder(
+        $this->doctrine->em->createQueryBuilder()
+            ->select('p.id, p.name')
+            ->from(\App\Models\Entity\Project::class, 'p'),
+    )
+    ->withRequestParams($this->request->getGet());
+
+return $this->response->setJSON($datatables->getResponse());
 ```
 
-## Using DataTables
+If pagination throws *"Not all identifier properties can be found in the
+ResultSetMapping"*, set `->setUseOutputWalkers(false)` on the Builder.
 
-Usage with [doctrine/orm](https://github.com/doctrine/doctrine2):
------
-```php
+### Search modes
 
-$datatables = ( new \Daycry\Doctrine\DataTables\Builder() )
-            ->withColumnAliases(
-                [
-                    'id' => 'qlu.id'
-                ]
-            )
-            ->withIndexColumn( 'qlu.id' )
-            ->withQueryBuilder(
-                $this->doctrine->em->createQueryBuilder()
-                    ->select( 'qlu.param, q.param, q.param, qs.id as param, qlu.param, qlu.param' )
-                    ->from( \App\Models\Entity\Class::class, 'qlu' )
-                    ->innerJoin( \App\Models\Entity\Class::class, 'qs', \Doctrine\ORM\Query\Expr\Join::WITH, 'qs.id = qlu.*' )
-                    ->innerJoin( \App\Models\Entity\Class::class, 'ql', \Doctrine\ORM\Query\Expr\Join::WITH, 'ql.id = qlu.*' )
-                    ->innerJoin( \App\Models\Entity\Class::class, 'q', \Doctrine\ORM\Query\Expr\Join::WITH, 'q.id = ql.*' )
-            )
-            ->withRequestParams( $this->request->getGet( null ) );
-        
-        $response = $datatables->getResponse();
-
-        echo \json_encode( $response );
+The Builder supports bracket-prefixed operators per column:
 
 ```
-
-If you receive an error: **Not all identifier properties can be found in the ResultSetMapping** you can use:
-
-```php
-
-    ->setUseOutputWalkers( false )
-```
-## Example
-
-```php
-
-$datatables = ( new \Daycry\Doctrine\DataTables\Builder() )
-            ->withColumnAliases(
-                [
-                    'id' => 'qlu.id'
-                ]
-            )
-            ->withIndexColumn( 'qlu.id' )
-            ->setUseOutputWalkers( false )
-            ->withQueryBuilder(
-                $this->doctrine->em->createQueryBuilder()
-                    ->select( 'qlu.param, q.param, q.param, qs.id as param, qlu.param, qlu.param' )
-                    ->from( \App\Models\Entity\Class::class, 'qlu' )
-                    ->innerJoin( \App\Models\Entity\Class::class, 'qs', \Doctrine\ORM\Query\Expr\Join::WITH, 'qs.id = qlu.*' )
-                    ->innerJoin( \App\Models\Entity\Class::class, 'ql', \Doctrine\ORM\Query\Expr\Join::WITH, 'ql.id = qlu.*' )
-                    ->innerJoin( \App\Models\Entity\Class::class, 'q', \Doctrine\ORM\Query\Expr\Join::WITH, 'q.id = ql.*' )
-            )
-            ->withRequestParams( $this->request->getGet( null ) );
-        
-        $response = $datatables->getResponse();
-
-        echo \json_encode( $response );
-
+[%]   (LIKE, default)   [=]   [!=]   [>]   [<]   [IN]   [OR]   [><]
 ```
 
-## Search
+Synonyms `[LIKE]` and `[%%]` map to `[%]`. Unknown prefixes silently fall
+back to `[%]`. The DataTables `regex: true` flag is **not supported** —
+sending it raises `InvalidArgumentException`.
 
-To search from datatables there are nine different search modes
+See **[`docs/search_modes.md`](docs/search_modes.md)** for the full operator
+matrix, validation rules, case-insensitivity behaviour and examples.
 
-Mode | Pattern | Desctiption
--------- | ------------- | -----------
-**LIKE '…%'** | [*%]searchTerm | This performs a LIKE '…%' search where the start of the search term must match a value in the given column. This can be archived with only providing the search term (because it's default) or by prefixing the search term with "[*%]" ([*%]searchTerm).
-**LIKE '%…%'**| [%%]searchTerm | This performs a LIKE '%…%' search where any part the search term must match a value in the given column. This can be archived by prefixing the search term with "[%%]" ([%%]searchTerm).
-**Equality** | [=]searchTerm | This performs a = … search. The search term must exactly match a value in the given column. This can be archived by prefixing the search term with "[=]" ([=]searchTerm).
-**!= (No Equality)** | [!=]searchTerm | This performs a != … search. The search term must not exactly match a value in the given column. This can be archived by prefixing the search term with "[!=]" ([!=]searchTerm).
-**>** (Greater Than) | [>]searchTerm | This performs a > … search. The search term must be smaller than a value in the given column. This can be archived by prefixing the search term with "[>]" ([>]searchTerm).
-**<** (Smaller Than) | [<]searchTerm | This performs a < … search. The search term must be greater than a value in the given column. This can be archived by prefixing the search term with "[<]" ([<]searchTerm).
-**< (IN)** | [IN]searchTerm,searchTerm,… | This performs an IN(…) search. One of the provided comma-separated search terms must exactly match a value in the given column. This can be archived by prefixing the search terms with "[IN]" ([IN]searchTerm,searchTerm,…).
-**< (OR)** | [OR]searchTerm,searchTerm,… | This performs multiple OR-connected LIKE('%…%') searches. One of the provided comma-separated search terms must match a fragment of a value in the given column. This can be archived by prefixing the search terms with "[OR]" ([OR]searchTerm,searchTerm,…).
-**\>< (Between)** | [><]searchTerm,searchTerm | This performs a BETWEEN … AND … search. Both search terms must be separated with a comma. This operation can be archived by prefixing the comma-separated search terms with "[><]" ([><]searchTerm,searchTerm).
+## Debug Toolbar
 
-Prefixes are case-insenstive (IN, in, OR, or). Provided search terms were trimmed.
+A `DoctrineCollector` automatically captures every DBAL query so you can
+inspect them in the CodeIgniter Debug Toolbar.
 
-## Example
-
-```php
-
-public function testDataTableSearchColumnWithOr()
-    {
-        $doctrine = new \Daycry\Doctrine\Doctrine($this->config);
-        $request = \Config\Services::request();
-
-        $datatables = ( new \Daycry\Doctrine\DataTables\Builder() )
-            ->withColumnAliases(
-                [
-                    'id' => 't.id',
-                    'name' => 't.name'
-                ]
-            )
-            ->withIndexColumn('qlu.id')
-            ->setUseOutputWalkers(false)
-            ->withCaseInsensitive(false)
-            ->withColumnField('name')
-            ->withQueryBuilder(
-                $doctrine->em->createQueryBuilder()
-                    ->select('t.id, t.name')
-                    ->from(\Tests\Support\Models\Entities\Test::class, 't')
-            )
-            ->withRequestParams(
-                array(
-                    'draw' => 1,
-                    'start' => 0,
-                    'length' => 10,
-                    'search' => array('value' => '', 'regex' => true ),
-                    'columns' => array(
-                        array(
-                            'data' => 'id',
-                            'name' => 'id',
-                            'searchable' => true,
-                            'orderable' => true,
-                            'search' => array('value' => '[OR]1,3', 'regex' => false)
-                        ),
-                        array(
-                            'data' => 'name',
-                            'name' => 'name',
-                            'searchable' => true,
-                            'orderable' => true,
-                            'search' => array('value' => '', 'regex' => false)
-                        )
-                    ),
-                    'order' => array( array( 'column' => 0, 'dir' => 'asc') )
-                )
-            );
-
-        echo $response = json_encode($datatables->getResponse());
-
-    }
-```
-
-## Viewing Doctrine Queries in the Debug Toolbar
-
-This library allows you to view all SQL queries executed by Doctrine directly in the CodeIgniter 4 Debug Toolbar, making it easier to analyze and debug your database interactions.
-
-### How does it work?
-- A custom Collector (`DoctrineCollector`) and Middleware (`DoctrineQueryMiddleware`) are included to capture all queries executed by Doctrine.
-- The Middleware is automatically integrated when you instantiate `\Daycry\Doctrine\Doctrine`.
-- The Collector exposes the query information to the Toolbar, letting you see queries in real time.
-
-### Integration steps
-
-1. **Register the Collector in the Toolbar**
-
-   Open your `app/Config/Toolbar.php` file and add the Doctrine Collector to the `$collectors` array:
+1. Register the collector in `app/Config/Toolbar.php`:
 
    ```php
    public $collectors = [
-       // ...other collectors...
+       // ...
        \Daycry\Doctrine\Debug\Toolbar\Collectors\DoctrineCollector::class,
    ];
    ```
 
-2. **Use the Doctrine class as usual**
+2. Use Doctrine as usual — the middleware self-registers when you instantiate
+   the service.
 
-   When you instantiate `\Daycry\Doctrine\Doctrine` (as a service, helper, or manually), the Middleware is automatically enabled and queries will be captured.
+For long-running CLI workers you can cap the in-memory query log:
 
-3. **View queries in the Toolbar**
+```php
+\Config\Services::doctrineCollector()->setMaxQueries(500); // FIFO; 0 disables the cap
+```
 
-   Whenever you execute any query with Doctrine, you will see a new "Doctrine" tab in the CodeIgniter 4 Debug Toolbar, showing all SQL queries executed during the current request.
-
-### Notes and troubleshooting
-- You do not need to call any method manually to enable the Collector or Middleware.
-- If you do not see the "Doctrine" tab in the Toolbar, make sure the Collector is registered in `Toolbar.php` and that the Toolbar is enabled in your environment.
-- Fully compatible with advanced connections (SQLite3, SSL, custom options) and Doctrine DBAL 4+.
+See [docs/debug_toolbar.md](docs/debug_toolbar.md) for the full collector API,
+the SLC stats badge, and the per-request reset filter.
 
 ## Second-Level Cache (SLC)
 
-Doctrine's Second-Level Cache caches entities across requests using the same cache backend configured in `Config\Cache` (file, redis, memcached). No extra adapter configuration is required.
-
-Enable in `app/Config/Doctrine.php`:
+Doctrine's Second-Level Cache reuses the framework cache backend
+(file / Redis / Memcached / array) and its `ttl`. Enable in
+`app/Config/Doctrine.php`:
 
 ```php
 public bool $secondLevelCache           = true;
-public bool $secondLevelCacheStatistics = true;  // optional: show hits/misses/puts in the Debug Toolbar
+public bool $secondLevelCacheStatistics = true;  // optional: hits/misses/puts badge
 public ?int $secondLevelCacheTtl        = null;   // null = inherit Config\Cache::$ttl; 0 = no expiry
 ```
 
-See [docs/second_level_cache.md](docs/second_level_cache.md) for full details.
+To reset SLC statistics at the start of every request (useful in development
+to read per-request hit ratios in the toolbar), register the filter:
+
+```php
+// app/Config/Filters.php
+public array $globals = [
+    'before' => [
+        \Daycry\Doctrine\Debug\Filters\DoctrineSlcReset::class,
+    ],
+];
+```
+
+The filter is a no-op unless `secondLevelCacheStatistics` is enabled.
+
+See [docs/second_level_cache.md](docs/second_level_cache.md) and
+[docs/second_level_cache_stats.md](docs/second_level_cache_stats.md) for full
+details.
 
 ## Development
 
-Available composer scripts for contributors:
+Available Composer scripts for contributors:
 
 ```bash
-composer test          # Run PHPUnit test suite
-composer phpstan       # PHPStan static analysis (level 6)
+composer test          # PHPUnit test suite
+composer phpstan       # PHPStan (level 6)
 composer psalm         # Psalm static analysis
-composer rector        # Rector dry-run (code quality checks)
-composer analyze       # Run phpstan + psalm + rector
-composer cs            # PHP-CS-Fixer dry-run (check code style)
-composer cs-fix        # PHP-CS-Fixer apply fixes
+composer rector        # Rector dry-run
+composer analyze       # phpstan + psalm + rector
+composer cs            # PHP-CS-Fixer dry-run
+composer cs-fix        # PHP-CS-Fixer apply
 ```
+
+## License
+
+[MIT](LICENSE.md). Issues and PRs welcome at
+<https://github.com/daycry/doctrine>.

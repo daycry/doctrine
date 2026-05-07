@@ -1,55 +1,65 @@
 # Installation
 
 ## Key Concepts
-- Package: `daycry/doctrine` provides Doctrine integration for CodeIgniter 4.
-- Autoload: When installing manually, register the `Daycry\Doctrine` namespace in `app/Config/Autoload.php`.
+
+- Package: `daycry/doctrine` provides Doctrine ORM 3 integration for CodeIgniter 4.
+- Requirements: PHP ≥ 8.2, CodeIgniter ^4, Doctrine ORM ^3, Symfony Cache ^7.
+- Autoload: when installing manually, register the `Daycry\Doctrine` namespace in `app/Config/Autoload.php`.
 
 ## Via Composer
 
-Use Composer to install the package:
-
-```
+```bash
 composer require daycry/doctrine
 ```
 
+After installing, publish the configuration files:
+
+```bash
+php spark doctrine:publish
+```
+
+This generates `app/Config/Doctrine.php` and `cli-config.php` in the project
+root. See [`configuration.md`](configuration.md) for the available options.
+
 ## Manual Installation
 
-Download this repository and enable it by editing `app/Config/Autoload.php` and adding the `Daycry\Doctrine` namespace to the `$psr4` array. For example, if you copied it into `app/ThirdParty`:
+Download this repository and register the namespace in
+`app/Config/Autoload.php`. For example, when copied into `app/ThirdParty`:
 
 ```php
 $psr4 = [
-    'Config'      => APPPATH . 'Config',
-    APP_NAMESPACE => APPPATH,
-    'App'         => APPPATH,
-    'Daycry\Doctrine' => APPPATH .'ThirdParty/doctrine/src',
+    'Config'          => APPPATH . 'Config',
+    APP_NAMESPACE     => APPPATH,
+    'App'             => APPPATH,
+    'Daycry\Doctrine' => APPPATH . 'ThirdParty/doctrine/src',
 ];
 ```
 
+Composer installation is preferred — it keeps dependencies and the
+`autoload.files` entry for the helper function in sync (see below).
+
+## Helper Function Autoload
+
+`Daycry\Doctrine\Helpers\getFromCacheOrQuery()` is autoloaded as a global
+function via the package's `composer.json` `autoload.files` entry. No
+namespace registration is needed; just import it where you use it:
+
+```php
+use function Daycry\Doctrine\Helpers\getFromCacheOrQuery;
+```
+
+See [`usage.md`](usage.md) for the cache-aside example.
+
 ## Notes
-- Prefer Composer installation to ensure dependencies and autoloading are managed correctly.
-- After installation, run `php spark doctrine:publish` to publish configuration files.
 
-## Debug Toolbar Integration
+- For Redis/Memcached cache backends, the corresponding PHP extensions
+  (`ext-redis`, `ext-memcached`) must be installed; the Doctrine service
+  raises a descriptive `CacheException` on missing extensions.
+- Ensure every path listed in `Config\Doctrine::$entities` exists and is
+  readable; misconfigured paths fail fast at construction time.
 
-To view Doctrine queries in the CodeIgniter Debug Toolbar:
+## Debug Toolbar
 
-1. Register the collector in `app/Config/Toolbar.php`:
-   ```php
-   public $collectors = [
-       // ... other collectors ...
-       \Daycry\Doctrine\Debug\Toolbar\Collectors\DoctrineCollector::class,
-   ];
-   ```
-2. Instantiate Doctrine (service, helper, or direct). Middleware auto-registers.
-3. Optional (development): reset Second-Level Cache counters per request by adding the filter in `app/Config/Filters.php`:
-   ```php
-   public array $globals = [
-       'before' => [
-           // ... other filters ...
-           \Daycry\Doctrine\Debug\Filters\DoctrineSlcReset::class,
-       ],
-       'after' => [],
-   ];
-   ```
-
-If you enable `Config\Doctrine::$secondLevelCacheStatistics = true`, the Doctrine panel shows a badge `SLC:hits/misses/puts (ratio%)` and a small statistics table above the queries.
+The package ships a Debug Toolbar collector and an optional per-request reset
+filter for SLC statistics. See [`debug_toolbar.md`](debug_toolbar.md) for the
+collector + filter setup steps.

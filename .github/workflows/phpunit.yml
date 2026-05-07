@@ -81,7 +81,7 @@ jobs:
         run: composer test -- --color=always --coverage-clover=build/logs/clover.xml
 
       - name: Upload coverage to Coveralls
-        if: matrix.php-versions == '8.2' && matrix.mysql-versions == '8.0'
+        if: matrix.php-versions == '8.5' && matrix.mysql-versions == '8.0'
         uses: coverallsapp/github-action@v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -101,4 +101,4 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           parallel-finished: true
-          carryforward: "PHP-8.2-MySQL-8.0"
+          carryforward: "PHP-8.5-MySQL-8.0"

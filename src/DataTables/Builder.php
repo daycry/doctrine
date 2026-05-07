@@ -150,6 +150,21 @@ class Builder
         $columns = $this->requestParams['columns'];
         $c       = count($columns);
 
+        // Reject regex search mode only when it would actually be applied (non-empty value).
+        // DataTables clients commonly send `regex` keys for every column even when the value is
+        // empty; raising on empty values would force callers to strip noise from their payload.
+        $globalSearchValue = trim((string) ($this->requestParams['search']['value'] ?? ''));
+        if ($globalSearchValue !== '' && ! empty($this->requestParams['search']['regex'])) {
+            throw new InvalidArgumentException('Regex search is not supported. Use bracket-prefix operators like [IN], [OR], [><] instead.');
+        }
+
+        foreach ($columns as $column) {
+            $columnSearchValue = trim((string) ($column['search']['value'] ?? ''));
+            if ($columnSearchValue !== '' && ! empty($column['search']['regex'] ?? null)) {
+                throw new InvalidArgumentException('Regex per-column search is not supported. Use bracket-prefix operators like [IN], [OR], [><] instead.');
+            }
+        }
+
         // Search
         if (array_key_exists('search', $this->requestParams)) {
             $value = mb_substr(trim($this->requestParams['search']['value'] ?? ''), 0, 255);
@@ -269,11 +284,15 @@ class Builder
 
                     case '><':
                         $valueArr = explode(',', $value);
-                        if (count($valueArr) === 2) {
-                            $andX->add($query->expr()->between($fieldName, ":filter_{$i}_0", ":filter_{$i}_1"));
-                            $query->setParameter("filter_{$i}_0", trim($valueArr[0]));
-                            $query->setParameter("filter_{$i}_1", trim($valueArr[1]));
+                        if (count($valueArr) !== 2) {
+                            throw new InvalidArgumentException(sprintf(
+                                'BETWEEN operator [><] requires exactly 2 comma-separated values, got %d.',
+                                count($valueArr),
+                            ));
                         }
+                        $andX->add($query->expr()->between($fieldName, ":filter_{$i}_0", ":filter_{$i}_1"));
+                        $query->setParameter("filter_{$i}_0", trim($valueArr[0]));
+                        $query->setParameter("filter_{$i}_1", trim($valueArr[1]));
                         break;
 
                     case '=':
@@ -305,18 +324,25 @@ class Builder
      */
     private function parseFilterOperator(string $raw): array
     {
-        $operator = preg_match('~^\[(?<operator>[A-Z!=%<>•]+)\]~i', $raw, $m) ? strtoupper($m['operator']) : '%';
-        $value    = preg_replace('~^\[[A-Z!=%<>•]+\]~i', '', $raw);
-        // Normalize synonyms
-        if (in_array($operator, ['LIKE', '%%'], true)) {
+        $validPattern  = '~^\[(?<operator>!=|><|>|<|=|%%|%|IN|OR|LIKE)\]~i';
+        $bracketPrefix = '~^\[[^\]]+\]~';
+
+        if (preg_match($validPattern, $raw, $m)) {
+            $operator = strtoupper($m['operator']);
+            $value    = preg_replace($validPattern, '', $raw);
+        } else {
+            // Unknown bracket prefixes (typos like "[XYZ]") fall back to LIKE; the
+            // prefix itself is stripped so the user-facing search term works as-is.
             $operator = '%';
+            $value    = preg_replace($bracketPrefix, '', $raw);
         }
-        $valid = ['!=', '<', '>', 'IN', 'OR', '><', '=', '%'];
-        if (! in_array($operator, $valid, true)) {
+
+        // Normalize synonyms
+        if ($operator === 'LIKE' || $operator === '%%') {
             $operator = '%';
         }
 
-        return [$operator, trim($value)];
+        return [$operator, trim($value ?? $raw)];
     }
 
     /**

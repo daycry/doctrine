@@ -6,24 +6,24 @@ use DateTime;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity, ORM\HasLifecycleCallbacks]
+#[ORM\Index(name: 'deleted_at', columns: ['deleted_at'])]
 #[ORM\Table(name: 'test')]
-#[ORM\UniqueConstraint(name: "name", columns: ["name"])]
-#[ORM\Index(name: "deleted_at", columns: ["deleted_at"])]
+#[ORM\UniqueConstraint(name: 'name', columns: ['name'])]
 class TestAttribute
 {
-    #[ORM\Id, ORM\Column(name: "id", type: "integer", nullable: false), ORM\GeneratedValue(strategy: "IDENTITY")]
+    #[ORM\Column(name: 'id', type: 'integer', nullable: false), ORM\GeneratedValue(strategy: 'IDENTITY'),ORM\Id]
     private ?int $id = null;
 
-    #[ORM\Column(name: "name", type: "string", nullable: false)]
+    #[ORM\Column(name: 'name', type: 'string', nullable: false)]
     private string $name = '';
 
-    #[ORM\Column(name: "created_at", type: "datetime", nullable: false, options: ["default" => "CURRENT_TIMESTAMP"])]
+    #[ORM\Column(name: 'created_at', type: 'datetime', nullable: false, options: ['default' => 'CURRENT_TIMESTAMP'])]
     private ?DateTime $createdAt = null;
 
-    #[ORM\Column(name: "updated_at", type: "datetime", nullable: true)]
+    #[ORM\Column(name: 'updated_at', type: 'datetime', nullable: true)]
     private ?DateTime $updatedAt = null;
 
-    #[ORM\Column(name: "deleted_at", type: "datetime", nullable: true)]
+    #[ORM\Column(name: 'deleted_at', type: 'datetime', nullable: true)]
     private ?DateTime $deletedAt = null;
 
     #[ORM\PrePersist]

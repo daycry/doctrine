@@ -4,39 +4,27 @@ declare(strict_types=1);
 
 namespace Daycry\Doctrine\Libraries;
 
-use CodeIgniter\Cache\Exceptions\CacheException;
 use CodeIgniter\Cache\Handlers\RedisHandler;
 use Config\Cache;
-use Throwable;
+use Redis as NativeRedis;
 
 /**
- * Redis cache handler extension for Doctrine integration.
+ * Redis cache handler extension that exposes the native client to Doctrine.
  */
 class Redis extends RedisHandler
 {
-    /**
-     * Redis constructor.
-     *
-     * @param Cache $config Cache configuration
-     */
+    use InitializesNativeClient;
+
     public function __construct(Cache $config)
     {
-        if (! extension_loaded('redis')) {
-            throw new CacheException('Redis extension not loaded; install php-redis to enable Redis cache backend.');
-        }
         parent::__construct($config);
-
-        try {
-            $this->initialize();
-        } catch (Throwable $e) {
-            throw new CacheException('Failed to connect to Redis: ' . $e->getMessage(), 0, $e);
-        }
+        $this->bootClient('redis', 'Redis');
     }
 
     /**
-     * Get the native Redis client instance.
+     * Native Redis client used by Symfony Cache adapters.
      */
-    public function getInstance(): mixed
+    public function getInstance(): ?NativeRedis
     {
         return $this->redis;
     }

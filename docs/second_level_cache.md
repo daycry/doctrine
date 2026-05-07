@@ -1,57 +1,78 @@
 # Doctrine Second-Level Cache (SLC)
 
-This library optionally integrates Doctrine's Second-Level Cache (SLC). When enabled, entities can be cached across requests to reduce database load and improve performance for read-mostly data.
+The library wires Doctrine's Second-Level Cache (SLC) to the framework cache
+backend. When enabled, entities can be cached across requests to reduce
+database load and improve performance for read-mostly data.
 
 ## Key Concepts
-- Enable: single boolean in `app/Config/Doctrine.php` (`public bool $secondLevelCache = true;`).
-- Backend: reuses the framework cache backend from `Config\Cache` (file, redis, memcached, array) and its `ttl`.
-- Factory: `DefaultCacheFactory` is set up automatically in `src/Doctrine.php`; no app code changes required.
-- Regions: Doctrine manages regions and invalidation internally when entities change.
- - Statistics (optional): enable counters with `public bool $secondLevelCacheStatistics = true;` and view them in the Debug Toolbar.
+
+- **Enable:** a single boolean in `app/Config/Doctrine.php`
+  (`public bool $secondLevelCache = true;`).
+- **Backend:** reuses the framework cache backend from `Config\Cache` — file,
+  Redis, Memcached or in-memory array — and its `ttl`.
+- **Factory:** `DefaultCacheFactory` is set up automatically in
+  `src/Doctrine.php`; no application code required.
+- **Regions:** Doctrine creates and invalidates regions automatically per
+  entity. Manual region naming is optional and only useful for granular
+  invalidation strategies.
+- **Statistics (optional):** enable counters via
+  `public bool $secondLevelCacheStatistics = true;`. See
+  [`second_level_cache_stats.md`](second_level_cache_stats.md) for the API
+  and [`debug_toolbar.md`](debug_toolbar.md#resetting-stats-per-request) for
+  the per-request reset filter.
 
 ## Enable and Configure
 
-Publish config if you haven't:
+Publish the config if you haven't already:
 
 ```bash
 php spark doctrine:publish
 ```
 
-Then edit `app/Config/Doctrine.php` and set (see also [Configuration](configuration.md)):
+Then edit `app/Config/Doctrine.php`:
 
 ```php
-public bool $secondLevelCache = true;
-public bool $secondLevelCacheStatistics = true; // optional: show SLC hits/misses/puts in the Debug Toolbar
+public bool $secondLevelCache           = true;
+public bool $secondLevelCacheStatistics = true; // optional
 ```
 
-No application code changes are required to wire the factory; `src/Doctrine.php` sets up `DefaultCacheFactory` using the same cache backend configured in `Config\Cache` (file/redis/memcached/array) and its `ttl`.
+## TTL Override
 
-## Notes
-- Ensure cache adapters are available (extensions for Redis/Memcached). The service throws descriptive errors if missing.
-- Lifetimes follow the framework `ttl` by default. You can override specifically for SLC using `public ?int $secondLevelCacheTtl` in `app/Config/Doctrine.php`:
-    - `null`: inherit framework cache `ttl` from `Config\Cache`.
-    - `0`: no expiration (entries persist until invalidated by Doctrine).
-    - `> 0`: set a custom TTL in seconds just for SLC.
+```php
+public ?int $secondLevelCacheTtl = null;
+```
+
+| Value | Behaviour |
+|-------|-----------|
+| `null` | Inherit `Config\Cache::$ttl` (default). |
+| `0`    | No expiration — entries persist until Doctrine invalidates them. |
+| `> 0`  | Custom SLC TTL in seconds (overrides `Config\Cache::$ttl` only for SLC). |
 
 ## Cache Key Namespace
 
-SLC entries use the framework cache prefix plus `doctrine_slc` as namespace root:
+SLC entries use the framework cache prefix plus `doctrine_slc` as namespace
+root:
 
 ```
 <cache prefix>doctrine_slc
 ```
 
-Within this namespace Doctrine creates internal region keys. Flushing or updating entities invalidates affected region entries automatically—no manual deletion is required.
+Within this namespace Doctrine creates internal region keys. Flushing or
+updating entities invalidates affected region entries automatically — manual
+deletion is not required and is generally discouraged.
 
 ## Mark Entities as Cacheable
 
-Use Doctrine attributes to mark cacheable entities and optionally define a region:
+Use Doctrine attributes to mark entities cacheable:
 
 ```php
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
-#[ORM\Cache(usage: 'READ_ONLY', region: 'default_region')]
+#[ORM\Cache(
+    usage: 'READ_ONLY',         // READ_ONLY | NONSTRICT_READ_WRITE | READ_WRITE
+    region: 'default_region',   // optional; omit to use the Doctrine default
+)]
 class Product
 {
     #[ORM\Id]
@@ -64,26 +85,35 @@ class Product
 }
 ```
 
-Common `usage` values:
-- `READ_ONLY`: fastest; use for immutable data.
-- `NONSTRICT_READ_WRITE`: allows concurrent reads with eventual consistency.
-- `READ_WRITE`: strict invalidation; slightly slower.
+`usage` semantics:
+
+- `READ_ONLY` — fastest; use for immutable reference data.
+- `NONSTRICT_READ_WRITE` — concurrent reads with eventual consistency.
+- `READ_WRITE` — strict invalidation; slightly slower under concurrency.
 
 ## Best Practices
 
-- Prefer `READ_ONLY` for reference/lookup tables.
-- Avoid caching highly volatile entities unless using `READ_WRITE` and proper invalidation.
-- Use distinct regions to separate concerns; lifetimes follow the framework `ttl`.
-- Verify cache adapter availability (extensions for Redis/Memcached) in your environment.
+- Prefer `READ_ONLY` for reference / lookup tables.
+- Avoid caching highly volatile entities unless using `READ_WRITE` and
+  knowing the invalidation cost.
+- Use distinct regions to separate concerns when needed; lifetimes follow
+  the framework `ttl` unless overridden via `secondLevelCacheTtl`.
+- Verify cache adapter availability (extensions for Redis / Memcached) in
+  every environment.
 
 ## Troubleshooting
 
-- If the SLC does not seem effective, ensure entities are annotated with `#[ORM\Cache(...)]` and queries aren’t bypassing the cache (e.g., custom hydrators).
-- With `file` adapter, ensure the framework's cache directory is writable.
-- For Redis/Memcached, confirm the PHP extensions are loaded and credentials in `Config\Cache` are correct.
-- To inspect raw keys: list entries filtered by the prefix plus `doctrine_slc`. Avoid manual deletion unless performing a full cache reset.
+- If SLC does not seem effective, ensure entities are annotated with
+  `#[ORM\Cache(...)]` and that queries are not bypassing the cache (eg.
+  custom hydrators, `setHint(Query::HINT_CACHE_ENABLED, false)`).
+- With the `file` adapter, ensure the framework's cache directory is
+  writable.
+- For Redis / Memcached, confirm the PHP extensions are loaded and the
+  credentials in `Config\Cache` are correct.
 
 ## See Also
 
-- Debug Toolbar integration and SLC stats badge/table: [Debug Toolbar](debug_toolbar.md)
-- How to enable and view counters programmatically: [SLC Statistics](second_level_cache_stats.md)
+- Toolbar integration and the `SLC: hits/misses/puts (ratio%)` badge:
+  [`debug_toolbar.md`](debug_toolbar.md)
+- Statistics API and counters reset:
+  [`second_level_cache_stats.md`](second_level_cache_stats.md)

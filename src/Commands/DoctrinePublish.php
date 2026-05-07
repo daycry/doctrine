@@ -44,7 +44,7 @@ class DoctrinePublish extends BaseCommand
         if ($this->sourcePath === '/' || empty($this->sourcePath)) {
             CLI::error('Unable to determine the correct source directory. Bailing.');
 
-            exit();
+            exit(1);
         }
     }
 
@@ -59,7 +59,7 @@ class DoctrinePublish extends BaseCommand
         if ($content === false) {
             CLI::error("Unable to read source file: {$path}");
 
-            exit();
+            exit(1);
         }
         $this->writeFile('../cli-config.php', $content);
     }
@@ -75,7 +75,7 @@ class DoctrinePublish extends BaseCommand
         if ($content === false) {
             CLI::error("Unable to read source file: {$path}");
 
-            exit();
+            exit(1);
         }
         $content = str_replace('namespace Daycry\\Doctrine\\Config', 'namespace Config', $content);
         $content = str_replace('extends BaseConfig', 'extends \\Daycry\\Doctrine\\Config\\Doctrine', $content);
@@ -94,7 +94,7 @@ class DoctrinePublish extends BaseCommand
         if ($appPath === null) {
             CLI::error('APP_NAMESPACE "' . APP_NAMESPACE . '" not found in autoload psr4 configuration.');
 
-            exit();
+            exit(1);
         }
         $directory = dirname($appPath . $path);
         if (! is_dir($directory)) {
@@ -103,7 +103,7 @@ class DoctrinePublish extends BaseCommand
         if (file_exists($appPath . $path) && CLI::prompt('Config file already exists, do you want to replace it?', ['y', 'n']) === 'n') {
             CLI::error('Cancelled');
 
-            exit();
+            exit(1);
         }
 
         try {
@@ -112,7 +112,7 @@ class DoctrinePublish extends BaseCommand
         } catch (Throwable $e) {
             $this->showError($e);
 
-            exit();
+            exit(1);
         }
         $path = str_replace($appPath, '', $path);
         CLI::write(CLI::color('Created: ', 'yellow') . $path);

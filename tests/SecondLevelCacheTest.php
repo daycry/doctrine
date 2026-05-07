@@ -2,29 +2,31 @@
 
 declare(strict_types=1);
 
-use Doctrine\ORM\Cache\CacheConfiguration;
-
 use CodeIgniter\Test\CIUnitTestCase;
 use Daycry\Doctrine\Config\Doctrine as DoctrineConfig;
 use Daycry\Doctrine\Doctrine;
-use Tests\Support\Models\Entities\CacheableProduct;
+use Doctrine\ORM\Cache\CacheConfiguration;
 use Doctrine\ORM\Tools\SchemaTool;
+use Tests\Support\Models\Entities\CacheableProduct;
 
+/**
+ * @internal
+ */
 final class SecondLevelCacheTest extends CIUnitTestCase
 {
     public function testSecondLevelCacheConfigurationIsApplied()
     {
         // Force SQLite3 in-memory for tests
-        $db = config('Database');
+        $db                    = config('Database');
         $db->tests['DBDriver'] = 'SQLite3';
         $db->tests['database'] = ':memory:';
 
-        $config = new DoctrineConfig();
-        $config->entities = [__DIR__ . '/_support/Models/Entities'];
+        $config                   = new DoctrineConfig();
+        $config->entities         = [__DIR__ . '/_support/Models/Entities'];
         $config->secondLevelCache = true;
 
         $doctrine = new Doctrine($config, config('Cache'), 'tests');
-        $em = $doctrine->em;
+        $em       = $doctrine->em;
 
         $this->assertTrue($em->getConfiguration()->isSecondLevelCacheEnabled());
         $this->assertInstanceOf(CacheConfiguration::class, $em->getConfiguration()->getSecondLevelCacheConfiguration());
@@ -33,23 +35,24 @@ final class SecondLevelCacheTest extends CIUnitTestCase
     public function testPersistAndFetchCacheableEntityWithoutErrors()
     {
         // Force SQLite3 in-memory for tests
-        $db = config('Database');
+        $db                    = config('Database');
         $db->tests['DBDriver'] = 'SQLite3';
         $db->tests['database'] = ':memory:';
 
-        $config = new DoctrineConfig();
-        $config->entities = [__DIR__ . '/_support/Models/Entities'];
+        $config                   = new DoctrineConfig();
+        $config->entities         = [__DIR__ . '/_support/Models/Entities'];
         $config->secondLevelCache = true;
 
         $doctrine = new Doctrine($config, config('Cache'), 'tests');
-        $em = $doctrine->em;
+        $em       = $doctrine->em;
 
         // Skip on SQLite memory DB if schema not available
         // Minimal check: ensure EntityManager works and operations do not error out
         $product = new CacheableProduct('Sample');
         // Create schema for the entity
         $metadata = $em->getClassMetadata(CacheableProduct::class);
-        $tool = new SchemaTool($em);
+        $tool     = new SchemaTool($em);
+
         try {
             $tool->createSchema([$metadata]);
         } catch (Throwable $e) {
@@ -71,7 +74,7 @@ final class SecondLevelCacheTest extends CIUnitTestCase
         // Cleanup schema
         try {
             $tool->dropSchema([$metadata]);
-        } catch (Throwable $e) {
+        } catch (Throwable) {
             // ignore
         }
     }
@@ -79,17 +82,17 @@ final class SecondLevelCacheTest extends CIUnitTestCase
     public function testSecondLevelCacheNoExpiryTtlZero()
     {
         // Force SQLite3 in-memory for tests
-        $db = config('Database');
+        $db                    = config('Database');
         $db->tests['DBDriver'] = 'SQLite3';
         $db->tests['database'] = ':memory:';
 
-        $config = new DoctrineConfig();
-        $config->entities = [__DIR__ . '/_support/Models/Entities'];
-        $config->secondLevelCache = true;
+        $config                      = new DoctrineConfig();
+        $config->entities            = [__DIR__ . '/_support/Models/Entities'];
+        $config->secondLevelCache    = true;
         $config->secondLevelCacheTtl = 0; // no expiration
 
         $doctrine = new Doctrine($config, config('Cache'), 'tests');
-        $em = $doctrine->em;
+        $em       = $doctrine->em;
 
         $this->assertTrue($em->getConfiguration()->isSecondLevelCacheEnabled());
         $slc = $em->getConfiguration()->getSecondLevelCacheConfiguration();

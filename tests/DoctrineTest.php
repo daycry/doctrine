@@ -4,15 +4,17 @@ declare(strict_types=1);
 
 namespace Tests;
 
-use Config\Services;
 use CodeIgniter\Test\DatabaseTestTrait;
-use Tests\Support\Database\Seeds\TestSeeder;
-use Doctrine\ORM\EntityManager;
-use Daycry\Doctrine\Doctrine;
-use Daycry\Doctrine\Config\Doctrine as DoctrineConfig;
-use Tests\Support\TestCase;
 use Config\Cache;
+use Config\Services;
+use Daycry\Doctrine\Doctrine;
+use Doctrine\ORM\EntityManager;
+use Tests\Support\Database\Seeds\TestSeeder;
+use Tests\Support\TestCase;
 
+/**
+ * @internal
+ */
 final class DoctrineTest extends TestCase
 {
     use DatabaseTestTrait;
@@ -20,8 +22,8 @@ final class DoctrineTest extends TestCase
     protected $migrate     = true;
     protected $migrateOnce = false;
     protected $refresh     = true;
-    protected $seedOnce = false;
-    protected $seed = TestSeeder::class;
+    protected $seedOnce    = false;
+    protected $seed        = TestSeeder::class;
 
     protected function setUp(): void
     {
@@ -59,7 +61,7 @@ final class DoctrineTest extends TestCase
     public function testInstanceDoctrineRedis()
     {
         /** @var Cache $cacheConf */
-        $cacheConf = config('Cache');
+        $cacheConf          = config('Cache');
         $cacheConf->handler = 'redis';
 
         $cache = Services::cache($cacheConf);
@@ -75,7 +77,7 @@ final class DoctrineTest extends TestCase
     public function testInstanceDoctrineFile()
     {
         /** @var Cache $cacheConf */
-        $cacheConf = config('Cache');
+        $cacheConf          = config('Cache');
         $cacheConf->handler = 'file';
 
         $doctrine = new Doctrine($this->config, $cacheConf);
@@ -86,12 +88,12 @@ final class DoctrineTest extends TestCase
 
     public function testInstanceDoctrineMemcached()
     {
-        if (!extension_loaded('memcached')) {
+        if (! extension_loaded('memcached')) {
             $this->markTestSkipped('La extensión memcached no está habilitada.');
         }
-        
+
         /** @var Cache $cacheConf */
-        $cacheConf = config('Cache');
+        $cacheConf          = config('Cache');
         $cacheConf->handler = 'memcached';
 
         $doctrine = new Doctrine($this->config, $cacheConf);
@@ -103,7 +105,7 @@ final class DoctrineTest extends TestCase
     public function testInstanceDoctrineArray()
     {
         /** @var Cache $cacheConf */
-        $cacheConf = config('Cache');
+        $cacheConf          = config('Cache');
         $cacheConf->handler = 'dummy';
 
         $doctrine = new Doctrine($this->config, $cacheConf);
@@ -126,23 +128,23 @@ final class DoctrineTest extends TestCase
     {
         $dbConfig = config('Database');
         // Crea un objeto temporal con el grupo custom
-        $customConfig = clone $dbConfig;
+        $customConfig        = clone $dbConfig;
         $customConfig->tests = $dbConfig->tests;
-        $doctrine = new Doctrine($this->config, null, 'tests');
+        $doctrine            = new Doctrine($this->config, null, 'tests');
         $this->assertInstanceOf(Doctrine::class, $doctrine);
         $this->assertInstanceOf(EntityManager::class, $doctrine->em);
     }
 
     public function testDoctrineWithSSLOptions()
     {
-        $dbConfig = $this->getMysqlConfig();
+        $dbConfig                   = $this->getMysqlConfig();
         $dbConfig->tests['sslmode'] = 'require';
         $dbConfig->tests['sslcert'] = '/path/to/cert.pem';
-        $dbConfig->tests['sslkey'] = '/path/to/key.pem';
-        $dbConfig->tests['sslca'] = '/path/to/ca.pem';
-        $doctrine = new Doctrine($this->config, null, 'tests');
-        $options = $doctrine->em->getConnection()->getParams();
-        if (!isset($options['sslmode']) || !isset($options['sslcert']) || !isset($options['sslkey']) || !isset($options['sslca'])) {
+        $dbConfig->tests['sslkey']  = '/path/to/key.pem';
+        $dbConfig->tests['sslca']   = '/path/to/ca.pem';
+        $doctrine                   = new Doctrine($this->config, null, 'tests');
+        $options                    = $doctrine->em->getConnection()->getParams();
+        if (! isset($options['sslmode']) || ! isset($options['sslcert']) || ! isset($options['sslkey']) || ! isset($options['sslca'])) {
             $this->markTestSkipped('SSL options not available in this environment/config.');
         }
         $this->assertSame('require', $options['sslmode']);
@@ -153,14 +155,14 @@ final class DoctrineTest extends TestCase
 
     public function testDoctrineWithCustomOptions()
     {
-        $dbConfig = $this->getMysqlConfig();
+        $dbConfig                   = $this->getMysqlConfig();
         $dbConfig->tests['options'] = [
             'foo' => 'bar',
-            'baz' => 123
+            'baz' => 123,
         ];
         $doctrine = new Doctrine($this->config, null, 'tests');
-        $options = $doctrine->em->getConnection()->getParams();
-        if (!isset($options['foo']) || !isset($options['baz'])) {
+        $options  = $doctrine->em->getConnection()->getParams();
+        if (! isset($options['foo']) || ! isset($options['baz'])) {
             $this->markTestSkipped('Custom options not available in this environment/config.');
         }
         $this->assertSame('bar', $options['foo']);

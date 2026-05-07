@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace Tests;
 
-use Throwable;
-use Tests\Support\TestCase;
-use Tests\Support\Models\Entities\TestAttribute;
-use Daycry\Doctrine\Doctrine;
 use Daycry\Doctrine\Debug\Toolbar\Collectors\DoctrineCollector;
+use Daycry\Doctrine\Doctrine;
 use Doctrine\ORM\Tools\SchemaTool;
+use Tests\Support\Models\Entities\TestAttribute;
+use Tests\Support\TestCase;
+use Throwable;
 
 /**
  * Covers DoctrineQueryMiddleware Connection methods that require an active DB:
@@ -17,6 +17,8 @@ use Doctrine\ORM\Tools\SchemaTool;
  * getNativeConnection(), quote(), getServerVersion(), getExceptionConverter().
  *
  * All tests use SQLite :memory: — no external service required.
+ *
+ * @internal
  */
 final class DoctrineMiddlewareCoverageTest extends TestCase
 {
@@ -57,7 +59,7 @@ final class DoctrineMiddlewareCoverageTest extends TestCase
     {
         $tool = $this->createSchema();
 
-        $conn = $this->doctrine->em->getConnection();
+        $conn   = $this->doctrine->em->getConnection();
         $result = $conn->executeQuery('SELECT 1');
         $row    = $result->fetchOne();
 
@@ -76,7 +78,7 @@ final class DoctrineMiddlewareCoverageTest extends TestCase
         // Insert a row inside the transaction
         $conn->executeStatement(
             'INSERT INTO test (name, created_at) VALUES (?, ?)',
-            ['tx_test', '2026-01-01 00:00:00']
+            ['tx_test', '2026-01-01 00:00:00'],
         );
 
         $conn->commit();
@@ -96,7 +98,7 @@ final class DoctrineMiddlewareCoverageTest extends TestCase
 
         $conn->executeStatement(
             'INSERT INTO test (name, created_at) VALUES (?, ?)',
-            ['rollback_test', '2026-01-01 00:00:00']
+            ['rollback_test', '2026-01-01 00:00:00'],
         );
 
         $conn->rollBack();
@@ -111,14 +113,14 @@ final class DoctrineMiddlewareCoverageTest extends TestCase
     {
         $tool = $this->createSchema();
 
-        $conn          = $this->doctrine->em->getConnection();
-        $collector     = new DoctrineCollector();
+        $conn      = $this->doctrine->em->getConnection();
+        $collector = new DoctrineCollector();
         count($collector->getQueries());
 
         // executeStatement routes through exec() on the middleware Connection
         $affected = $conn->executeStatement(
             'INSERT INTO test (name, created_at) VALUES (?, ?)',
-            ['exec_test', '2026-01-01 00:00:00']
+            ['exec_test', '2026-01-01 00:00:00'],
         );
 
         $this->assertGreaterThanOrEqual(1, $affected);
@@ -133,7 +135,7 @@ final class DoctrineMiddlewareCoverageTest extends TestCase
         $conn = $this->doctrine->em->getConnection();
         $conn->executeStatement(
             'INSERT INTO test (name, created_at) VALUES (?, ?)',
-            ['insert_id_test', '2026-01-01 00:00:00']
+            ['insert_id_test', '2026-01-01 00:00:00'],
         );
 
         $id = $conn->lastInsertId();
@@ -156,7 +158,7 @@ final class DoctrineMiddlewareCoverageTest extends TestCase
         $conn   = $this->doctrine->em->getConnection();
         $quoted = $conn->quote("O'Reilly");
 
-        $this->assertStringContainsString("O", $quoted);
+        $this->assertStringContainsString('O', $quoted);
         $this->assertIsString($quoted);
     }
 

@@ -16,7 +16,6 @@ use Rector\CodingStyle\Rector\ClassMethod\FuncGetArgsToVariadicParamRector;
 use Rector\CodingStyle\Rector\ClassMethod\MakeInheritedMethodVisibilitySameAsParentRector;
 use Rector\CodingStyle\Rector\FuncCall\CountArrayToEmptyArrayComparisonRector;
 use Rector\Config\RectorConfig;
-use Rector\DeadCode\Rector\ClassMethod\RemoveUnusedPromotedPropertyRector;
 use Rector\EarlyReturn\Rector\Foreach_\ChangeNestedForeachIfsToEarlyContinueRector;
 use Rector\EarlyReturn\Rector\If_\ChangeIfElseValueAssignToEarlyReturnRector;
 use Rector\EarlyReturn\Rector\If_\RemoveAlwaysElseRector;
@@ -29,7 +28,7 @@ use Rector\Set\ValueObject\SetList;
 use Rector\ValueObject\PhpVersion;
 
 return static function (RectorConfig $rectorConfig): void {
-    $rectorConfig->sets([SetList::DEAD_CODE, LevelSetList::UP_TO_PHP_74, PHPUnitSetList::PHPUNIT_CODE_QUALITY, PHPUnitSetList::PHPUNIT_80]);
+    $rectorConfig->sets([SetList::DEAD_CODE, LevelSetList::UP_TO_PHP_82, PHPUnitSetList::PHPUNIT_CODE_QUALITY, PHPUnitSetList::PHPUNIT_100]);
     $rectorConfig->parallel();
     // The paths to refactor (can also be supplied with CLI arguments)
     $rectorConfig->paths([
@@ -52,7 +51,7 @@ return static function (RectorConfig $rectorConfig): void {
     }
 
     // Set the target version for refactoring
-    $rectorConfig->phpVersion(PhpVersion::PHP_74);
+    $rectorConfig->phpVersion(PhpVersion::PHP_82);
 
     // Auto-import fully qualified class names
     $rectorConfig->importNames();
@@ -63,19 +62,8 @@ return static function (RectorConfig $rectorConfig): void {
 
         StringifyStrNeedlesRector::class,
 
-        // Note: requires php 8
-        RemoveUnusedPromotedPropertyRector::class,
-
-        // Ignore tests that might make calls without a result
-        // RemoveEmptyMethodCallRector removed in current Rector version
-
-        // Ignore files that should not be namespaced
-        // NormalizeNamespaceByPSR4ComposerAutoloadRector removed in current Rector version
-
         // May load view files directly when detecting classes
         StringClassNameToClassConstantRector::class,
-
-        // May be uninitialized on purpose — AddDefaultValueForUndefinedVariableRector removed in current Rector version
     ]);
     $rectorConfig->rule(SimplifyUselessVariableRector::class);
     $rectorConfig->rule(RemoveAlwaysElseRector::class);
