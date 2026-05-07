@@ -32,9 +32,6 @@
 			<directory suffix=".php">./src</directory>
 		</include>
 		<exclude>
-			<directory suffix=".php">./src/Config</directory>
-			<directory suffix=".php">./src/Commands</directory>
-			<directory suffix=".php">./src/Cache</directory>
 			<file>./src/cli-config.php</file>
 		</exclude>
 	</source>
