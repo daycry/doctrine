@@ -37,7 +37,10 @@
     "autoload": {
         "psr-4": {
             "Daycry\\Doctrine\\": "src/"
-        }
+        },
+        "files": [
+            "src/Helpers/getFromCacheOrQuery.php"
+        ]
     },
     "autoload-dev":
     {
