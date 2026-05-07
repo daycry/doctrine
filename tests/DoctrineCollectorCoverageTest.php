@@ -43,6 +43,43 @@ final class DoctrineCollectorCoverageTest extends TestCase
         $this->assertSame([], $collector->getQueries());
     }
 
+    public function testAddQueryEvictsOldestWhenMaxQueriesReached(): void
+    {
+        $collector = new DoctrineCollector();
+        $collector->setMaxQueries(2);
+
+        $collector->addQuery(['sql' => 'SELECT 1', 'params' => [], 'duration' => 0.0]);
+        $collector->addQuery(['sql' => 'SELECT 2', 'params' => [], 'duration' => 0.0]);
+        $collector->addQuery(['sql' => 'SELECT 3', 'params' => [], 'duration' => 0.0]);
+
+        $sqls = array_column($collector->getQueries(), 'sql');
+        $this->assertSame(['SELECT 2', 'SELECT 3'], $sqls, 'Oldest query must be dropped FIFO when the cap is reached.');
+    }
+
+    public function testSetMaxQueriesWithZeroDisablesTheCap(): void
+    {
+        $collector = new DoctrineCollector();
+        $collector->setMaxQueries(0);
+
+        for ($i = 0; $i < 5; $i++) {
+            $collector->addQuery(['sql' => 'SELECT ' . $i, 'params' => [], 'duration' => 0.0]);
+        }
+
+        $this->assertCount(5, $collector->getQueries(), 'Cap of 0 must keep every query.');
+    }
+
+    public function testSetMaxQueriesNormalisesNegativeToZero(): void
+    {
+        $collector = new DoctrineCollector();
+        $collector->setMaxQueries(-3);
+
+        for ($i = 0; $i < 3; $i++) {
+            $collector->addQuery(['sql' => 'SELECT ' . $i, 'params' => [], 'duration' => 0.0]);
+        }
+
+        $this->assertCount(3, $collector->getQueries());
+    }
+
     public function testIconReturnsPngDataUrl(): void
     {
         $collector = new DoctrineCollector();
