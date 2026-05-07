@@ -4,39 +4,27 @@ declare(strict_types=1);
 
 namespace Daycry\Doctrine\Libraries;
 
-use CodeIgniter\Cache\Exceptions\CacheException;
 use CodeIgniter\Cache\Handlers\MemcachedHandler;
 use Config\Cache;
-use Throwable;
+use Memcached as NativeMemcached;
 
 /**
- * Memcached cache handler extension for Doctrine integration.
+ * Memcached cache handler extension that exposes the native client to Doctrine.
  */
 class Memcached extends MemcachedHandler
 {
-    /**
-     * Memcached constructor.
-     *
-     * @param Cache $config Cache configuration
-     */
+    use InitializesNativeClient;
+
     public function __construct(Cache $config)
     {
-        if (! extension_loaded('memcached')) {
-            throw new CacheException('Memcached extension not loaded; install php-memcached to enable Memcached cache backend.');
-        }
         parent::__construct($config);
-
-        try {
-            $this->initialize();
-        } catch (Throwable $e) {
-            throw new CacheException('Failed to connect to Memcached: ' . $e->getMessage(), 0, $e);
-        }
+        $this->bootClient('memcached', 'Memcached');
     }
 
     /**
-     * Get the native Memcached client instance.
+     * Native Memcached client used by Symfony Cache adapters.
      */
-    public function getInstance(): mixed
+    public function getInstance(): ?NativeMemcached
     {
         return $this->memcached;
     }
