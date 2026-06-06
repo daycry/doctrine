@@ -38,6 +38,8 @@ See [`composer.json`](composer.json) for the complete dependency graph.
 
 ## Documentation Index
 
+📖 **Full documentation site:** <https://daycry.github.io/doctrine/>
+
 - [Installation](docs/installation.md)
 - [Configuration](docs/configuration.md)
 - [Usage](docs/usage.md) — service, helper, multi-DB, `getFromCacheOrQuery`, advanced API
