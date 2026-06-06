@@ -11,6 +11,7 @@ Doctrine ORM 3 integration for CodeIgniter 4.
 [![Code Style](https://github.com/daycry/doctrine/actions/workflows/cs.yml/badge.svg?branch=master)](https://github.com/daycry/doctrine/actions/workflows/cs.yml)
 [![Coverage Status](https://coveralls.io/repos/github/daycry/doctrine/badge.svg?branch=master)](https://coveralls.io/github/daycry/doctrine?branch=master)
 [![Downloads](https://poser.pugx.org/daycry/doctrine/downloads)](https://packagist.org/packages/daycry/doctrine)
+[![Monthly Downloads](https://img.shields.io/packagist/dm/daycry/doctrine)](https://packagist.org/packages/daycry/doctrine)
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/daycry/doctrine)](https://packagist.org/packages/daycry/doctrine)
 [![GitHub stars](https://img.shields.io/github/stars/daycry/doctrine)](https://packagist.org/packages/daycry/doctrine)
 [![GitHub license](https://img.shields.io/github/license/daycry/doctrine)](https://github.com/daycry/doctrine/blob/master/LICENSE)
