@@ -123,14 +123,20 @@ multi-database groups, `Services::resetDoctrine()`, and more.
 Use the generated `cli-config.php` from the project root:
 
 ```bash
-php cli-config.php orm:convert-mapping --namespace="App\Models\Entity\\" --force --from-database annotation .
-php cli-config.php orm:generate-entities .
+php cli-config.php orm:validate-schema          # check mappings vs. database
+php cli-config.php orm:schema-tool:update --dump-sql   # preview schema changes
+php cli-config.php orm:schema-tool:update --force      # apply them
 php cli-config.php orm:generate-proxies app/Models/Proxies
+php cli-config.php orm:info                      # list mapped entities
+php cli-config.php orm:run-dql "SELECT u FROM App\Models\Entity\User u"
 ```
 
-If you encounter the JMS Serializer error *"The annotation
-@JMS\Serializer\Annotation\ExclusionPolicy was never imported"*, run
-`composer dump-autoload` to refresh annotation discovery.
+> Doctrine ORM 3 removed `orm:convert-mapping` and `orm:generate-entities`.
+> Reverse-engineering an existing schema into entities is no longer part of the
+> ORM toolchain; map your entities with PHP attributes (or XML) directly.
+
+The same commands are also available through Spark — see
+[docs/cli_commands.md](docs/cli_commands.md).
 
 ## DataTables
 
