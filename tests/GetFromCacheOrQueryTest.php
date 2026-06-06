@@ -95,6 +95,26 @@ final class GetFromCacheOrQueryTest extends TestCase
         $this->assertSame(2, $calls);
     }
 
+    public function testHandlesPsr6ReservedCharacterKeys(): void
+    {
+        // PSR-6 reserves {}()/\@: — a caller key containing them must not throw
+        // and must still cache (and dedupe) correctly.
+        $key     = 'user:42/profile{a}';
+        $calls   = 0;
+        $queryFn = static function () use (&$calls) {
+            $calls++;
+
+            return 'cached-value';
+        };
+
+        $first  = getFromCacheOrQuery($key, 60, $queryFn);
+        $second = getFromCacheOrQuery($key, 60, $queryFn);
+
+        $this->assertSame('cached-value', $first);
+        $this->assertSame('cached-value', $second);
+        $this->assertSame(1, $calls, 'reserved-char key must be normalized and cached, not re-run or throw');
+    }
+
     public function testTtlZeroPersistsWithoutExpiration(): void
     {
         $key     = 'test_ttl0_' . uniqid();

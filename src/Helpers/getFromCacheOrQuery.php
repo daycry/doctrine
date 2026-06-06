@@ -16,7 +16,9 @@ use Daycry\Doctrine\Config\Services;
  * If no result cache is configured (`Config\Doctrine::$resultsCache = false`),
  * the query is always executed and nothing is cached.
  *
- * @param string      $cacheKey PSR-6 compatible cache key (no reserved characters: {}()/\@:)
+ * @param string      $cacheKey Cache key. PSR-6 reserved characters ({}()/\@:) are
+ *                              normalised automatically (sanitised + short hash of the
+ *                              original to avoid collisions), so any string is accepted.
  * @param int         $ttl      Lifetime in seconds; 0 means no expiration
  * @param callable    $queryFn  Closure that returns the value to cache
  * @param string|null $dbGroup  Optional CodeIgniter database group; null = default
@@ -32,7 +34,14 @@ function getFromCacheOrQuery(string $cacheKey, int $ttl, callable $queryFn, ?str
         return $queryFn();
     }
 
-    $item = $pool->getItem($cacheKey);
+    // Normalise PSR-6 reserved characters ({}()/\@:) so any caller key works; the
+    // appended hash of the original key keeps distinct keys from colliding.
+    $key = $cacheKey;
+    if (preg_match('~[{}()/\\\\@:]~', $key) === 1) {
+        $key = preg_replace('~[{}()/\\\\@:]~', '_', $key) . '_' . substr(sha1($cacheKey), 0, 12);
+    }
+
+    $item = $pool->getItem($key);
     if ($item->isHit()) {
         return $item->get();
     }
