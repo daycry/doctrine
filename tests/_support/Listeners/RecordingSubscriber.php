@@ -18,8 +18,4 @@ final class RecordingSubscriber implements EventSubscriber
     {
         return ['postLoad'];
     }
-
-    public function postLoad(): void
-    {
-    }
 }

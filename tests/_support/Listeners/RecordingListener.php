@@ -9,7 +9,4 @@ namespace Tests\Support\Listeners;
  */
 final class RecordingListener
 {
-    public function prePersist(): void
-    {
-    }
 }

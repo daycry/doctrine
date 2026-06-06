@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Commands;
 
 use Daycry\Doctrine\Config\Services;
+use Psr\Cache\CacheItemPoolInterface;
 use Tests\Support\TestCase;
 
 /**
@@ -20,7 +21,7 @@ final class DoctrineCacheClearTest extends TestCase
 
         Services::resetDoctrine('tests');
         $pool = Services::doctrine(true, 'tests')->getEm()->getConfiguration()->getResultCache();
-        $this->assertNotNull($pool);
+        $this->assertInstanceOf(CacheItemPoolInterface::class, $pool);
 
         $item = $pool->getItem('audit_cache_probe');
         $item->set('value');
