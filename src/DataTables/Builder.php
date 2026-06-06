@@ -77,6 +77,14 @@ class Builder
     protected int $maxFilterValues = 500;
 
     /**
+     * Hard cap on the page size (DataTables `length`). When greater than 0, any
+     * request asking for more rows than this — including DataTables' "All"
+     * sentinel `length=-1`, which otherwise produces an unbounded result set —
+     * is clamped to this value. 0 (default) keeps the legacy behaviour (no cap).
+     */
+    protected int $maxPageLength = 0;
+
+    /**
      * Static factory for fluent usage.
      */
     public static function create(): self
@@ -109,6 +117,24 @@ class Builder
         }
 
         $this->maxFilterValues = $maxFilterValues;
+
+        return $this;
+    }
+
+    /**
+     * Set a hard upper bound on the page size returned to the client.
+     *
+     * Protects against resource exhaustion from `length=-1` ("All") or an
+     * arbitrarily large `length`, which would otherwise hydrate the entire
+     * filtered table. Pass 0 to disable the cap (legacy behaviour).
+     */
+    public function withMaxPageLength(int $maxPageLength): static
+    {
+        if ($maxPageLength < 0) {
+            throw new InvalidArgumentException('maxPageLength must be 0 (disabled) or a positive integer.');
+        }
+
+        $this->maxPageLength = $maxPageLength;
 
         return $this;
     }
@@ -273,7 +299,10 @@ class Builder
                         $orX = $query->expr()->orX();
 
                         for ($j = 0; $j < count($valueArr); $j++) {
-                            $orX->add($query->expr()->like($fieldName, ":filter_{$i}_{$j}"));
+                            // Honor caseInsensitive: $searchColumn is already lower()-wrapped
+                            // when the flag is on; wrap each placeholder to match.
+                            $orPlaceholder = $this->caseInsensitive ? "lower(:filter_{$i}_{$j})" : ":filter_{$i}_{$j}";
+                            $orX->add($query->expr()->like($searchColumn, $orPlaceholder));
                         }
                         $andX->add($orX);
 
@@ -508,8 +537,18 @@ class Builder
             $order = $this->requestParams['order'];
 
             foreach ($order as $sort) {
-                $column    = $columns[(int) ($sort['column'])];
-                $fieldName = $this->resolveFieldName($column[$this->columnField] ?? '', (int) ($sort['column']));
+                // Skip entries whose client-supplied column index is missing or
+                // out of range, instead of warning on an undefined array key.
+                if (! isset($sort['column'])) {
+                    continue;
+                }
+                $columnIndex = (int) $sort['column'];
+                if (! array_key_exists($columnIndex, $columns)) {
+                    continue;
+                }
+
+                $column    = $columns[$columnIndex];
+                $fieldName = $this->resolveFieldName($column[$this->columnField] ?? '', $columnIndex);
                 $dir       = strtoupper($sort['dir'] ?? 'ASC');
                 $dir       = in_array($dir, ['ASC', 'DESC'], true) ? $dir : 'ASC';
 
@@ -529,11 +568,17 @@ class Builder
         if (array_key_exists('start', $this->requestParams)) {
             $query->setFirstResult((int) ($this->requestParams['start']));
         }
-        if (array_key_exists('length', $this->requestParams)) {
-            $length = (int) ($this->requestParams['length']);
-            if ($length > 0) {
-                $query->setMaxResults($length);
-            }
+
+        $length = array_key_exists('length', $this->requestParams)
+            ? (int) ($this->requestParams['length'])
+            : 0;
+
+        if ($this->maxPageLength > 0) {
+            // Clamp unbounded ("All"/length<=0) or oversized requests to the cap.
+            $effective = ($length <= 0 || $length > $this->maxPageLength) ? $this->maxPageLength : $length;
+            $query->setMaxResults($effective);
+        } elseif ($length > 0) {
+            $query->setMaxResults($length);
         }
     }
 
