@@ -15,6 +15,9 @@ Doctrine ORM 3 integration for CodeIgniter 4.
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/daycry/doctrine)](https://packagist.org/packages/daycry/doctrine)
 [![GitHub stars](https://img.shields.io/github/stars/daycry/doctrine)](https://packagist.org/packages/daycry/doctrine)
 [![GitHub license](https://img.shields.io/github/license/daycry/doctrine)](https://github.com/daycry/doctrine/blob/master/LICENSE)
+[![Documentation](https://img.shields.io/badge/docs-daycry.github.io%2Fdoctrine-blue?logo=materialformkdocs&logoColor=white)](https://daycry.github.io/doctrine/)
+
+📖 **Documentation:** <https://daycry.github.io/doctrine/>
 
 ## Features
 
