@@ -115,8 +115,8 @@ $rows = getFromCacheOrQuery(
 ```
 
 When the result cache is disabled (`Config\Doctrine::$resultsCache = false`)
-the closure runs every time. PSR-6 reserves the characters
-`{}()/\@:` in cache keys — avoid them.
+the closure runs every time. PSR-6 reserved characters (`{}()/\@:`) in the key
+are normalised automatically, so any key string is accepted.
 
 See [docs/usage.md](docs/usage.md) for advanced API: `getEm()`, `reOpen()`,
 multi-database groups, `Services::resetDoctrine()`, and more.

@@ -34,6 +34,9 @@ and end-to-end examples.
 | `withCaseInsensitive(bool $flag)` | Enable case-insensitive LIKE / equality via `lower()`. |
 | `withIndexColumn(string $col)` | Override the index column used in pagination. |
 | `withMaxFilterValues(int $max)` | Cap the values accepted by `[IN]` and `[OR]`. Throws `InvalidArgumentException` if `< 1`. Use `PHP_INT_MAX` to disable. **Default: 500**, intended as a DoS guard. |
+| `withMaxPageLength(int $max)` | Hard cap on the page size. Clamps DataTables' `length=-1` ("All") and oversized requests, which would otherwise hydrate the whole filtered table. **Default: 0** (no cap). Throws on a negative value. |
+| `withFetchJoinCollection(bool $flag)` | Whether the data Paginator fetches to-many collections via an id sub-query. **Default: true.** Set `false` for scalar/single-entity SELECTs to collapse the page fetch into a single query. |
+| `withRecordsTotal(int\|Closure $total)` | Inject or cache the unfiltered total so `getRecordsTotal()` / `getResponse()` skip the COUNT query across draws. Invalidation is the caller's responsibility. |
 | `setUseOutputWalkers(bool $flag)` | Toggle Doctrine `Paginator` output walkers. Set `false` when pagination fails with scalar-select queries (eg. *"Not all identifier properties can be found in the ResultSetMapping"*). |
 | `getData()` | Execute and return the paginated, filtered, ordered result. |
 | `getRecordsFiltered()` | Count records matching the current filters (no pagination). |
@@ -134,6 +137,25 @@ $builder->withRequestParams([
     ],
 ]);
 // Equivalent to LIKE '%[XYZ]am%' — useful to know when debugging silent matches.
+```
+
+## Performance & limits
+
+- **Cap the page size.** `withMaxPageLength(200)` clamps DataTables' "All"
+  sentinel (`length=-1`) and oversized `length` values so a single request
+  cannot hydrate the entire filtered table. Off by default (`0`) for backward
+  compatibility — set it on public/unauthenticated endpoints.
+- **Skip the unneeded fetch-join query.** For the common scalar or
+  single-entity SELECT (no to-many fetch join), `withFetchJoinCollection(false)`
+  collapses the data fetch from two queries (id sub-query + `WHERE IN`) into one.
+- **Cache the total.** `recordsTotal` rarely changes between draws. Inject it to
+  skip the COUNT query entirely:
+
+```php
+$builder
+    ->withMaxPageLength(200)
+    ->withFetchJoinCollection(false)
+    ->withRecordsTotal(fn (): int => cache()->remember('projects_total', 300, fn () => $repo->count([])));
 ```
 
 ## Best Practices

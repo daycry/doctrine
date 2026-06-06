@@ -1,0 +1,70 @@
+/* ------------------------------------------------------------------ *
+ *  Daycry Doctrine — landing-page polish on top of MkDocs Material.
+ * ------------------------------------------------------------------ */
+
+/* ---- Hero ---------------------------------------------------------- */
+.hero {
+  text-align: center;
+  padding: 3.5rem 1rem 3rem;
+  margin: -1.2rem 0 2.5rem;
+  background: radial-gradient(
+    1100px 380px at 50% -12%,
+    color-mix(in srgb, var(--md-primary-fg-color) 20%, transparent),
+    transparent 70%
+  );
+  border-bottom: 1px solid var(--md-default-fg-color--lightest);
+}
+
+.md-typeset .hero h1 {
+  font-size: clamp(2.2rem, 5.5vw, 3.4rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  margin: 0 0 0.7rem;
+  background: linear-gradient(
+    90deg,
+    var(--md-primary-fg-color),
+    color-mix(in srgb, var(--md-primary-fg-color) 50%, #22d3ee)
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.hero > p {
+  max-width: 46rem;
+  margin: 0 auto 1.6rem;
+  font-size: 1.06rem;
+  color: var(--md-default-fg-color--light);
+}
+
+.hero .md-button {
+  margin: 0.3rem 0.3rem;
+  border-radius: 2rem;
+}
+
+/* ---- Feature cards: lift + accent on hover ------------------------- */
+.md-typeset .grid.cards > :is(ul, ol) > li,
+.md-typeset .grid.cards > .card {
+  border-radius: 0.7rem;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.md-typeset .grid.cards > :is(ul, ol) > li:hover,
+.md-typeset .grid.cards > .card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  border-color: var(--md-primary-fg-color);
+}
+
+/* Card heading icons in the brand colour. */
+.md-typeset .grid.cards .lg.middle,
+.md-typeset .grid.cards .twemoji.lg {
+  color: var(--md-primary-fg-color);
+}
+
+/* ---- Small global polish ------------------------------------------ */
+/* Slightly rounder code blocks to match the cards. */
+.md-typeset pre > code {
+  border-radius: 0.5rem;
+}

@@ -134,7 +134,9 @@ function getFromCacheOrQuery(
   );
   ```
 
-PSR-6 reserves `{}()/\@:` in cache keys — avoid them.
+PSR-6 reserved characters (`{}()/\@:`) in the key are normalised automatically
+(sanitised and disambiguated with a short hash of the original), so any key
+string is accepted.
 
 ## Second-Level Cache Statistics
 

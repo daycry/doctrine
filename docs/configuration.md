@@ -36,6 +36,12 @@ existing files; choose `n` to abort safely.
 | `queryCache` / `resultsCache` / `metadataCache` | `bool` | `true` | Toggle each Doctrine cache backed by `Config\Cache`. |
 | `queryCacheNamespace` / `resultsCacheNamespace` / `metadataCacheNamespace` | `string` | `doctrine_queries` / `doctrine_results` / `doctrine_metadata` | Namespace prefix for each cache pool. |
 
+!!! info "Per-group isolation"
+    Cache namespaces are automatically suffixed with the database group name for
+    every **non-default** group (e.g. `doctrine_results_reporting`), so multiple
+    groups sharing one cache backend never collide on the same keys. The default
+    group keeps the unsuffixed namespaces shown above.
+
 ### Metadata driver
 
 | Option | Type | Default | Description |
