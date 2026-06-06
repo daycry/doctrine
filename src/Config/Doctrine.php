@@ -6,7 +6,9 @@ namespace Daycry\Doctrine\Config;
 
 use CodeIgniter\Config\BaseConfig;
 use Doctrine\Common\EventSubscriber;
+use Doctrine\DBAL\Driver\Middleware;
 use Doctrine\DBAL\Types\Type;
+use Doctrine\ORM\EntityRepository;
 use Doctrine\ORM\Query\Filter\SQLFilter;
 use DoctrineExtensions\Query\Mysql\AnyValue;
 use DoctrineExtensions\Query\Mysql\Binary;
@@ -347,4 +349,44 @@ class Doctrine extends BaseConfig
      * @var list<class-string<EventSubscriber>|EventSubscriber>
      */
     public array $eventSubscribers = [];
+
+    /**
+     * User-defined DBAL middlewares to compose with the toolbar middleware
+     * (retry, logging, metrics, …). Each entry is a class-string or instance of
+     * Doctrine\DBAL\Driver\Middleware. Listed middlewares wrap the driver first
+     * (outermost); the toolbar capture middleware, when enabled, is applied last
+     * so it sees the final SQL closest to the driver.
+     *
+     * @var list<class-string<Middleware>|Middleware>
+     */
+    public array $dbalMiddlewares = [];
+
+    /**
+     * Default repository class used for every entity that does not declare its
+     * own via #[ORM\Entity(repositoryClass: ...)]. Must extend
+     * Doctrine\ORM\EntityRepository. null keeps Doctrine's built-in repository.
+     *
+     * @var class-string<EntityRepository<object>>|null
+     */
+    public ?string $defaultRepositoryClass = null;
+
+    /**
+     * Enable production query logging via a PSR-3 logger (CodeIgniter's logger
+     * by default). Unlike the Debug Toolbar collector — which only renders under
+     * CI_DEBUG — this logs in any environment, making slow queries observable in
+     * production. Off by default.
+     */
+    public bool $queryLogging = false;
+
+    /**
+     * Minimum query duration, in seconds, before a query is logged when
+     * $queryLogging is enabled. 0.0 logs every query (noisy — intended for
+     * debugging); set e.g. 0.5 to log only queries slower than 500 ms.
+     */
+    public float $slowQueryThreshold = 0.0;
+
+    /**
+     * PSR-3 log level used for query logging (e.g. 'debug', 'info', 'warning').
+     */
+    public string $queryLogLevel = 'info';
 }

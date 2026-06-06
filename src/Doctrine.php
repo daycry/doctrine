@@ -13,6 +13,7 @@ use Daycry\Doctrine\Config\Services;
 use Daycry\Doctrine\Debug\Toolbar\Collectors\DoctrineQueryMiddleware;
 use Daycry\Doctrine\Libraries\Memcached;
 use Daycry\Doctrine\Libraries\Redis;
+use Daycry\Doctrine\Logging\QueryLoggerMiddleware;
 use Doctrine\Common\EventManager;
 use Doctrine\DBAL\DriverManager;
 use Doctrine\DBAL\Tools\DsnParser;
@@ -25,6 +26,7 @@ use Doctrine\ORM\Configuration;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\Mapping\Driver\AttributeDriver;
 use Doctrine\ORM\Mapping\Driver\XmlDriver;
+use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Symfony\Component\Cache\Adapter\AdapterInterface as Psr6AdapterInterface;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
@@ -189,14 +191,40 @@ class Doctrine
             $config->addFilter($name, $class);
         }
 
-        // Collector and middleware integration: capture every DBAL query for the toolbar.
-        // Only wired when query instrumentation is enabled (i.e. CI_DEBUG): in production
-        // the toolbar never renders, so wrapping every statement is pure dead weight.
-        $dbalConfig = new \Doctrine\DBAL\Configuration();
+        // Default repository class for entities that don't declare their own.
+        if ($doctrineConfig->defaultRepositoryClass !== null) {
+            $config->setDefaultRepositoryClassName($doctrineConfig->defaultRepositoryClass);
+        }
+
+        // DBAL middleware chain: user-defined middlewares (retry/logging/metrics)
+        // wrap the driver first (outermost); the toolbar capture middleware is
+        // applied last so it sees the final SQL closest to the driver. The toolbar
+        // middleware is only wired when query instrumentation is enabled (CI_DEBUG):
+        // in production the toolbar never renders, so wrapping every statement is
+        // pure dead weight.
+        $dbalConfig  = new \Doctrine\DBAL\Configuration();
+        $middlewares = [];
+
+        foreach ($doctrineConfig->dbalMiddlewares as $userMiddleware) {
+            $middlewares[] = is_string($userMiddleware) ? new $userMiddleware() : $userMiddleware;
+        }
+
+        // Production query logging (slow-query log) — independent of CI_DEBUG.
+        if ($doctrineConfig->queryLogging) {
+            $middlewares[] = new QueryLoggerMiddleware(
+                $this->logger(),
+                $doctrineConfig->slowQueryThreshold,
+                $doctrineConfig->queryLogLevel,
+            );
+        }
+
         if ($this->shouldInstrumentQueries()) {
-            $collector  = Services::doctrineCollector();
-            $middleware = new DoctrineQueryMiddleware($collector);
-            $dbalConfig->setMiddlewares([$middleware]);
+            $collector     = Services::doctrineCollector();
+            $middlewares[] = new DoctrineQueryMiddleware($collector);
+        }
+
+        if ($middlewares !== []) {
+            $dbalConfig->setMiddlewares($middlewares);
         }
 
         /** @var Database $dbConfig */
@@ -224,6 +252,15 @@ class Doctrine
     protected function shouldInstrumentQueries(): bool
     {
         return defined('CI_DEBUG') && CI_DEBUG;
+    }
+
+    /**
+     * PSR-3 logger used for production query logging. Defaults to CodeIgniter's
+     * logger service; override in a subclass to route logs elsewhere.
+     */
+    protected function logger(): LoggerInterface
+    {
+        return service('logger');
     }
 
     /**

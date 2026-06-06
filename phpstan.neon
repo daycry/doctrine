@@ -63,6 +63,10 @@ parameters:
         - identifier: method.dynamicName
           path: src/Debug/Toolbar/Collectors/DoctrineQueryMiddleware.php
 
+        # Same intentional __call() forwarding in the query-logging middleware
+        - identifier: method.dynamicName
+          path: src/Logging/QueryLoggerMiddleware.php
+
         # getSharedInstance() return type is mixed — @var annotation ensures proper type narrowing
         - identifier: varTag.type
           path: src/Config/Services.php

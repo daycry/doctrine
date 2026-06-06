@@ -10,10 +10,14 @@ use Config\Services;
 use Daycry\Doctrine\Doctrine;
 use Doctrine\DBAL\Types\Type;
 use Doctrine\ORM\EntityManager;
+use Psr\Log\LoggerInterface;
 use Tests\Support\Database\Seeds\TestSeeder;
 use Tests\Support\Filters\SoftDeleteFilter;
 use Tests\Support\Listeners\RecordingListener;
 use Tests\Support\Listeners\RecordingSubscriber;
+use Tests\Support\Log\SpyLogger;
+use Tests\Support\Middlewares\RecordingMiddleware;
+use Tests\Support\Repositories\CustomRepository;
 use Tests\Support\TestCase;
 use Tests\Support\Types\CustomStringType;
 
@@ -212,6 +216,60 @@ final class DoctrineTest extends TestCase
 
         $this->assertTrue($evm->hasListeners('prePersist'), 'configured listener should be registered');
         $this->assertTrue($evm->hasListeners('postLoad'), 'subscriber event should be registered');
+    }
+
+    public function testQueryLoggingLogsQueriesToPsr3Logger()
+    {
+        $spy = new SpyLogger();
+
+        $db                    = config('Database');
+        $db->tests['DBDriver'] = 'SQLite3';
+        $db->tests['database'] = ':memory:';
+
+        $this->config->queryLogging       = true;
+        $this->config->slowQueryThreshold = 0.0; // log every query
+
+        $doctrine = new class ($this->config, $spy) extends Doctrine {
+            public function __construct(\Daycry\Doctrine\Config\Doctrine $config, private readonly LoggerInterface $spy)
+            {
+                parent::__construct($config, null, 'tests');
+            }
+
+            protected function logger(): LoggerInterface
+            {
+                return $this->spy;
+            }
+        };
+
+        $doctrine->em->getConnection()->executeQuery('SELECT 1');
+
+        $this->assertNotEmpty($spy->records, 'query logging should emit at least one log record');
+        $sqls = array_column(array_column($spy->records, 'context'), 'sql');
+        $this->assertNotEmpty(array_filter($sqls, static fn ($sql): bool => str_contains((string) $sql, 'SELECT 1')));
+    }
+
+    public function testDefaultRepositoryClassIsConfigured()
+    {
+        $this->config->defaultRepositoryClass = CustomRepository::class;
+
+        $doctrine = new Doctrine($this->config);
+
+        $this->assertSame(
+            CustomRepository::class,
+            $doctrine->em->getConfiguration()->getDefaultRepositoryClassName(),
+        );
+    }
+
+    public function testUserDbalMiddlewaresAreComposed()
+    {
+        RecordingMiddleware::$wrapped  = false;
+        $this->config->dbalMiddlewares = [RecordingMiddleware::class];
+
+        new Doctrine($this->config);
+
+        // DriverManager::getConnection() wraps the driver through every middleware
+        // eagerly, so the user middleware must have been invoked.
+        $this->assertTrue(RecordingMiddleware::$wrapped);
     }
 
     public function testDoctrineWithCustomDbGroup()
