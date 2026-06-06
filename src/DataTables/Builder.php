@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Daycry\Doctrine\DataTables;
 
+use Closure;
 use CodeIgniter\Exceptions\InvalidArgumentException;
 use Doctrine\DBAL\Query\QueryBuilder;
 use Doctrine\ORM\QueryBuilder as ORMQueryBuilder;
@@ -77,6 +78,30 @@ class Builder
     protected int $maxFilterValues = 500;
 
     /**
+     * Hard cap on the page size (DataTables `length`). When greater than 0, any
+     * request asking for more rows than this — including DataTables' "All"
+     * sentinel `length=-1`, which otherwise produces an unbounded result set —
+     * is clamped to this value. 0 (default) keeps the legacy behaviour (no cap).
+     */
+    protected int $maxPageLength = 0;
+
+    /**
+     * Whether the data Paginator fetches to-many collections via an id sub-query
+     * (`fetchJoinCollection`). Defaults to true (Doctrine's safe default). Set to
+     * false when the query has no to-many fetch join to collapse the page fetch
+     * from two queries (id sub-query + WHERE-IN) into one. Count queries are
+     * unaffected by this flag.
+     */
+    protected bool $fetchJoinCollection = true;
+
+    /**
+     * Optional precomputed unfiltered total. When set (an int or a Closure
+     * returning an int), getRecordsTotal()/getResponse() return it instead of
+     * issuing a COUNT query — useful to cache an expensive total across draws.
+     */
+    protected Closure|int|null $recordsTotal = null;
+
+    /**
      * Static factory for fluent usage.
      */
     public static function create(): self
@@ -114,6 +139,48 @@ class Builder
     }
 
     /**
+     * Set a hard upper bound on the page size returned to the client.
+     *
+     * Protects against resource exhaustion from `length=-1` ("All") or an
+     * arbitrarily large `length`, which would otherwise hydrate the entire
+     * filtered table. Pass 0 to disable the cap (legacy behaviour).
+     */
+    public function withMaxPageLength(int $maxPageLength): static
+    {
+        if ($maxPageLength < 0) {
+            throw new InvalidArgumentException('maxPageLength must be 0 (disabled) or a positive integer.');
+        }
+
+        $this->maxPageLength = $maxPageLength;
+
+        return $this;
+    }
+
+    /**
+     * Set whether the paginated data fetch uses `fetchJoinCollection`.
+     * Leave true (default) for queries that fetch-join a to-many association;
+     * set false for the common scalar/single-entity SELECT to save one query.
+     */
+    public function withFetchJoinCollection(bool $fetchJoinCollection): static
+    {
+        $this->fetchJoinCollection = $fetchJoinCollection;
+
+        return $this;
+    }
+
+    /**
+     * Provide a precomputed unfiltered total (int or a Closure returning int) so
+     * getRecordsTotal()/getResponse() skip the COUNT query. Invalidation is the
+     * caller's responsibility.
+     */
+    public function withRecordsTotal(Closure|int $recordsTotal): static
+    {
+        $this->recordsTotal = $recordsTotal;
+
+        return $this;
+    }
+
+    /**
      * Returns paginated, filtered, and ordered data for DataTables.
      *
      * @return list<object>
@@ -127,7 +194,7 @@ class Builder
         $columns = $this->requestParams['columns'];
         $this->applyOrdering($query, $columns);
         $this->applyPagination($query);
-        $paginator = new Paginator($query, $fetchJoinCollection = true);
+        $paginator = new Paginator($query, $this->fetchJoinCollection);
         $paginator->setUseOutputWalkers($this->useOutputWalkers ?? true);
         $result = [];
 
@@ -273,7 +340,10 @@ class Builder
                         $orX = $query->expr()->orX();
 
                         for ($j = 0; $j < count($valueArr); $j++) {
-                            $orX->add($query->expr()->like($fieldName, ":filter_{$i}_{$j}"));
+                            // Honor caseInsensitive: $searchColumn is already lower()-wrapped
+                            // when the flag is on; wrap each placeholder to match.
+                            $orPlaceholder = $this->caseInsensitive ? "lower(:filter_{$i}_{$j})" : ":filter_{$i}_{$j}";
+                            $orX->add($query->expr()->like($searchColumn, $orPlaceholder));
                         }
                         $andX->add($orX);
 
@@ -362,12 +432,29 @@ class Builder
      */
     public function getRecordsTotal(): int
     {
+        $injected = $this->resolveInjectedRecordsTotal();
+        if ($injected !== null) {
+            return $injected;
+        }
+
         $this->validate();
         $query     = clone $this->queryBuilder;
         $paginator = new Paginator($query, $fetchJoinCollection = true);
         $paginator->setUseOutputWalkers($this->useOutputWalkers ?? true);
 
         return $paginator->count();
+    }
+
+    /**
+     * Resolve the injected unfiltered total, or null when none was provided.
+     */
+    private function resolveInjectedRecordsTotal(): ?int
+    {
+        if ($this->recordsTotal === null) {
+            return null;
+        }
+
+        return (int) ($this->recordsTotal instanceof Closure ? ($this->recordsTotal)() : $this->recordsTotal);
     }
 
     /**
@@ -385,7 +472,7 @@ class Builder
         $dataQuery = clone $filteredQuery;
         $this->applyOrdering($dataQuery, $columns);
         $this->applyPagination($dataQuery);
-        $dataPaginator = new Paginator($dataQuery, true);
+        $dataPaginator = new Paginator($dataQuery, $this->fetchJoinCollection);
         $dataPaginator->setUseOutputWalkers($this->useOutputWalkers ?? true);
         $data = [];
 
@@ -397,16 +484,21 @@ class Builder
         $filteredPaginator = new Paginator($filteredQuery, true);
         $filteredPaginator->setUseOutputWalkers($this->useOutputWalkers ?? true);
 
-        // Total count (unfiltered)
-        $totalQuery     = clone $this->queryBuilder;
-        $totalPaginator = new Paginator($totalQuery, true);
-        $totalPaginator->setUseOutputWalkers($this->useOutputWalkers ?? true);
+        // Total count (unfiltered) — use the injected/cached total when provided,
+        // otherwise compute it via a Paginator.
+        $recordsTotal = $this->resolveInjectedRecordsTotal();
+        if ($recordsTotal === null) {
+            $totalQuery     = clone $this->queryBuilder;
+            $totalPaginator = new Paginator($totalQuery, true);
+            $totalPaginator->setUseOutputWalkers($this->useOutputWalkers ?? true);
+            $recordsTotal = $totalPaginator->count();
+        }
 
         return [
             'data'            => $data,
             'draw'            => $this->requestParams['draw'] ?? 0,
             'recordsFiltered' => $filteredPaginator->count(),
-            'recordsTotal'    => $totalPaginator->count(),
+            'recordsTotal'    => $recordsTotal,
         ];
     }
 
@@ -508,8 +600,18 @@ class Builder
             $order = $this->requestParams['order'];
 
             foreach ($order as $sort) {
-                $column    = $columns[(int) ($sort['column'])];
-                $fieldName = $this->resolveFieldName($column[$this->columnField] ?? '', (int) ($sort['column']));
+                // Skip entries whose client-supplied column index is missing or
+                // out of range, instead of warning on an undefined array key.
+                if (! isset($sort['column'])) {
+                    continue;
+                }
+                $columnIndex = (int) $sort['column'];
+                if (! array_key_exists($columnIndex, $columns)) {
+                    continue;
+                }
+
+                $column    = $columns[$columnIndex];
+                $fieldName = $this->resolveFieldName($column[$this->columnField] ?? '', $columnIndex);
                 $dir       = strtoupper($sort['dir'] ?? 'ASC');
                 $dir       = in_array($dir, ['ASC', 'DESC'], true) ? $dir : 'ASC';
 
@@ -529,11 +631,17 @@ class Builder
         if (array_key_exists('start', $this->requestParams)) {
             $query->setFirstResult((int) ($this->requestParams['start']));
         }
-        if (array_key_exists('length', $this->requestParams)) {
-            $length = (int) ($this->requestParams['length']);
-            if ($length > 0) {
-                $query->setMaxResults($length);
-            }
+
+        $length = array_key_exists('length', $this->requestParams)
+            ? (int) ($this->requestParams['length'])
+            : 0;
+
+        if ($this->maxPageLength > 0) {
+            // Clamp unbounded ("All"/length<=0) or oversized requests to the cap.
+            $effective = ($length <= 0 || $length > $this->maxPageLength) ? $this->maxPageLength : $length;
+            $query->setMaxResults($effective);
+        } elseif ($length > 0) {
+            $query->setMaxResults($length);
         }
     }
 

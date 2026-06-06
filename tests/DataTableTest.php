@@ -6,6 +6,7 @@ namespace Tests;
 
 use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
+use Daycry\Doctrine\Config\Services;
 use Daycry\Doctrine\DataTables\Builder;
 use Daycry\Doctrine\Doctrine;
 use Tests\Support\Database\Seeds\TestSeeder;
@@ -128,6 +129,186 @@ final class DataTableTest extends TestCase
 
         $this->assertArrayHasKey('data', $response);
         $this->assertCount(1, $response['data']);
+    }
+
+    public function testWithRecordsTotalBypassesTheCountQuery()
+    {
+        $this->getMysqlDSNConfig();
+
+        $doctrine  = new Doctrine($this->config);
+        $collector = Services::doctrineCollector();
+
+        $builder = (new Builder())
+            ->withColumnAliases(['id' => 't.id', 'name' => 't.name'])
+            ->withRecordsTotal(999)
+            ->withQueryBuilder(
+                $doctrine->em->createQueryBuilder()->select('t')->from(TestAttribute::class, 't'),
+            )
+            ->withRequestParams([
+                'draw'    => 1,
+                'start'   => 0,
+                'length'  => 10,
+                'columns' => [
+                    ['data' => 'id', 'name' => 'id', 'searchable' => true, 'orderable' => true, 'search' => ['value' => '', 'regex' => false]],
+                    ['data' => 'name', 'name' => 'name', 'searchable' => true, 'orderable' => true, 'search' => ['value' => '', 'regex' => false]],
+                ],
+            ]);
+
+        $collector->reset();
+        $total   = $builder->getRecordsTotal();
+        $queries = count($collector->getQueries());
+
+        $this->assertSame(999, $total);
+        $this->assertSame(0, $queries, 'an injected total must not issue a count query');
+    }
+
+    public function testWithRecordsTotalAcceptsAClosure()
+    {
+        $this->getMysqlDSNConfig();
+
+        $doctrine = new Doctrine($this->config);
+
+        $builder = (new Builder())
+            ->withColumnAliases(['id' => 't.id', 'name' => 't.name'])
+            ->withRecordsTotal(static fn (): int => 1234)
+            ->withQueryBuilder(
+                $doctrine->em->createQueryBuilder()->select('t')->from(TestAttribute::class, 't'),
+            )
+            ->withRequestParams([
+                'draw'    => 1,
+                'start'   => 0,
+                'length'  => 10,
+                'columns' => [
+                    ['data' => 'id', 'name' => 'id', 'searchable' => true, 'orderable' => true, 'search' => ['value' => '', 'regex' => false]],
+                    ['data' => 'name', 'name' => 'name', 'searchable' => true, 'orderable' => true, 'search' => ['value' => '', 'regex' => false]],
+                ],
+            ]);
+
+        $this->assertSame(1234, $builder->getResponse()['recordsTotal']);
+    }
+
+    public function testFetchJoinCollectionOptOutReducesDataQueries()
+    {
+        $this->getMysqlDSNConfig();
+
+        $doctrine  = new Doctrine($this->config);
+        $collector = Services::doctrineCollector();
+
+        $build = static fn (): Builder => (new Builder())
+            ->withColumnAliases(['id' => 't.id', 'name' => 't.name'])
+            ->withQueryBuilder(
+                $doctrine->em->createQueryBuilder()->select('t')->from(TestAttribute::class, 't'),
+            )
+            ->withRequestParams([
+                'draw'    => 1,
+                'start'   => 0,
+                'length'  => 10,
+                'columns' => [
+                    ['data' => 'id', 'name' => 'id', 'searchable' => true, 'orderable' => true, 'search' => ['value' => '', 'regex' => false]],
+                    ['data' => 'name', 'name' => 'name', 'searchable' => true, 'orderable' => true, 'search' => ['value' => '', 'regex' => false]],
+                ],
+            ]);
+
+        // Default fetchJoinCollection=true issues an id sub-query + WHERE-IN fetch.
+        $collector->reset();
+        $build()->getData();
+        $withJoin = count($collector->getQueries());
+
+        // Opting out collapses the page fetch into a single query.
+        $collector->reset();
+        $build()->withFetchJoinCollection(false)->getData();
+        $withoutJoin = count($collector->getQueries());
+
+        $this->assertLessThan($withJoin, $withoutJoin);
+    }
+
+    public function testOrderingWithOutOfRangeColumnIndexIsIgnored()
+    {
+        $this->getMysqlDSNConfig();
+
+        $doctrine = new Doctrine($this->config);
+
+        $datatables = (new Builder())
+            ->withColumnAliases(['id' => 't.id', 'name' => 't.name'])
+            ->setUseOutputWalkers(false)
+            ->withQueryBuilder(
+                $doctrine->em->createQueryBuilder()
+                    ->select('t.id, t.name')
+                    ->from(TestAttribute::class, 't'),
+            )
+            ->withRequestParams([
+                'draw'    => 1,
+                'start'   => 0,
+                'length'  => 10,
+                'columns' => [
+                    ['data' => 'id', 'name' => 'id', 'searchable' => true, 'orderable' => true, 'search' => ['value' => '', 'regex' => false]],
+                    ['data' => 'name', 'name' => 'name', 'searchable' => true, 'orderable' => true, 'search' => ['value' => '', 'regex' => false]],
+                ],
+                // Attacker/garbage column index out of range — must be ignored, not warn.
+                'order' => [['column' => 5, 'dir' => 'asc']],
+            ]);
+
+        $response = $datatables->getResponse();
+        $this->assertCount(2, $response['data']);
+    }
+
+    public function testOrOperatorHonorsCaseInsensitive()
+    {
+        $this->getMysqlDSNConfig();
+
+        $doctrine = new Doctrine($this->config);
+
+        $query = (new Builder())
+            ->withColumnAliases(['name' => 't.name'])
+            ->withCaseInsensitive(true)
+            ->withColumnField('name')
+            ->withQueryBuilder(
+                $doctrine->em->createQueryBuilder()
+                    ->select('t')
+                    ->from(TestAttribute::class, 't'),
+            )
+            ->withRequestParams([
+                'draw'    => 1,
+                'columns' => [
+                    ['name' => 'name', 'searchable' => true, 'search' => ['value' => '[OR]name1,name2', 'regex' => false]],
+                ],
+            ])
+            ->getFilteredQuery();
+
+        // Case-insensitive [OR] must wrap BOTH the column and each placeholder in lower(),
+        // exactly like the global search and the default LIKE branch already do.
+        $dql = $query->getDQL();
+        $this->assertStringContainsString('lower(t.name) LIKE lower(:filter_0_0)', $dql);
+        $this->assertStringContainsString('lower(:filter_0_1)', $dql);
+    }
+
+    public function testMaxPageLengthCapsUnboundedAllRequest()
+    {
+        $this->getMysqlDSNConfig();
+
+        $doctrine = new Doctrine($this->config);
+
+        $datatables = (new Builder())
+            ->withColumnAliases(['id' => 't.id', 'name' => 't.name'])
+            ->setUseOutputWalkers(false)
+            ->withMaxPageLength(1)
+            ->withQueryBuilder(
+                $doctrine->em->createQueryBuilder()
+                    ->select('t.id, t.name')
+                    ->from(TestAttribute::class, 't'),
+            )
+            ->withRequestParams([
+                'draw'    => 1,
+                'start'   => 0,
+                'length'  => -1, // DataTables "All" — must not bypass the cap
+                'columns' => [
+                    ['data' => 'id', 'name' => 'id', 'searchable' => true, 'orderable' => true, 'search' => ['value' => '', 'regex' => false]],
+                    ['data' => 'name', 'name' => 'name', 'searchable' => true, 'orderable' => true, 'search' => ['value' => '', 'regex' => false]],
+                ],
+            ]);
+
+        // Two rows are seeded; the cap must limit the unbounded "All" request to 1.
+        $this->assertCount(1, $datatables->getData());
     }
 
     public function testDataTableSearchColumnWithPercent()

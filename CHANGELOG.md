@@ -8,6 +8,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Custom DBAL Types** — `Config\Doctrine::$customTypes` registers
+  `Doctrine\DBAL\Types\Type` subclasses via `Type::addType()` (idempotent),
+  applied on construction and `reOpen()`.
+- **SQL Filters** — `Config\Doctrine::$sqlFilters` / `$enabledFilters` register
+  and auto-enable Doctrine SQL filters (soft-delete, multi-tenant). Re-enabled
+  after `reOpen()`.
+- **Event listeners/subscribers** — `Config\Doctrine::$eventListeners` /
+  `$eventSubscribers` build an `EventManager` wired into the `EntityManager`
+  (and threaded through `reOpen()`).
+- **Composable DBAL middlewares** — `Config\Doctrine::$dbalMiddlewares` compose
+  user middlewares with the toolbar middleware (applied last/innermost).
+- **Default repository class** — `Config\Doctrine::$defaultRepositoryClass`.
+- **Production query logging** — `Config\Doctrine::$queryLogging`,
+  `$slowQueryThreshold`, `$queryLogLevel` log queries (optionally only slow
+  ones) to a PSR-3 logger via `Daycry\Doctrine\Logging\QueryLoggerMiddleware`,
+  in any environment (unlike the debug-only toolbar collector).
+- `Daycry\Doctrine\DataTables\Builder::withMaxPageLength(int)` caps the page
+  size, clamping unbounded `length=-1` ("All") / oversized requests.
+- **Spark commands** (group `Doctrine`): `doctrine:cache:clear`,
+  `doctrine:validate`, `doctrine:info`, `doctrine:schema:update` — each accepts
+  `--group` to target a database group.
+- `cli-config.php` exposes a lazy per-group `EntityManagerProvider`, so
+  `php cli-config.php orm:* --em=<group>` can target any database group.
+- `Daycry\Doctrine\DataTables\Builder::withFetchJoinCollection(bool)` — opt out
+  of `fetchJoinCollection` to collapse the page fetch into a single query for
+  scalar/single-entity SELECTs.
+- `Daycry\Doctrine\DataTables\Builder::withRecordsTotal(int|Closure)` — inject or
+  cache the unfiltered total so the COUNT query is skipped across draws.
 - `Daycry\Doctrine\Helpers\getFromCacheOrQuery()` cache-aside helper, autoloaded
   as a global function via `composer.json` `autoload.files`. Backed by the
   configured Doctrine `resultsCache` PSR-6 pool. Accepts an optional `$dbGroup`
@@ -31,6 +59,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   reference in `docs/search_modes.md`.
 
 ### Changed
+- Doctrine query/result/metadata/SLC cache namespaces are now suffixed with the
+  (non-default) database group, preventing cross-group key collisions when
+  multiple groups share one cache backend. The default group is unchanged.
+- `Daycry\Doctrine\Doctrine::reOpen()` now closes the existing DBAL connection
+  so it is re-established on the next query, actually recovering from a stale /
+  dropped connection ("server has gone away") in long-running workers.
+- The Debug Toolbar query middleware/collector is only wired when query
+  instrumentation is enabled (`CI_DEBUG`), removing per-statement overhead in
+  production. Overridable via the protected `shouldInstrumentQueries()` seam.
+- `composer.json` — pin `doctrine/dbal ^4` explicitly (the code uses DBAL-4-only
+  APIs), remove the unused `jms/serializer-bundle`, and add `suggest` entries for
+  `ext-redis`, `ext-memcached` and `doctrine/migrations`.
+- `cli-config.php` requires `vendor/autoload.php` via `__DIR__` so it is
+  invokable from any working directory.
 - `Daycry\Doctrine\DataTables\Builder::parseFilterOperator()` regex now matches
   only documented operators (`!=, ><, >, <, =, %%, %, IN, OR, LIKE`); accidental
   `•` (U+2022) matches are no longer accepted. Unknown bracket prefixes
@@ -76,6 +118,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Broken doc links to `docs/DATATABLES_FIX.md` and `docs/TEST_COVERAGE.md`.
 
 ### Fixed
+- `Daycry\Doctrine\Doctrine::convertDbConfig()` now lower-cases only the DSN
+  scheme, preserving a case-sensitive SQLite file path (whole-DSN lowercasing
+  opened/created the wrong DB file on case-sensitive filesystems).
+- `getFromCacheOrQuery()` normalises PSR-6 reserved characters (`{}()/\@:`) in
+  the cache key instead of throwing at runtime.
+- `Daycry\Doctrine\DataTables\Builder` — the `[OR]` operator now honors
+  `withCaseInsensitive(true)`, wrapping the column and placeholders in `lower()`
+  like the other operator branches and the global search.
+- `Daycry\Doctrine\DataTables\Builder::applyOrdering()` now bounds-checks the
+  client-supplied `order[].column` index instead of emitting an "Undefined array
+  key" warning on out-of-range values.
+- `README.md` / `docs/cli_commands.md` — replaced the `orm:convert-mapping` and
+  `orm:generate-entities` examples (removed in Doctrine ORM 3) with the schema
+  tooling that ORM 3 actually ships.
 - The documented helper `getFromCacheOrQuery()` now actually exists.
 - The documented `DoctrineSlcReset` filter now performs its job.
 - Doc-code mismatch around the `[*%]` operator in `README.md`.

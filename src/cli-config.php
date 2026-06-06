@@ -8,13 +8,15 @@
  * @see       https://github.com/daycry/doctrine
  */
 
-require_once 'vendor/autoload.php';
+require_once __DIR__ . '/vendor/autoload.php';
 
 use Config\Paths;
 use Daycry\Doctrine\Boot;
+use Daycry\Doctrine\Config\Doctrine as DoctrineConfig;
 use Daycry\Doctrine\Doctrine;
+use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Tools\Console\ConsoleRunner;
-use Doctrine\ORM\Tools\Console\EntityManagerProvider\SingleManagerProvider;
+use Doctrine\ORM\Tools\Console\EntityManagerProvider;
 
 // Path to the front controller (this file)
 define('FCPATH', __DIR__ . DIRECTORY_SEPARATOR);
@@ -55,20 +57,34 @@ require $paths->systemDirectory . '/Boot.php';
 // Load environment settings from .env files into $_SERVER and $_ENV
 Boot::bootDoctrine($paths);
 
-$doctrine = new Doctrine(config('Doctrine'));
+// Lazily build one EntityManager per CodeIgniter database group, so the Doctrine
+// ORM CLI can target any group with `--em=<group>` (the default group is used
+// when the option is omitted). This avoids accidentally running schema/DDL
+// commands against the wrong database in multi-group applications.
+$provider = new class (config('Doctrine')) implements EntityManagerProvider {
+    /**
+     * @var array<string, EntityManagerInterface>
+     */
+    private array $managers = [];
 
-if ($doctrine->em === null) {
-    echo 'EntityManager could not be initialized.' . PHP_EOL;
+    public function __construct(private readonly DoctrineConfig $config)
+    {
+    }
 
-    exit(1);
-}
+    public function getDefaultManager(): EntityManagerInterface
+    {
+        return $this->getManager(config('Database')->defaultGroup);
+    }
+
+    public function getManager(string $name): EntityManagerInterface
+    {
+        return $this->managers[$name] ??= (new Doctrine($this->config, null, $name))->getEm();
+    }
+};
 
 $commands = [
     // If you want to add your own custom console commands,
     // you can do so here.
 ];
 
-ConsoleRunner::run(
-    new SingleManagerProvider($doctrine->em),
-    $commands,
-);
+ConsoleRunner::run($provider, $commands);

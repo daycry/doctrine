@@ -5,6 +5,11 @@ declare(strict_types=1);
 namespace Daycry\Doctrine\Config;
 
 use CodeIgniter\Config\BaseConfig;
+use Doctrine\Common\EventSubscriber;
+use Doctrine\DBAL\Driver\Middleware;
+use Doctrine\DBAL\Types\Type;
+use Doctrine\ORM\EntityRepository;
+use Doctrine\ORM\Query\Filter\SQLFilter;
 use DoctrineExtensions\Query\Mysql\AnyValue;
 use DoctrineExtensions\Query\Mysql\Binary;
 use DoctrineExtensions\Query\Mysql\BitCount;
@@ -290,4 +295,98 @@ class Doctrine extends BaseConfig
         'enum' => 'string',
         'set'  => 'string',
     ];
+
+    /**
+     * Custom DBAL Types to register via Doctrine\DBAL\Types\Type::addType().
+     * Registration is idempotent (guarded by Type::hasType()) and applied on
+     * construction and reOpen().
+     *
+     * Key = type name referenced by entities / customTypeMappings,
+     * value = a Doctrine\DBAL\Types\Type subclass.
+     *
+     * Example: ['uuid' => \Ramsey\Uuid\Doctrine\UuidType::class]
+     *
+     * @var array<string, class-string<Type>>
+     */
+    public array $customTypes = [];
+
+    /**
+     * Doctrine SQL Filters to register on the EntityManager configuration
+     * (soft-delete, multi-tenant scoping, …).
+     *
+     * Key = filter name, value = a Doctrine\ORM\Query\Filter\SQLFilter subclass.
+     *
+     * @var array<string, class-string<SQLFilter>>
+     */
+    public array $sqlFilters = [];
+
+    /**
+     * Names of SQL filters (declared in $sqlFilters) to enable automatically on
+     * every EntityManager, including after reOpen(). Parameters that a filter
+     * needs at runtime must still be set by the application via
+     * $em->getFilters()->getFilter($name)->setParameter(...).
+     *
+     * @var list<string>
+     */
+    public array $enabledFilters = [];
+
+    /**
+     * Doctrine event listeners, keyed by event name (e.g. 'prePersist',
+     * 'postLoad', 'onFlush'). Each value is a list of listener class-strings or
+     * ready-made listener instances. Class-strings are instantiated with no
+     * constructor arguments.
+     *
+     * Example: ['onFlush' => [\App\Doctrine\AuditListener::class]]
+     *
+     * @var array<string, list<class-string|object>>
+     */
+    public array $eventListeners = [];
+
+    /**
+     * Doctrine event subscribers (implementing Doctrine\Common\EventSubscriber).
+     * Each entry is a class-string or a ready-made instance.
+     *
+     * @var list<class-string<EventSubscriber>|EventSubscriber>
+     */
+    public array $eventSubscribers = [];
+
+    /**
+     * User-defined DBAL middlewares to compose with the toolbar middleware
+     * (retry, logging, metrics, …). Each entry is a class-string or instance of
+     * Doctrine\DBAL\Driver\Middleware. Listed middlewares wrap the driver first
+     * (outermost); the toolbar capture middleware, when enabled, is applied last
+     * so it sees the final SQL closest to the driver.
+     *
+     * @var list<class-string<Middleware>|Middleware>
+     */
+    public array $dbalMiddlewares = [];
+
+    /**
+     * Default repository class used for every entity that does not declare its
+     * own via #[ORM\Entity(repositoryClass: ...)]. Must extend
+     * Doctrine\ORM\EntityRepository. null keeps Doctrine's built-in repository.
+     *
+     * @var class-string<EntityRepository<object>>|null
+     */
+    public ?string $defaultRepositoryClass = null;
+
+    /**
+     * Enable production query logging via a PSR-3 logger (CodeIgniter's logger
+     * by default). Unlike the Debug Toolbar collector — which only renders under
+     * CI_DEBUG — this logs in any environment, making slow queries observable in
+     * production. Off by default.
+     */
+    public bool $queryLogging = false;
+
+    /**
+     * Minimum query duration, in seconds, before a query is logged when
+     * $queryLogging is enabled. 0.0 logs every query (noisy — intended for
+     * debugging); set e.g. 0.5 to log only queries slower than 500 ms.
+     */
+    public float $slowQueryThreshold = 0.0;
+
+    /**
+     * PSR-3 log level used for query logging (e.g. 'debug', 'info', 'warning').
+     */
+    public string $queryLogLevel = 'info';
 }

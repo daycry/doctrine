@@ -1,0 +1,135 @@
+site_name: Daycry Doctrine
+site_description: Doctrine ORM 3 integration for CodeIgniter 4 — EntityManager, multi-DB groups, caching & Second-Level Cache, server-side DataTables, debug toolbar and a Spark/ORM CLI.
+site_author: Daycry
+site_url: https://daycry.github.io/doctrine/
+copyright: Copyright &copy; 2025 Daycry
+
+repo_url: https://github.com/daycry/doctrine
+repo_name: daycry/doctrine
+edit_uri: edit/development/docs/
+
+docs_dir: docs
+
+theme:
+  name: material
+  language: en
+  icon:
+    repo: fontawesome/brands/github
+  font:
+    text: Inter
+    code: JetBrains Mono
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.top
+    - navigation.instant
+    - navigation.instant.progress
+    - navigation.tracking
+    - navigation.indexes
+    - toc.follow
+    - search.suggest
+    - search.highlight
+    - search.share
+    - content.code.copy
+    - content.code.annotate
+    - content.tooltips
+    - content.action.edit
+    - content.action.view
+    - navigation.footer
+    - navigation.path
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+
+plugins:
+  - search
+
+markdown_extensions:
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+      slugify: !!python/object/apply:pymdownx.slugs.slugify
+        kwds:
+          case: lower
+  - pymdownx.betterem
+  - pymdownx.caret
+  - pymdownx.mark
+  - pymdownx.tilde
+  - pymdownx.details
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+      # Doc PHP snippets sometimes omit the opening `<?php` tag; run the PHP
+      # lexer in inline mode so bare PHP still highlights correctly.
+      extend_pygments_lang:
+        - name: php
+          lang: php
+          options:
+            startinline: true
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+
+# Fail `mkdocs build --strict` on any broken internal link or anchor.
+validation:
+  omitted_files: warn
+  absolute_links: warn
+  unrecognized_links: warn
+  anchors: warn
+
+# The docs folder README is an index for GitHub, not a site page.
+exclude_docs: |
+  README.md
+
+extra_css:
+  - stylesheets/extra.css
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/daycry/doctrine
+    - icon: fontawesome/brands/php
+      link: https://packagist.org/packages/daycry/doctrine
+
+nav:
+  - Home: index.md
+  - Getting Started:
+      - Installation: installation.md
+      - Configuration: configuration.md
+      - Usage: usage.md
+  - DataTables:
+      - Builder: datatables.md
+      - Search Modes: search_modes.md
+  - Caching:
+      - Second-Level Cache: second_level_cache.md
+      - SLC Statistics: second_level_cache_stats.md
+  - Tooling:
+      - CLI Commands: cli_commands.md
+      - Debug Toolbar: debug_toolbar.md
