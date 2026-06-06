@@ -45,7 +45,8 @@
     "suggest": {
         "doctrine/migrations": "Versioned schema migrations integration for the Doctrine ORM CLI (php cli-config.php / spark doctrine:*)",
         "ext-memcached": "Required for the Memcached cache backend",
-        "ext-redis": "Required for the Redis cache backend"
+        "ext-redis": "Required for the Redis cache backend",
+        "jms/serializer-bundle": "Only if your entities use JMS Serializer annotations (e.g. when reverse-engineering mappings)"
     },
     "autoload-dev":
     {
