@@ -10,6 +10,7 @@ use Config\Services;
 use Daycry\Doctrine\Doctrine;
 use Doctrine\DBAL\Types\Type;
 use Doctrine\ORM\EntityManager;
+use Psr\Cache\CacheItemPoolInterface;
 use Psr\Log\LoggerInterface;
 use Tests\Support\Database\Seeds\TestSeeder;
 use Tests\Support\Filters\SoftDeleteFilter;
@@ -270,6 +271,55 @@ final class DoctrineTest extends TestCase
         // DriverManager::getConnection() wraps the driver through every middleware
         // eagerly, so the user middleware must have been invoked.
         $this->assertTrue(RecordingMiddleware::$wrapped);
+    }
+
+    public function testResultCacheIsIsolatedPerDbGroup()
+    {
+        $cache          = config('Cache');
+        $cache->handler = 'file';
+
+        $db                      = config('Database');
+        $db->tests['DBDriver']   = 'SQLite3';
+        $db->tests['database']   = ':memory:';
+        $db->default['DBDriver'] = 'SQLite3';
+        $db->default['database'] = ':memory:';
+
+        \Daycry\Doctrine\Config\Services::resetDoctrine('default');
+        \Daycry\Doctrine\Config\Services::resetDoctrine('tests');
+
+        // 'default' is the default group (no suffix); 'tests' is a non-default
+        // group (suffixed). Their cache pools must not collide.
+        $poolDefault = (new Doctrine($this->config, $cache, 'default'))->em->getConfiguration()->getResultCache();
+        $poolTests   = (new Doctrine($this->config, $cache, 'tests'))->em->getConfiguration()->getResultCache();
+
+        $this->assertInstanceOf(CacheItemPoolInterface::class, $poolDefault);
+        $this->assertInstanceOf(CacheItemPoolInterface::class, $poolTests);
+        $poolDefault->clear();
+        $poolTests->clear();
+
+        $item = $poolTests->getItem('group_isolation_probe');
+        $item->set('from-tests');
+        $poolTests->save($item);
+
+        $this->assertFalse(
+            $poolDefault->getItem('group_isolation_probe')->isHit(),
+            'cache pools for different DB groups must not collide',
+        );
+
+        $poolTests->clear();
+        \Daycry\Doctrine\Config\Services::resetDoctrine('default');
+        \Daycry\Doctrine\Config\Services::resetDoctrine('tests');
+    }
+
+    public function testConvertDbConfigPreservesSqliteDsnPathCase()
+    {
+        $doctrine = new Doctrine($this->config);
+
+        // Only the scheme should be lower-cased; a case-sensitive file path must
+        // survive intact (lowercasing it would open/create the wrong DB file).
+        $options = $doctrine->convertDbConfig((object) ['DSN' => 'SQLite3:/Var/Data/MyApp.sqlite']);
+
+        $this->assertStringContainsString('MyApp', (string) json_encode($options), 'SQLite DSN path case must be preserved');
     }
 
     public function testDoctrineWithCustomDbGroup()
