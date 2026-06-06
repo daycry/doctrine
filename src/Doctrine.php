@@ -13,8 +13,10 @@ use Daycry\Doctrine\Config\Services;
 use Daycry\Doctrine\Debug\Toolbar\Collectors\DoctrineQueryMiddleware;
 use Daycry\Doctrine\Libraries\Memcached;
 use Daycry\Doctrine\Libraries\Redis;
+use Doctrine\Common\EventManager;
 use Doctrine\DBAL\DriverManager;
 use Doctrine\DBAL\Tools\DsnParser;
+use Doctrine\DBAL\Types\Type;
 use Doctrine\ORM\Cache\CacheConfiguration as ORMCacheConfiguration;
 use Doctrine\ORM\Cache\DefaultCacheFactory;
 use Doctrine\ORM\Cache\Logging\StatisticsCacheLogger;
@@ -182,6 +184,11 @@ class Doctrine
             $config->addCustomStringFunction($name, $class);
         }
 
+        // Register SQL Filters (soft-delete, multi-tenant, …) on the configuration.
+        foreach ($doctrineConfig->sqlFilters as $name => $class) {
+            $config->addFilter($name, $class);
+        }
+
         // Collector and middleware integration: capture every DBAL query for the toolbar.
         // Only wired when query instrumentation is enabled (i.e. CI_DEBUG): in production
         // the toolbar never renders, so wrapping every statement is pure dead weight.
@@ -201,9 +208,10 @@ class Doctrine
         $connectionOptions = $this->convertDbConfig($dbConfig->{$dbGroup});
         $connection        = DriverManager::getConnection($connectionOptions, $dbalConfig);
         // Create EntityManager con la conexión original (middleware ya captura queries)
-        $this->em = new EntityManager($connection, $config);
+        $this->em = new EntityManager($connection, $config, $this->buildEventManager($doctrineConfig));
 
         $this->registerTypeMappings($doctrineConfig);
+        $this->enableConfiguredFilters($doctrineConfig);
     }
 
     /**
@@ -253,8 +261,60 @@ class Doctrine
             $connection->close();
         }
 
-        $this->em = new EntityManager($connection, $em->getConfiguration());
-        $this->registerTypeMappings(config('Doctrine'));
+        /** @var DoctrineConfig $doctrineConfig */
+        $doctrineConfig = config('Doctrine');
+        $this->em       = new EntityManager($connection, $em->getConfiguration(), $this->buildEventManager($doctrineConfig));
+        $this->registerTypeMappings($doctrineConfig);
+        $this->enableConfiguredFilters($doctrineConfig);
+    }
+
+    /**
+     * Build an EventManager from the configured listeners/subscribers, or null
+     * when none are configured (so the EntityManager keeps its default).
+     * Class-strings are instantiated with no constructor arguments; ready-made
+     * instances are used as-is.
+     */
+    protected function buildEventManager(DoctrineConfig $doctrineConfig): ?EventManager
+    {
+        if ($doctrineConfig->eventListeners === [] && $doctrineConfig->eventSubscribers === []) {
+            return null;
+        }
+
+        $eventManager = new EventManager();
+
+        foreach ($doctrineConfig->eventListeners as $event => $listeners) {
+            foreach ($listeners as $listener) {
+                $eventManager->addEventListener($event, is_string($listener) ? new $listener() : $listener);
+            }
+        }
+
+        foreach ($doctrineConfig->eventSubscribers as $subscriber) {
+            $eventManager->addEventSubscriber(is_string($subscriber) ? new $subscriber() : $subscriber);
+        }
+
+        return $eventManager;
+    }
+
+    /**
+     * Enable the SQL filters listed in Config\Doctrine::$enabledFilters on the
+     * current EntityManager. FilterCollection is per-EntityManager, so this must
+     * run on construction and again after reOpen() rebuilds the EM.
+     */
+    protected function enableConfiguredFilters(DoctrineConfig $doctrineConfig): void
+    {
+        if ($doctrineConfig->enabledFilters === []) {
+            return;
+        }
+
+        $filters = $this->getEm()->getFilters();
+
+        foreach ($doctrineConfig->enabledFilters as $name) {
+            // Only enable filters that were actually registered, to avoid a
+            // misconfigured name throwing during construction.
+            if (array_key_exists($name, $doctrineConfig->sqlFilters)) {
+                $filters->enable($name);
+            }
+        }
     }
 
     /**
@@ -262,6 +322,13 @@ class Doctrine
      */
     protected function registerTypeMappings(DoctrineConfig $doctrineConfig): void
     {
+        // Register custom DBAL Types first (process-global, idempotent).
+        foreach ($doctrineConfig->customTypes as $name => $class) {
+            if (! Type::hasType($name)) {
+                Type::addType($name, $class);
+            }
+        }
+
         $platform = $this->getEm()->getConnection()->getDatabasePlatform();
 
         foreach ($doctrineConfig->customTypeMappings as $dbType => $doctrineType) {

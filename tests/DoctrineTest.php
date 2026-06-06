@@ -8,9 +8,14 @@ use CodeIgniter\Test\DatabaseTestTrait;
 use Config\Cache;
 use Config\Services;
 use Daycry\Doctrine\Doctrine;
+use Doctrine\DBAL\Types\Type;
 use Doctrine\ORM\EntityManager;
 use Tests\Support\Database\Seeds\TestSeeder;
+use Tests\Support\Filters\SoftDeleteFilter;
+use Tests\Support\Listeners\RecordingListener;
+use Tests\Support\Listeners\RecordingSubscriber;
 use Tests\Support\TestCase;
+use Tests\Support\Types\CustomStringType;
 
 /**
  * @internal
@@ -172,6 +177,41 @@ final class DoctrineTest extends TestCase
         $doctrine->em->getConnection()->executeQuery('SELECT 1');
 
         $this->assertGreaterThan(0, count($collector->getQueries()));
+    }
+
+    public function testCustomTypesAreRegistered()
+    {
+        $this->config->customTypes = [CustomStringType::NAME => CustomStringType::class];
+
+        new Doctrine($this->config);
+
+        $this->assertTrue(Type::hasType(CustomStringType::NAME));
+    }
+
+    public function testSqlFiltersAreRegisteredAndEnabled()
+    {
+        $this->config->sqlFilters     = ['soft_delete' => SoftDeleteFilter::class];
+        $this->config->enabledFilters = ['soft_delete'];
+
+        $doctrine = new Doctrine($this->config);
+
+        $this->assertTrue($doctrine->em->getFilters()->isEnabled('soft_delete'));
+
+        // Auto-enabled filters survive a reOpen() (re-enabled on the rebuilt EM).
+        $doctrine->reOpen();
+        $this->assertTrue($doctrine->em->getFilters()->isEnabled('soft_delete'));
+    }
+
+    public function testEventListenersAndSubscribersAreRegistered()
+    {
+        $this->config->eventListeners   = ['prePersist' => [RecordingListener::class]];
+        $this->config->eventSubscribers = [RecordingSubscriber::class];
+
+        $doctrine = new Doctrine($this->config);
+        $evm      = $doctrine->em->getEventManager();
+
+        $this->assertTrue($evm->hasListeners('prePersist'), 'configured listener should be registered');
+        $this->assertTrue($evm->hasListeners('postLoad'), 'subscriber event should be registered');
     }
 
     public function testDoctrineWithCustomDbGroup()

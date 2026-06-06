@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace Daycry\Doctrine\Config;
 
 use CodeIgniter\Config\BaseConfig;
+use Doctrine\Common\EventSubscriber;
+use Doctrine\DBAL\Types\Type;
+use Doctrine\ORM\Query\Filter\SQLFilter;
 use DoctrineExtensions\Query\Mysql\AnyValue;
 use DoctrineExtensions\Query\Mysql\Binary;
 use DoctrineExtensions\Query\Mysql\BitCount;
@@ -290,4 +293,58 @@ class Doctrine extends BaseConfig
         'enum' => 'string',
         'set'  => 'string',
     ];
+
+    /**
+     * Custom DBAL Types to register via Doctrine\DBAL\Types\Type::addType().
+     * Registration is idempotent (guarded by Type::hasType()) and applied on
+     * construction and reOpen().
+     *
+     * Key = type name referenced by entities / customTypeMappings,
+     * value = a Doctrine\DBAL\Types\Type subclass.
+     *
+     * Example: ['uuid' => \Ramsey\Uuid\Doctrine\UuidType::class]
+     *
+     * @var array<string, class-string<Type>>
+     */
+    public array $customTypes = [];
+
+    /**
+     * Doctrine SQL Filters to register on the EntityManager configuration
+     * (soft-delete, multi-tenant scoping, …).
+     *
+     * Key = filter name, value = a Doctrine\ORM\Query\Filter\SQLFilter subclass.
+     *
+     * @var array<string, class-string<SQLFilter>>
+     */
+    public array $sqlFilters = [];
+
+    /**
+     * Names of SQL filters (declared in $sqlFilters) to enable automatically on
+     * every EntityManager, including after reOpen(). Parameters that a filter
+     * needs at runtime must still be set by the application via
+     * $em->getFilters()->getFilter($name)->setParameter(...).
+     *
+     * @var list<string>
+     */
+    public array $enabledFilters = [];
+
+    /**
+     * Doctrine event listeners, keyed by event name (e.g. 'prePersist',
+     * 'postLoad', 'onFlush'). Each value is a list of listener class-strings or
+     * ready-made listener instances. Class-strings are instantiated with no
+     * constructor arguments.
+     *
+     * Example: ['onFlush' => [\App\Doctrine\AuditListener::class]]
+     *
+     * @var array<string, list<class-string|object>>
+     */
+    public array $eventListeners = [];
+
+    /**
+     * Doctrine event subscribers (implementing Doctrine\Common\EventSubscriber).
+     * Each entry is a class-string or a ready-made instance.
+     *
+     * @var list<class-string<EventSubscriber>|EventSubscriber>
+     */
+    public array $eventSubscribers = [];
 }
