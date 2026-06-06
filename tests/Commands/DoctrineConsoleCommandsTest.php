@@ -6,7 +6,9 @@ namespace Tests\Commands;
 
 use Daycry\Doctrine\Commands\DoctrineInfo;
 use Daycry\Doctrine\Commands\DoctrineSchemaUpdate;
+use Daycry\Doctrine\Commands\DoctrineValidate;
 use Daycry\Doctrine\Config\Services;
+use Doctrine\ORM\Tools\SchemaTool;
 use Tests\Support\TestCase;
 
 /**
@@ -47,6 +49,26 @@ final class DoctrineConsoleCommandsTest extends TestCase
         $command = new DoctrineSchemaUpdate(service('logger'), service('commands'));
 
         // No --force: defaults to a non-destructive --dump-sql dry run.
+        $this->assertSame(0, $command->run(['group' => 'tests']));
+    }
+
+    public function testSchemaUpdateWrapperWithForceAppliesDdl(): void
+    {
+        $command = new DoctrineSchemaUpdate(service('logger'), service('commands'));
+
+        $this->assertSame(0, $command->run(['group' => 'tests', 'force' => null]));
+    }
+
+    public function testValidateWrapperExitsZeroOnSyncedSchema(): void
+    {
+        // Create the full schema on the shared 'tests' instance the command reuses,
+        // so orm:validate-schema finds the database in sync and exits 0.
+        $em   = Services::doctrine(true, 'tests')->getEm();
+        $tool = new SchemaTool($em);
+        $tool->createSchema($em->getMetadataFactory()->getAllMetadata());
+
+        $command = new DoctrineValidate(service('logger'), service('commands'));
+
         $this->assertSame(0, $command->run(['group' => 'tests']));
     }
 }
