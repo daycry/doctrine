@@ -25,6 +25,22 @@ If you see *"APP_NAMESPACE not found in autoload psr4 configuration"*, ensure
 `composer.json`'s `autoload.psr-4` declares your `App\` namespace correctly,
 then run `composer dump-autoload`.
 
+### `doctrine:*` ORM wrappers
+
+These run the Doctrine ORM 3 console commands through Spark, using the
+CodeIgniter-resolved `EntityManager`. Each accepts `--group <db_group>` to target
+a specific database group (default group when omitted).
+
+```bash
+php spark doctrine:cache:clear [--group <db_group>]      # clear query/result/metadata caches
+php spark doctrine:validate    [--group <db_group>]      # orm:validate-schema
+php spark doctrine:info        [--group <db_group>]      # orm:info (list mapped entities)
+php spark doctrine:schema:update [--dump-sql] [--force] [--group <db_group>]
+```
+
+`doctrine:schema:update` defaults to a non-destructive `--dump-sql` dry run;
+pass `--force` to apply the changes.
+
 ## Doctrine ORM CLI
 
 These commands operate on the `cli-config.php` file generated above. Run them

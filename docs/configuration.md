@@ -63,6 +63,33 @@ existing files; choose `n` to abort safely.
 |--------|------|-------------|
 | `customTypeMappings` | `array<string, string>` | Native DBAL type → Doctrine type mappings registered on the database platform. Default: `['enum' => 'string', 'set' => 'string']`. Re-applied automatically on `Doctrine::reOpen()`. |
 
+### Extension points
+
+All of the following are additive and default to "off" (empty / `null` / `false`),
+so existing configs are unaffected.
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `customTypes` | `array<string, class-string<Doctrine\DBAL\Types\Type>>` | Custom DBAL Types registered with `Type::addType()` (idempotent). Use for UUID/ULID keys, value objects, etc. Applied on construction and `reOpen()`. |
+| `sqlFilters` | `array<string, class-string<Doctrine\ORM\Query\Filter\SQLFilter>>` | Named SQL filters to register (soft-delete, multi-tenant scoping). |
+| `enabledFilters` | `list<string>` | Names from `sqlFilters` to enable automatically on every `EntityManager` (and after `reOpen()`). Filter parameters must still be set at runtime via `$em->getFilters()->getFilter($name)->setParameter(...)`. |
+| `eventListeners` | `array<string, list<class-string\|object>>` | Doctrine event listeners keyed by event name (e.g. `'onFlush'`). Class-strings are instantiated with no arguments. |
+| `eventSubscribers` | `list<class-string<Doctrine\Common\EventSubscriber>\|object>` | Doctrine event subscribers. |
+| `dbalMiddlewares` | `list<class-string<Doctrine\DBAL\Driver\Middleware>\|object>` | User DBAL middlewares (retry/logging/metrics). They wrap the driver first; the toolbar capture middleware is applied last. |
+| `defaultRepositoryClass` | `?class-string<Doctrine\ORM\EntityRepository>` | Default repository class for entities that don't declare their own. `null` keeps Doctrine's built-in repository. |
+
+### Production query logging
+
+Unlike the Debug Toolbar collector (which only renders under `CI_DEBUG`), query
+logging runs in any environment, giving production a slow-query log via a PSR-3
+logger (CodeIgniter's `logger` service by default).
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `queryLogging` | `bool` | `false` | Enable query logging via `Daycry\Doctrine\Logging\QueryLoggerMiddleware`. |
+| `slowQueryThreshold` | `float` | `0.0` | Minimum query duration (seconds) before logging. `0.0` logs every query (noisy); set e.g. `0.5` for slow-query logging only. |
+| `queryLogLevel` | `string` | `'info'` | PSR-3 level used for the log records. |
+
 ## Quick example
 
 ```php

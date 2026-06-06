@@ -23,6 +23,9 @@ Doctrine ORM 3 integration for CodeIgniter 4.
 - **Doctrine Second-Level Cache** wired to the framework cache backend (file, Redis, Memcached, array).
 - `getFromCacheOrQuery()` cache-aside helper backed by the configured PSR-6 result cache.
 - **Multi-database group support** — get a separate Doctrine instance per `Config\Database` group.
+- **Extensible** via config: custom DBAL **Types**, **SQL Filters** (soft-delete / multi-tenant), **event listeners/subscribers**, composable **DBAL middlewares** and a **default repository class**.
+- **Production query logging** (PSR-3) with an optional slow-query threshold — independent of the debug toolbar.
+- **Spark commands** (`doctrine:cache:clear`, `doctrine:validate`, `doctrine:info`, `doctrine:schema:update`) and a multi-group ORM CLI (`--em=<group>`).
 
 ## Requirements
 
@@ -149,6 +152,7 @@ $datatables = (new \Daycry\Doctrine\DataTables\Builder())
     ->withSearchableColumns(['p.name'])
     ->withCaseInsensitive(true)
     ->withMaxFilterValues(500) // cap [IN] / [OR] value lists; default 500
+    ->withMaxPageLength(200)   // cap page size; clamps length=-1 ("All") — default 0 (no cap)
     ->withQueryBuilder(
         $this->doctrine->em->createQueryBuilder()
             ->select('p.id, p.name')
@@ -232,6 +236,31 @@ The filter is a no-op unless `secondLevelCacheStatistics` is enabled.
 See [docs/second_level_cache.md](docs/second_level_cache.md) and
 [docs/second_level_cache_stats.md](docs/second_level_cache_stats.md) for full
 details.
+
+## Extending the EntityManager
+
+`Config\Doctrine` exposes additive, backward-compatible hooks (all default to
+off) for the common Doctrine extension points:
+
+```php
+// app/Config/Doctrine.php
+public array  $customTypes            = ['uuid' => \Ramsey\Uuid\Doctrine\UuidType::class];
+public array  $sqlFilters             = ['soft_delete' => \App\Doctrine\SoftDeleteFilter::class];
+public array  $enabledFilters         = ['soft_delete'];
+public array  $eventListeners         = ['onFlush' => [\App\Doctrine\AuditListener::class]];
+public array  $eventSubscribers       = [\App\Doctrine\TimestampSubscriber::class];
+public array  $dbalMiddlewares        = [\App\Doctrine\RetryMiddleware::class];
+public ?string $defaultRepositoryClass = \App\Repositories\BaseRepository::class;
+
+// Production query logging (PSR-3) — independent of the debug toolbar
+public bool   $queryLogging        = true;
+public float  $slowQueryThreshold  = 0.5;  // log queries slower than 500 ms
+public string $queryLogLevel       = 'warning';
+```
+
+All are re-applied across `Doctrine::reOpen()`. See
+[docs/configuration.md](docs/configuration.md#extension-points) for the full
+reference.
 
 ## Development
 
