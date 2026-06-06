@@ -1,5 +1,8 @@
 # Daycry Doctrine for CodeIgniter 4
 
+📖 **Online documentation:** <https://daycry.github.io/doctrine/> (built from this
+folder with MkDocs Material).
+
 Modern integration of Doctrine ORM/DBAL into CodeIgniter 4. Highlights:
 
 - ORM bootstrap via `\Daycry\Doctrine\Doctrine` and `Services::doctrine()`

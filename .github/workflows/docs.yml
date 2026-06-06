@@ -1,0 +1,61 @@
+name: Docs
+
+on:
+  push:
+    # Publish only from the development branch (the github-pages environment's
+    # allowed branch).
+    branches: [development]
+    paths:
+      - 'docs/**'
+      - 'mkdocs.yml'
+      - 'docs/requirements.txt'
+      - '.github/workflows/docs.yml'
+  workflow_dispatch:
+
+# Allow this workflow to publish to GitHub Pages.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One concurrent deploy; don't cancel an in-progress production deploy.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build (MkDocs Material)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: docs/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r docs/requirements.txt
+
+      - name: Build site (strict — fails on any broken link/anchor)
+        run: mkdocs build --strict --site-dir site
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: site
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    # Publish only from the development branch; never from forks/PRs.
+    if: github.ref == 'refs/heads/development'
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v5
