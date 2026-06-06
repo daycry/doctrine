@@ -124,6 +124,56 @@ final class DoctrineTest extends TestCase
         $this->assertInstanceOf(EntityManager::class, $doctrine->em);
     }
 
+    public function testReOpenClosesAndReconnectsConnection()
+    {
+        $doctrine = new Doctrine($this->config);
+
+        // Establish a live connection.
+        $doctrine->em->getConnection()->executeQuery('SELECT 1');
+        $this->assertTrue($doctrine->em->getConnection()->isConnected());
+
+        $doctrine->reOpen();
+
+        // reOpen() must drop the underlying connection so a stale socket is
+        // re-established lazily on the next query (the documented worker use case).
+        $this->assertFalse($doctrine->em->getConnection()->isConnected());
+
+        // The connection still works and reconnects transparently on next use.
+        $value = $doctrine->em->getConnection()->executeQuery('SELECT 1')->fetchOne();
+        $this->assertSame(1, (int) $value);
+        $this->assertTrue($doctrine->em->getConnection()->isConnected());
+    }
+
+    public function testQueryInstrumentationCanBeDisabled()
+    {
+        $collector = \Daycry\Doctrine\Config\Services::doctrineCollector();
+        $collector->reset();
+
+        // Simulate production (CI_DEBUG off): the toolbar middleware must not be wired.
+        $doctrine = new class ($this->config) extends Doctrine {
+            protected function shouldInstrumentQueries(): bool
+            {
+                return false;
+            }
+        };
+
+        $doctrine->em->getConnection()->executeQuery('SELECT 1');
+
+        $this->assertCount(0, $collector->getQueries());
+    }
+
+    public function testQueryInstrumentationEnabledByDefaultCapturesQueries()
+    {
+        $collector = \Daycry\Doctrine\Config\Services::doctrineCollector();
+        $collector->reset();
+
+        // CI_DEBUG is true under the testing environment, so capture stays on.
+        $doctrine = new Doctrine($this->config);
+        $doctrine->em->getConnection()->executeQuery('SELECT 1');
+
+        $this->assertGreaterThan(0, count($collector->getQueries()));
+    }
+
     public function testDoctrineWithCustomDbGroup()
     {
         $dbConfig = config('Database');

@@ -183,10 +183,14 @@ class Doctrine
         }
 
         // Collector and middleware integration: capture every DBAL query for the toolbar.
-        $collector  = Services::doctrineCollector();
+        // Only wired when query instrumentation is enabled (i.e. CI_DEBUG): in production
+        // the toolbar never renders, so wrapping every statement is pure dead weight.
         $dbalConfig = new \Doctrine\DBAL\Configuration();
-        $middleware = new DoctrineQueryMiddleware($collector);
-        $dbalConfig->setMiddlewares([$middleware]);
+        if ($this->shouldInstrumentQueries()) {
+            $collector  = Services::doctrineCollector();
+            $middleware = new DoctrineQueryMiddleware($collector);
+            $dbalConfig->setMiddlewares([$middleware]);
+        }
 
         /** @var Database $dbConfig */
         $dbConfig = config('Database');
@@ -203,6 +207,18 @@ class Doctrine
     }
 
     /**
+     * Whether DBAL queries should be instrumented for the Debug Toolbar.
+     *
+     * Defaults to CodeIgniter's debug flag: the toolbar only renders when
+     * CI_DEBUG is true, so production skips the per-query capture overhead.
+     * Override in a subclass to force instrumentation on or off.
+     */
+    protected function shouldInstrumentQueries(): bool
+    {
+        return defined('CI_DEBUG') && CI_DEBUG;
+    }
+
+    /**
      * Get the EntityManager. Throws if it has not been initialized.
      */
     public function getEm(): EntityManager
@@ -215,12 +231,29 @@ class Doctrine
     }
 
     /**
-     * Reopen the EntityManager with the current connection and configuration.
+     * Reopen the EntityManager, recovering from a stale or dropped database
+     * connection (e.g. "MySQL server has gone away" after an idle timeout in a
+     * long-running CLI worker or queue consumer).
+     *
+     * The existing DBAL connection is closed first so DBAL re-establishes the
+     * underlying socket lazily on the next query; a fresh EntityManager is then
+     * built over that connection with the same configuration, and custom type
+     * mappings are re-applied.
+     *
+     * Note: closing the connection discards an in-memory SQLite database. This
+     * method is intended for server-backed connections (MySQL/Postgres/…), which
+     * is the documented worker-recovery use case.
      */
     public function reOpen(): void
     {
-        $em       = $this->getEm();
-        $this->em = new EntityManager($em->getConnection(), $em->getConfiguration());
+        $em         = $this->getEm();
+        $connection = $em->getConnection();
+
+        if ($connection->isConnected()) {
+            $connection->close();
+        }
+
+        $this->em = new EntityManager($connection, $em->getConfiguration());
         $this->registerTypeMappings(config('Doctrine'));
     }
 
