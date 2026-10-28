@@ -1,5 +1,5 @@
 site_name: Daycry Doctrine
-site_description: Doctrine ORM 3 integration for CodeIgniter 4 — EntityManager, multi-DB groups, caching & Second-Level Cache, server-side DataTables, debug toolbar and a Spark/ORM CLI.
+site_description: Standalone Doctrine ORM toolkit for PHP 8.5, with PSR caching/logging, DataTables and an optional CodeIgniter 4 adapter.
 site_author: Daycry
 site_url: https://daycry.github.io/doctrine/
 copyright: Copyright &copy; 2025 Daycry
@@ -122,9 +122,9 @@ nav:
   - Home: index.md
   - Getting Started:
       - Installation: installation.md
-      - Standalone: standalone.md
+      - Standalone Core: standalone.md
       - Configuration: configuration.md
-      - Usage: usage.md
+      - CodeIgniter Usage: usage.md
       - Major Migration: migration-major.md
   - DataTables:
       - Builder: datatables.md
@@ -134,5 +134,5 @@ nav:
       - SLC Statistics: second_level_cache_stats.md
   - Tooling:
       - CLI Commands: cli_commands.md
-      - Debug Toolbar: debug_toolbar.md
+      - CodeIgniter Toolbar: debug_toolbar.md
       - Maintenance: maintenance.md

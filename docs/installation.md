@@ -1,71 +1,123 @@
 # Installation
 
-## Key Concepts
+The 6.x major separates the standalone core from the CodeIgniter integration.
+These instructions describe the unreleased branch. The version overrides below
+are local Composer aliases for testing, not published releases.
 
-- Packages: `daycry/doctrine` is the standalone core; `daycry/doctrine-codeigniter4` adds the CI4 integration described on this page.
-- Core requirements: PHP ^8.5, ORM ^3.7, DBAL ^4.5, Symfony Cache/Console ^8 and DoctrineExtensions ^1.5. The adapter also requires CodeIgniter ^4.7.
-- Autoload: when installing manually, register the `Daycry\Doctrine` namespace in `app/Config/Autoload.php`.
+## Choose a package
 
-## Via Composer
+| Package | Use | Runtime requirements |
+|---|---|---|
+| `daycry/doctrine` | Plain PHP or integration into another framework | PHP ^8.5, ORM ^3.7, DBAL ^4.5, Symfony Cache/Console ^8 |
+| `daycry/doctrine-codeigniter4` | CodeIgniter services, config, cache backends, toolbar and Spark | Core ^6.0 and CI4 ^4.7 |
 
-The next major release is not yet published. Use the path repository setup in the
-[standalone guide](standalone.md) for local testing. After publication:
+Composer installs the remaining dependencies, including DoctrineExtensions and
+JSON DQL functions. The core does not require or boot CodeIgniter at runtime.
+Redis and Memcached extensions are needed only when using their native backends.
+Enable the PHP extension for the selected DBAL driver.
+
+## Install from this checkout
+
+In the consuming application's `composer.json`, add path repositories pointing
+to the checkout. Adjust the paths to your directory layout:
+
+```json
+{
+    "repositories": [
+        {
+            "type": "path",
+            "url": "../doctrine",
+            "options": {"versions": {"daycry/doctrine": "6.0.0"}}
+        },
+        {
+            "type": "path",
+            "url": "../doctrine/packages/codeigniter4",
+            "options": {"versions": {"daycry/doctrine-codeigniter4": "6.0.0"}}
+        }
+    ]
+}
+```
+
+For standalone use, only the first repository is needed:
+
+```bash
+composer require daycry/doctrine:^6.0
+```
+
+For CI4, keep both repositories and install the adapter:
 
 ```bash
 composer require daycry/doctrine-codeigniter4:^6.0
 ```
 
-After installing, publish the configuration files:
+The adapter installs the core and framework itself. After coordinated publication
+of the 6.x packages, the same require commands work without these local repositories.
+Path installations depend on the checkout remaining available; use released
+packages or prepared distributions for deployment.
+
+## Standalone bootstrap
+
+Load Composer and construct the core with explicit configuration. No Spark
+command, framework bootstrap or application constants are needed:
+
+```php
+require __DIR__ . '/vendor/autoload.php';
+
+$config = new \Daycry\Doctrine\Configuration();
+$config->connection = ['driver' => 'pdo_sqlite', 'memory' => true];
+$doctrine = new \Daycry\Doctrine\Doctrine($config);
+
+echo $doctrine->getEm()->getConnection()->fetchOne('SELECT 1');
+```
+
+For mapped entities, set `$config->entities` to existing mapping directories
+before constructing Doctrine. See [standalone usage](standalone.md) for persistent
+caches, named managers and a console bootstrap.
+
+## CodeIgniter setup
+
+After installing the adapter:
 
 ```bash
 php spark doctrine:publish
 ```
 
-This generates `app/Config/Doctrine.php` and `cli-config.php` in the project
-root. See [`configuration.md`](configuration.md) for the available options.
-
-## Manual Installation
-
-Download this repository and register the namespace in
-`app/Config/Autoload.php`. For example, when copied into `app/ThirdParty`:
+This writes `app/Config/Doctrine.php` and the application-level `cli-config.php`.
+The application config extends
+`Daycry\Doctrine\CodeIgniter4\Config\Doctrine` and declares only your overrides:
 
 ```php
-$psr4 = [
-    'Config'          => APPPATH . 'Config',
-    APP_NAMESPACE     => APPPATH,
-    'App'             => APPPATH,
-    'Daycry\Doctrine' => APPPATH . 'ThirdParty/doctrine/src',
-    'Daycry\Doctrine\CodeIgniter4' => APPPATH . 'ThirdParty/doctrine/packages/codeigniter4/src',
-];
+<?php
+
+namespace Config;
+
+class Doctrine extends \Daycry\Doctrine\CodeIgniter4\Config\Doctrine
+{
+    public array $entities = [APPPATH . 'Models/Entity'];
+}
 ```
 
-Composer installation is preferred — it keeps dependencies and the
-`autoload.files` entry for the helper function in sync (see below).
+Ensure the mapping directory exists. Connections come from `Config\Database` and
+caches from `Config\Cache`. See [configuration](configuration.md) and
+[CI4 usage](usage.md).
 
-## Helper Function Autoload
-
-`Daycry\Doctrine\CodeIgniter4\Helpers\getFromCacheOrQuery()` is autoloaded as a namespaced
-function via the adapter's `composer.json` `autoload.files` entry. No
-namespace registration is needed; just import it where you use it:
+The adapter autoloads the namespaced cache helper through Composer:
 
 ```php
 use function Daycry\Doctrine\CodeIgniter4\Helpers\getFromCacheOrQuery;
 ```
 
-See [`usage.md`](usage.md) for the cache-aside example.
+The global `doctrine_instance()` helper is separate: load `doctrine_helper` through
+CI4's helper mechanism. The core uses `Cache\CacheAside` directly.
 
-## Notes
+## Deployment and upgrades
 
-- For Redis/Memcached cache backends, the corresponding PHP extensions
-  (`ext-redis`, `ext-memcached`) must be installed; the Doctrine service
-  raises a descriptive `CacheException` on missing extensions.
-- Ensure every path listed in `Config\Doctrine::$entities` exists and is
-  readable; misconfigured paths fail fast at construction time.
+Commit the consuming application's lockfile and install with PHP 8.5:
 
-## Debug Toolbar
+```bash
+composer install --no-dev --optimize-autoloader --no-interaction
+```
 
-The package ships a Debug Toolbar collector and an optional per-request reset
-filter for SLC statistics. See [`debug_toolbar.md`](debug_toolbar.md) for the
-collector + filter setup steps.
-
-For an existing application, follow [the major-version migration guide](migration-major.md).
+Configure persistent pools before running metadata warmup across processes.
+Doctor and warmup do not create or migrate database tables.
+Use the [6.x migration guide](migration-major.md) when upgrading existing code.

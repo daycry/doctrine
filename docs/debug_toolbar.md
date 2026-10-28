@@ -1,7 +1,7 @@
 # Doctrine Queries in the Debug Toolbar
 
-This page documents the CodeIgniter Debug Toolbar collector that ships with
-the package, the in-memory query log limit, the SLC stats badge, and the
+This page requires the `daycry/doctrine-codeigniter4` adapter. It documents the
+CodeIgniter Debug Toolbar collector, the in-memory query log limit, the SLC stats badge, and the
 per-request reset filter.
 
 ## Key Concepts
@@ -9,8 +9,8 @@ per-request reset filter.
 - **Collector:** `Daycry\Doctrine\CodeIgniter4\Debug\Toolbar\Collectors\DoctrineCollector`
   renders the Doctrine tab in the toolbar.
 - **Middleware:** `Daycry\Doctrine\CodeIgniter4\Debug\Toolbar\Collectors\DoctrineQueryMiddleware`
-  is wired into Doctrine's DBAL stack automatically when you instantiate
-  `\Daycry\Doctrine\CodeIgniter4\Doctrine`. No manual setup required.
+  is wired into Doctrine's DBAL stack when `CI_DEBUG` is enabled and you instantiate
+  `\Daycry\Doctrine\CodeIgniter4\Doctrine`. The collector must still be registered.
 - **SLC stats badge:** appears when
   `Config\Doctrine::$secondLevelCacheStatistics = true`. The badge format is
   `SLC:hits/misses/puts (ratio%)` and a small stats table is rendered above
@@ -70,9 +70,10 @@ $collector->reset();
 ## Resetting Stats per Request
 
 `DoctrineSlcReset` is a CodeIgniter filter that calls
-`Services::doctrine()->resetSecondLevelCacheStatistics()` at the start of
-every request, so the toolbar shows hit/miss/put counts scoped to the
-current request.
+`Services::peekDoctrine()?->resetSecondLevelCacheStatistics()` for the effective
+default group at the start of a request. It never initializes a manager just to
+reset counters. Additional named groups need explicit lifecycle resets; see
+[SLC statistics](second_level_cache_stats.md#codeigniter-toolbar).
 
 Register it in `app/Config/Filters.php`:
 

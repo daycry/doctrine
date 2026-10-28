@@ -1,45 +1,34 @@
-# Daycry Doctrine for CodeIgniter 4
+# Daycry Doctrine documentation
 
-📖 **Online documentation:** <https://daycry.github.io/doctrine/> (built from this
-folder with MkDocs Material).
+This documentation describes the unreleased 6.x major: a standalone PHP 8.5
+toolkit and an optional CodeIgniter 4 adapter.
 
-Modern integration of Doctrine ORM/DBAL into CodeIgniter 4. Highlights:
+The [documentation site](https://daycry.github.io/doctrine/) is built from this
+folder. Until this branch is published, the site can describe an earlier release.
 
-- ORM bootstrap via `\Daycry\Doctrine\CodeIgniter4\Doctrine` and `Services::doctrine()`
-- Server-side **DataTables Builder** with safe operators and `[><]` / `[IN]` / `[OR]` validation
-- **Debug Toolbar** collector with optional SLC stats and a per-request reset filter
-- **Second-Level Cache** wired to the framework cache backend
-- `getFromCacheOrQuery()` cache-aside helper
-- Multi-database group support (`Services::doctrine(true, 'reporting')`)
-- Comprehensive PHPUnit, PHPStan, Psalm and Rector coverage
+## Choose your entry point
 
-## Documentation Index
+| Goal | Guide |
+|---|---|
+| Install the core or the CI4 adapter | [Installation](installation.md) |
+| Use Doctrine without a framework | [Standalone core](standalone.md) |
+| Configure mappings, caches, filters and logging | [Configuration](configuration.md) |
+| Use services, helpers and database groups in CI4 | [CodeIgniter usage](usage.md) |
+| Upgrade an existing application | [6.x migration](migration-major.md) |
 
-- [installation.md](installation.md) — Install, autoload helper, optional Debug Toolbar setup
-- [configuration.md](configuration.md) — Publish and configure `Config\Doctrine`
-- [usage.md](usage.md) — Service / helper / direct, multi-DB, `getFromCacheOrQuery`, `reOpen()`, SLC reset
-- [cli_commands.md](cli_commands.md) — `doctrine:publish` and Doctrine ORM CLI
-- [datatables.md](datatables.md) — DataTables Builder API, examples, troubleshooting
-- [search_modes.md](search_modes.md) — Canonical reference of per-column operators
-- [debug_toolbar.md](debug_toolbar.md) — Query log + SLC badge + memory limits + reset filter
-- [second_level_cache.md](second_level_cache.md) — Doctrine SLC configuration
-- [second_level_cache_stats.md](second_level_cache_stats.md) — `StatisticsCacheLogger` API
+## Shared functionality
 
-For breaking changes and a chronological list of additions see
-[`CHANGELOG.md`](../CHANGELOG.md) at the repository root.
+- [DataTables Builder](datatables.md): framework-independent pagination and filtering.
+- [Search modes](search_modes.md): supported operators and validation.
+- [Second-Level Cache](second_level_cache.md): explicit pools or CI4 backend wiring.
+- [SLC statistics](second_level_cache_stats.md): read and reset cache counters.
+- [Console commands](cli_commands.md): standalone console, Spark and ORM tools.
 
-## Quick Start
+## CodeIgniter integration
 
-```php
-// As a service
-$doctrine = \Config\Services::doctrine();
+The adapter supplies configuration discovery, shared services, database/cache
+translation, helpers, Spark commands and the [debug toolbar](debug_toolbar.md).
+Install it when the application uses CI4; standalone consumers need only the core.
 
-// As a helper (after adding 'doctrine_helper' to BaseController::$helpers)
-$doctrine = doctrine_instance();
-
-$repo = $doctrine->em->getRepository(\App\Models\Entity\WebProjects::class);
-$item = $repo->findOneBy(['uuid' => $uuid]);
-```
-
-For advanced usage (multi-DB, manual caching, EntityManager re-opening,
-Debug Toolbar memory limits) see the documents linked above.
+See [maintenance and validation](maintenance.md) for implementation evidence.
+The repository's CHANGELOG records changes pending the coordinated 6.x release.

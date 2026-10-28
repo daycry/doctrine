@@ -3,6 +3,11 @@
 `Daycry\Doctrine\DataTables\Builder` provides server-side pagination, ordering
 and filtering for DataTables, built on top of a Doctrine `QueryBuilder`.
 
+This API belongs to the standalone core and also works through the CI4 adapter.
+Supply a server-created ORM QueryBuilder and the request parameters as an array.
+Convert `getResponse()` to JSON using the application's HTTP layer; the Builder
+does not require a framework request or response object.
+
 For the canonical operator reference (modes, validation, exceptions) see
 [`search_modes.md`](search_modes.md). This document focuses on the Builder API
 and end-to-end examples.

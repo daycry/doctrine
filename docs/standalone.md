@@ -13,8 +13,9 @@ Consumers do not inherit those development requirements.
 
 ## Installation
 
-These packages have not yet been published as a 6.x release. For local use, configure
-Composer path repositories for the checkout and adapter:
+These packages have not yet been published as a 6.x release. The
+[installation guide](installation.md) covers package selection and deployment.
+For local use, configure Composer path repositories for the checkout and adapter:
 
 ```json
 {
@@ -43,9 +44,13 @@ CI4. The adapter pulls in the core and framework itself.
 use Daycry\Doctrine\Configuration;
 use Daycry\Doctrine\Doctrine;
 
+$password = getenv('DB_PASSWORD');
+if ($password === false) {
+    throw new RuntimeException('Set DB_PASSWORD in the application environment.');
+}
 $config = new Configuration();
 $config->connection = ['driver' => 'pdo_mysql', 'host' => '127.0.0.1',
-    'dbname' => 'app', 'user' => 'app', 'password' => getenv('DB_PASSWORD')];
+    'dbname' => 'app', 'user' => 'app', 'password' => $password];
 $config->entities = [__DIR__ . '/src/Entity'];
 $doctrine = new Doctrine($config);
 $em = $doctrine->getEm();
@@ -81,11 +86,44 @@ $value = new CacheAside($pools->result)->get('dashboard:total', 60, fn () => $re
 
 For `CacheAside`, a positive TTL expires the entry explicitly. Zero uses the pool's
 default lifetime; configure that default as zero for storage without expiry.
+Negative TTLs raise InvalidArgumentException. Passing a null pool runs the callback
+without caching. The adapter's namespaced helper delegates to this same class and
+uses its configured result pool.
 READ_WRITE SLC requires an explicit `secondLevelCacheLockPath` shared by processes
 that share regions.
 
 To enable query logging, set `queryLogging = true` and pass a PSR-3 logger as the
 `logger` constructor argument. The core does not look up a framework logger.
+
+### Redis and Memcached result pools
+
+Both backends can be supplied directly without CI4. Load the corresponding PHP
+extension and configure the client for the application's server:
+
+```php
+use Daycry\Doctrine\Cache\CachePools;
+use Symfony\Component\Cache\Adapter\RedisAdapter;
+
+$client = new \Redis();
+$client->connect('127.0.0.1', 6379);
+$pools = new CachePools(result: new RedisAdapter($client, 'app_results', 0));
+```
+
+Or, with Memcached:
+
+```php
+use Daycry\Doctrine\Cache\CachePools;
+use Symfony\Component\Cache\Adapter\MemcachedAdapter;
+
+$client = new \Memcached();
+$client->addServer('127.0.0.1', 11211);
+$pools = new CachePools(result: new MemcachedAdapter($client, 'app_results', 0));
+```
+
+Pass `$pools` to the Doctrine constructor. These examples replace only the result
+pool; query/metadata/SLC pools keep their ArrayAdapter defaults. Reuse a client when
+constructing additional pools, assigning a distinct namespace to each. Configure
+authentication and connection options in the application before constructing pools.
 
 ## Named managers and DataTables
 

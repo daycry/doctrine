@@ -8,101 +8,120 @@ hide:
 
 # Daycry Doctrine
 
-**Standalone Doctrine ORM toolkit for PHP 8.5**, with an optional **CodeIgniter 4** adapter. Includes explicit ORM configuration, named managers, PSR caching/logging, DataTables and operational tooling. See the [standalone guide](standalone.md) and [breaking-change migration](migration-major.md).
+**Standalone Doctrine ORM toolkit for PHP 8.5**, with an optional **CodeIgniter 4**
+adapter. Configure ORM, caching and logging explicitly, or integrate with CI4's
+services, database groups, toolbar and Spark.
 
-[Get started :material-rocket-launch:](installation.md){ .md-button .md-button--primary }
-[DataTables :material-table:](datatables.md){ .md-button }
-[GitHub :material-github:](https://github.com/daycry/doctrine){ .md-button }
-
-</div>
-
-## Features
-
-<div class="grid cards" markdown>
-
--   :material-database-cog:{ .lg .middle } __EntityManager, your way__
-
-    ---
-
-    Use it as a service, a helper or a plain object. `getEm()` with null-guards, `reOpen()` that actually reconnects a stale worker connection, and SSL / custom DBAL options passthrough.
-
-    [:octicons-arrow-right-24: Usage](usage.md)
-
--   :material-table-search:{ .lg .middle } __Server-side DataTables__
-
-    ---
-
-    Filtering, ordering and pagination with safe operator parsing, whitelisted columns, page-size and filter-value caps, `fetchJoinCollection` opt-out and injectable totals.
-
-    [:octicons-arrow-right-24: DataTables](datatables.md)
-
--   :material-magnify:{ .lg .middle } __Bracket search operators__
-
-    ---
-
-    Per-column `[%] [=] [!=] [>] [<] [IN] [OR] [><]` with case-insensitive support and strict, documented validation — `regex: true` is rejected by design.
-
-    [:octicons-arrow-right-24: Search Modes](search_modes.md)
-
--   :material-layers-triple:{ .lg .middle } __Caching & Second-Level Cache__
-
-    ---
-
-    Query / result / metadata caches backed by `Config\Cache`, per-group namespacing, the `getFromCacheOrQuery()` cache-aside helper, and Doctrine SLC with an optional stats badge.
-
-    [:octicons-arrow-right-24: Second-Level Cache](second_level_cache.md)
-
--   :material-database-multiple:{ .lg .middle } __Multi-database groups__
-
-    ---
-
-    Every `Config\Database` group resolves to its own cached Doctrine instance and isolated cache namespaces — and the ORM CLI can target any group with `--em=<group>`.
-
-    [:octicons-arrow-right-24: CLI Commands](cli_commands.md)
-
--   :material-puzzle:{ .lg .middle } __Extensible by config__
-
-    ---
-
-    Register custom DBAL Types, SQL Filters (soft-delete / multi-tenant), event listeners/subscribers, DBAL middlewares and a default repository class — all re-applied on `reOpen()`.
-
-    [:octicons-arrow-right-24: Configuration](configuration.md)
-
--   :material-bug-check:{ .lg .middle } __Debug toolbar & logging__
-
-    ---
-
-    A toolbar collector captures every DBAL query (debug only), with an SLC hit/miss/put badge — plus opt-in **PSR-3 production query logging** with a slow-query threshold.
-
-    [:octicons-arrow-right-24: Debug Toolbar](debug_toolbar.md)
-
--   :material-console:{ .lg .middle } __Spark & ORM CLI__
-
-    ---
-
-    `doctrine:publish`, `doctrine:cache:clear`, `doctrine:validate`, `doctrine:info`, `doctrine:schema:update`, plus the full Doctrine ORM console via `cli-config.php`.
-
-    [:octicons-arrow-right-24: CLI Commands](cli_commands.md)
+[Install :material-rocket-launch:](installation.md){ .md-button .md-button--primary }
+[Standalone :material-language-php:](standalone.md){ .md-button }
+[Migrate to 6.x :material-source-branch:](migration-major.md){ .md-button }
 
 </div>
 
-## Quick start
+!!! info "Unreleased 6.x documentation"
+    This branch describes the next major version. Use the local Composer path
+    repositories in [Installation](installation.md) until both packages are published.
+    Existing application imports and constructors require migration.
+
+## Choose a package
+
+| Package | Included |
+|---|---|
+| `daycry/doctrine` | Framework-independent ORM setup, DataTables, PSR-6 caching, PSR-3 query logging, named managers and console tools |
+| `daycry/doctrine-codeigniter4` | Core plus CI4 config/services, database/cache translation, helpers, toolbar and Spark |
+
+The core requires PHP ^8.5, ORM ^3.7, DBAL ^4.5, Symfony Cache/Console ^8 and
+DoctrineExtensions ^1.5. The adapter additionally requires CodeIgniter ^4.7.
+
+## Standalone quick start
+
+After [installing the core](installation.md#install-from-this-checkout):
+
+```php
+require __DIR__ . '/vendor/autoload.php';
+
+$config = new \Daycry\Doctrine\Configuration();
+$config->connection = ['driver' => 'pdo_sqlite', 'memory' => true];
+$doctrine = new \Daycry\Doctrine\Doctrine($config);
+
+echo $doctrine->getEm()->getConnection()->fetchOne('SELECT 1');
+```
+
+Set existing mapping directories on `$config->entities` before constructing the
+manager to use mapped entities. See [standalone usage](standalone.md).
+
+## CodeIgniter quick start
+
+After [installing the adapter](installation.md#codeigniter-setup):
 
 ```bash
-composer require daycry/doctrine-codeigniter4:^6.0
 php spark doctrine:publish
 ```
 
 ```php
-$doctrine = \Config\Services::doctrine();
-$user     = $doctrine->em->getRepository(\App\Models\Entity\User::class)->find(1);
+$doctrine = service('doctrine');
+$em = $doctrine->getEm();
 ```
 
-See **[Installation](installation.md)** and **[Configuration](configuration.md)** to get going, or jump to the **[DataTables Builder](datatables.md)**.
+Configure connections in `Config\Database`, caches in `Config\Cache` and ORM
+overrides in the published `Config\Doctrine`. See [CI4 usage](usage.md).
 
-## Requirements
+## Explore the toolkit
 
-- PHP **^8.5**
-- CodeIgniter **^4.7** for the optional CI4 adapter
-- Doctrine ORM **^3.7**, DBAL **^4.5**
-- Symfony Cache/Console **^8**, DoctrineExtensions **^1.5**
+<div class="grid cards" markdown>
+
+-   :material-table-search:{ .lg .middle } __DataTables__
+
+    ---
+
+    ORM QueryBuilder input, array request parameters, safe filter operators,
+    bounded pages and WindowPage results. Works without an HTTP framework.
+
+    [:octicons-arrow-right-24: Builder API](datatables.md)
+
+-   :material-layers-triple:{ .lg .middle } __Caching__
+
+    ---
+
+    Inject PSR-6 pools into the core or use CI4 backend wiring. Cache-aside and SLC
+    support explicit lifetimes, invalidation and optional statistics.
+
+    [:octicons-arrow-right-24: SLC setup](second_level_cache.md)
+
+-   :material-database-multiple:{ .lg .middle } __Named managers__
+
+    ---
+
+    Lazy ManagerRegistry factories in standalone code and case-sensitive database
+    group services in the adapter.
+
+    [:octicons-arrow-right-24: Standalone managers](standalone.md#named-managers-and-datatables)
+
+-   :material-puzzle:{ .lg .middle } __Configuration__
+
+    ---
+
+    Attributes/XML, custom types and DQL functions, filters, listeners/subscribers,
+    DBAL middlewares and repository classes.
+
+    [:octicons-arrow-right-24: Option reference](configuration.md)
+
+-   :material-bug-check:{ .lg .middle } __Logging and toolbar__
+
+    ---
+
+    PSR-3 query logging with a slow-query threshold in the core. The optional CI4
+    toolbar displays debug queries and SLC counters.
+
+    [:octicons-arrow-right-24: CI4 toolbar](debug_toolbar.md)
+
+-   :material-console:{ .lg .middle } __Operational tools__
+
+    ---
+
+    Standalone Symfony Console, CI4 Spark, readiness diagnostics and metadata
+    warmup. Schema operations use the native ORM commands.
+
+    [:octicons-arrow-right-24: Console guide](cli_commands.md)
+
+</div>
