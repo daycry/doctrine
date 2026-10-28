@@ -54,7 +54,7 @@ directory is prepended to PATH for its auxiliary DLLs. CI requires both extensio
 - Database-specific DQL function profiles and typed DataTables columns.
 - Stampede protection and independent configurable metadata/query lifetimes.
 
-## Final validation
+## Validation before standalone extraction
 
 - PHP 8.5.12 with highest dependencies, Redis and Memcached: 198 tests, 507 assertions, 2 skips.
 - Redis-specific tests: 3 tests, 7 assertions, no skips.
@@ -80,3 +80,30 @@ application, production deployment should install its committed lockfile with
 `composer install --no-dev --optimize-autoloader --no-interaction`. Regenerate the
 optimized classmap after dependency changes; the package does not impose Composer
 configuration on consuming applications.
+
+## Standalone extraction
+
+The next 6.x major splits the runtime into a framework-independent core and the
+`daycry/doctrine-codeigniter4` adapter. See [standalone usage](standalone.md) and
+[migration changes](migration-major.md). A separate native PHPUnit bootstrap and
+isolated Composer consumers verify that CI4 is absent from core runtime dependencies
+and that the installed adapter discovers configuration, services and Spark commands.
+
+Final standalone validation on PHP 8.5.12:
+
+- CI4 integration: 199 tests, 509 assertions, two existing SSL/custom-option skips.
+- Native core with current dependencies: 13 tests, 49 assertions.
+- Isolated core with minimum dependencies and no CI4 installed: 13 tests, 50 assertions.
+- Installed adapter boots SQLite, shared services and Spark discovery with both current and minimum dependencies.
+- PHPStan and Psalm: no errors. Rector and code style: no pending changes.
+- Both Composer manifests validate; strict MkDocs build and strict PSR-4 optimized autoload pass.
+- Both distribution ZIPs validated; core excludes dependencies, adapter, tests and local tooling/state.
+
+Independent review ran requirements, correctness, security and performance lenses
+using generic reviewers because the native reviewer agent was unavailable. Attempt 1
+found two Important gaps: adapter source missing from coverage, and declarative entity
+paths overwritten by its constructor. Both were fixed; requirements/correctness
+reviewers verified the corrections in attempt 2 with no remaining findings. Coverage
+now includes both packages and a new regression verifies entity-path inheritance/export.
+Security and performance reviews reported no findings. No production benchmark,
+local coverage percentage or remote workflow result is claimed in this record.

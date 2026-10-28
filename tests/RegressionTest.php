@@ -5,11 +5,12 @@ declare(strict_types=1);
 namespace Tests;
 
 use CodeIgniter\HTTP\IncomingRequest;
-use Daycry\Doctrine\Config\DatabaseGroup;
-use Daycry\Doctrine\Config\Services;
+use Daycry\Doctrine\CodeIgniter4\Config\DatabaseGroup;
+use Daycry\Doctrine\CodeIgniter4\Config\Doctrine as DoctrineConfig;
+use Daycry\Doctrine\CodeIgniter4\Config\Services;
+use Daycry\Doctrine\CodeIgniter4\Debug\Filters\DoctrineSlcReset;
+use Daycry\Doctrine\CodeIgniter4\Doctrine;
 use Daycry\Doctrine\DataTables\Builder;
-use Daycry\Doctrine\Debug\Filters\DoctrineSlcReset;
-use Daycry\Doctrine\Doctrine;
 use Doctrine\ORM\Cache\CacheFactory;
 use Doctrine\ORM\Cache\ConcurrentRegion;
 use Doctrine\ORM\Mapping\ClassMetadata;
@@ -23,7 +24,7 @@ use Tests\Support\Models\Entities\TestAttribute;
 use Tests\Support\TestCase;
 use TypeError;
 
-use function Daycry\Doctrine\Helpers\getFromCacheOrQuery;
+use function Daycry\Doctrine\CodeIgniter4\Helpers\getFromCacheOrQuery;
 
 /**
  * @internal
@@ -32,6 +33,16 @@ final class RegressionTest extends TestCase
 {
     private string $originalHandler;
     private int $originalTtl;
+
+    public function testDeclarativeEntityPathsSurviveAdapterConfigurationConstruction(): void
+    {
+        $config = new class () extends DoctrineConfig {
+            public array $entities = [__DIR__ . '/_support/Models/Entities'];
+        };
+
+        $this->assertSame([__DIR__ . '/_support/Models/Entities'], $config->entities);
+        $this->assertSame($config->entities, $config->toCoreConfig(['driver' => 'pdo_sqlite', 'memory' => true])->entities);
+    }
 
     protected function setUp(): void
     {

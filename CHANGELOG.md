@@ -8,7 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Breaking changes
-- Require PHP ^8.5, CodeIgniter ^4.7, ORM ^3.7, DBAL ^4.5, Symfony Cache/Console ^8, and doctrineextensions ^1.5.
+- Split the standalone core from the independently installable `daycry/doctrine-codeigniter4` adapter for the next 6.x release.
+- Move CI4 configuration, services, helpers, toolbar and Spark classes under `Daycry\Doctrine\CodeIgniter4`; use explicit DBAL/PSR configuration in the core.
+- Use SPL InvalidArgumentException for framework-independent validation.
+- Require PHP ^8.5, ORM ^3.7, DBAL ^4.5, Symfony Cache/Console ^8, and doctrineextensions ^1.5; the CI4 adapter also requires CodeIgniter ^4.7.
 - Use native lazy objects exclusively; remove generated-proxy configuration.
 - Replace Builder getData/getRecordsFiltered with getPage and its WindowPage accessors.
 - Rename setUseOutputWalkers to withOutputWalkers and remove withIndexColumn.

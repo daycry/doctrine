@@ -6,7 +6,7 @@ namespace Tests\Support;
 
 use CodeIgniter\Test\CIUnitTestCase;
 use Config\Database;
-use Daycry\Doctrine\Config\Doctrine as DoctrineConfig;
+use Daycry\Doctrine\CodeIgniter4\Config\Doctrine as DoctrineConfig;
 
 abstract class TestCase extends CIUnitTestCase
 {

@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Tests;
 
-use CodeIgniter\Exceptions\InvalidArgumentException;
 use CodeIgniter\Test\CIUnitTestCase;
 use Daycry\Doctrine\DataTables\Builder;
 use Doctrine\ORM\QueryBuilder;
+use InvalidArgumentException;
 use ReflectionMethod;
 
 /**

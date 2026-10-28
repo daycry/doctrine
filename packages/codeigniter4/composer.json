@@ -1,0 +1,23 @@
+{
+    "name": "daycry/doctrine-codeigniter4",
+    "description": "CodeIgniter 4 adapter for daycry/doctrine",
+    "type": "library",
+    "license": "MIT",
+    "require": {
+        "php": "^8.5",
+        "daycry/doctrine": "^6.0",
+        "codeigniter4/framework": "^4.7"
+    },
+    "autoload": {
+        "psr-4": {
+            "Daycry\\Doctrine\\CodeIgniter4\\": "src/"
+        },
+        "files": [
+            "src/Helpers/getFromCacheOrQuery.php"
+        ]
+    },
+    "suggest": {
+        "ext-redis": "Redis cache backend",
+        "ext-memcached": "Memcached cache backend"
+    }
+}

@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace Daycry\Doctrine\DataTables;
 
 use Closure;
-use CodeIgniter\Exceptions\InvalidArgumentException;
 use Doctrine\ORM\QueryBuilder as ORMQueryBuilder;
 use Doctrine\ORM\Tools\Pagination\OffsetPaginator;
 use Doctrine\ORM\Tools\Pagination\Window;
 use Doctrine\ORM\Tools\Pagination\WindowPage;
+use InvalidArgumentException;
 
 /**
  * Builder for DataTables integration with Doctrine ORM.

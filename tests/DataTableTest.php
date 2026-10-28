@@ -6,9 +6,9 @@ namespace Tests;
 
 use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
-use Daycry\Doctrine\Config\Services;
+use Daycry\Doctrine\CodeIgniter4\Config\Services;
+use Daycry\Doctrine\CodeIgniter4\Doctrine;
 use Daycry\Doctrine\DataTables\Builder;
-use Daycry\Doctrine\Doctrine;
 use Override;
 use Tests\Support\Database\Seeds\TestSeeder;
 use Tests\Support\Models\Entities\TestAttribute;

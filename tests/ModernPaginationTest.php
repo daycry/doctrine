@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace Tests;
 
-use CodeIgniter\Exceptions\InvalidArgumentException;
-use Daycry\Doctrine\Config\Services;
+use Daycry\Doctrine\CodeIgniter4\Config\Services;
+use Daycry\Doctrine\CodeIgniter4\Doctrine;
 use Daycry\Doctrine\DataTables\Builder;
 use Daycry\Doctrine\DataTables\Counter;
-use Daycry\Doctrine\Doctrine;
 use Doctrine\ORM\Tools\Pagination\WindowPage;
 use Doctrine\ORM\Tools\SchemaTool;
+use InvalidArgumentException;
 use Tests\Support\Models\Entities\TestAttribute;
 use Tests\Support\TestCase;
 

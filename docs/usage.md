@@ -2,7 +2,7 @@
 
 ## Key Concepts
 
-- **Service:** `\Config\Services::doctrine($getShared = true, ?string $dbGroup = null)` returns a shared `Daycry\Doctrine\Doctrine` keyed by the exact, case-sensitive DB group name.
+- **Service:** `\Config\Services::doctrine($getShared = true, ?string $dbGroup = null)` returns a shared `Daycry\Doctrine\CodeIgniter4\Doctrine` keyed by the exact, case-sensitive DB group name.
 - **Helper:** `doctrine_instance(?string $dbGroup = null)` is a convenience wrapper around the service for use with the `doctrine_helper`.
 - **EntityManager access:** `$doctrine->em` (direct property) or `$doctrine->getEm()` (throws if not initialised).
 - **Multi-DB:** every `Config\Database` group resolves to its own cached Doctrine instance — see [Multi-Database Groups](#multi-database-groups).
@@ -10,7 +10,7 @@
 ## Loading the Library
 
 ```php
-$doctrine = new \Daycry\Doctrine\Doctrine();
+$doctrine = new \Daycry\Doctrine\CodeIgniter4\Doctrine();
 $user     = $doctrine->em->getRepository(\App\Models\Entity\User::class)->find(1);
 ```
 
@@ -95,7 +95,7 @@ The library autoloads a global cache-aside helper backed by Doctrine's
 `resultsCache` PSR-6 pool:
 
 ```php
-use function Daycry\Doctrine\Helpers\getFromCacheOrQuery;
+use function Daycry\Doctrine\CodeIgniter4\Helpers\getFromCacheOrQuery;
 
 $rows = getFromCacheOrQuery(
     cacheKey: 'reports_daily',

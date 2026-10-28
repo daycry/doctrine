@@ -2,14 +2,17 @@
 
 ## Key Concepts
 
-- Package: `daycry/doctrine` provides Doctrine ORM 3 integration for CodeIgniter 4.
-- Requirements: PHP ^8.5, CodeIgniter ^4.7, ORM ^3.7, DBAL ^4.5, Symfony Cache/Console ^8 and DoctrineExtensions ^1.5.
+- Packages: `daycry/doctrine` is the standalone core; `daycry/doctrine-codeigniter4` adds the CI4 integration described on this page.
+- Core requirements: PHP ^8.5, ORM ^3.7, DBAL ^4.5, Symfony Cache/Console ^8 and DoctrineExtensions ^1.5. The adapter also requires CodeIgniter ^4.7.
 - Autoload: when installing manually, register the `Daycry\Doctrine` namespace in `app/Config/Autoload.php`.
 
 ## Via Composer
 
+The next major release is not yet published. Use the path repository setup in the
+[standalone guide](standalone.md) for local testing. After publication:
+
 ```bash
-composer require daycry/doctrine
+composer require daycry/doctrine-codeigniter4:^6.0
 ```
 
 After installing, publish the configuration files:
@@ -32,6 +35,7 @@ $psr4 = [
     APP_NAMESPACE     => APPPATH,
     'App'             => APPPATH,
     'Daycry\Doctrine' => APPPATH . 'ThirdParty/doctrine/src',
+    'Daycry\Doctrine\CodeIgniter4' => APPPATH . 'ThirdParty/doctrine/packages/codeigniter4/src',
 ];
 ```
 
@@ -40,12 +44,12 @@ Composer installation is preferred — it keeps dependencies and the
 
 ## Helper Function Autoload
 
-`Daycry\Doctrine\Helpers\getFromCacheOrQuery()` is autoloaded as a global
-function via the package's `composer.json` `autoload.files` entry. No
+`Daycry\Doctrine\CodeIgniter4\Helpers\getFromCacheOrQuery()` is autoloaded as a namespaced
+function via the adapter's `composer.json` `autoload.files` entry. No
 namespace registration is needed; just import it where you use it:
 
 ```php
-use function Daycry\Doctrine\Helpers\getFromCacheOrQuery;
+use function Daycry\Doctrine\CodeIgniter4\Helpers\getFromCacheOrQuery;
 ```
 
 See [`usage.md`](usage.md) for the cache-aside example.

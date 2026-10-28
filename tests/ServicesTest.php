@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Tests;
 
-use Daycry\Doctrine\Config\Services;
-use Daycry\Doctrine\Doctrine;
+use Daycry\Doctrine\CodeIgniter4\Config\Services;
+use Daycry\Doctrine\CodeIgniter4\Doctrine;
 use Tests\Support\TestCase;
 
 /**

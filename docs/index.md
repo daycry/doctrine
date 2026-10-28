@@ -8,7 +8,7 @@ hide:
 
 # Daycry Doctrine
 
-**Doctrine ORM 3** integration for **CodeIgniter 4** — a configured `EntityManager`, per-group multi-database support, query/result/metadata caching and **Second-Level Cache**, a safe server-side **DataTables Builder**, a debug-toolbar collector and **Spark / ORM CLI** tooling. Backward-compatible and production-ready.
+**Standalone Doctrine ORM toolkit for PHP 8.5**, with an optional **CodeIgniter 4** adapter. Includes explicit ORM configuration, named managers, PSR caching/logging, DataTables and operational tooling. See the [standalone guide](standalone.md) and [breaking-change migration](migration-major.md).
 
 [Get started :material-rocket-launch:](installation.md){ .md-button .md-button--primary }
 [DataTables :material-table:](datatables.md){ .md-button }
@@ -89,7 +89,7 @@ hide:
 ## Quick start
 
 ```bash
-composer require daycry/doctrine
+composer require daycry/doctrine-codeigniter4:^6.0
 php spark doctrine:publish
 ```
 
@@ -103,6 +103,6 @@ See **[Installation](installation.md)** and **[Configuration](configuration.md)*
 ## Requirements
 
 - PHP **^8.5**
-- CodeIgniter **^4.7**
+- CodeIgniter **^4.7** for the optional CI4 adapter
 - Doctrine ORM **^3.7**, DBAL **^4.5**
 - Symfony Cache/Console **^8**, DoctrineExtensions **^1.5**

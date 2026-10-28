@@ -7,7 +7,7 @@ namespace Tests;
 use CodeIgniter\Test\DatabaseTestTrait;
 use Config\Cache;
 use Config\Services;
-use Daycry\Doctrine\Doctrine;
+use Daycry\Doctrine\CodeIgniter4\Doctrine;
 use Doctrine\DBAL\Types\Type;
 use Doctrine\ORM\EntityManager;
 use Override;
@@ -168,7 +168,7 @@ final class DoctrineTest extends TestCase
 
     public function testQueryInstrumentationCanBeDisabled()
     {
-        $collector = \Daycry\Doctrine\Config\Services::doctrineCollector();
+        $collector = \Daycry\Doctrine\CodeIgniter4\Config\Services::doctrineCollector();
         $collector->reset();
 
         // Simulate production (CI_DEBUG off): the toolbar middleware must not be wired.
@@ -186,7 +186,7 @@ final class DoctrineTest extends TestCase
 
     public function testQueryInstrumentationEnabledByDefaultCapturesQueries()
     {
-        $collector = \Daycry\Doctrine\Config\Services::doctrineCollector();
+        $collector = \Daycry\Doctrine\CodeIgniter4\Config\Services::doctrineCollector();
         $collector->reset();
 
         // CI_DEBUG is true under the testing environment, so capture stays on.
@@ -243,7 +243,7 @@ final class DoctrineTest extends TestCase
         $this->config->slowQueryThreshold = 0.0; // log every query
 
         $doctrine = new class ($this->config, $spy) extends Doctrine {
-            public function __construct(\Daycry\Doctrine\Config\Doctrine $config, private readonly LoggerInterface $spy)
+            public function __construct(\Daycry\Doctrine\CodeIgniter4\Config\Doctrine $config, private readonly LoggerInterface $spy)
             {
                 parent::__construct($config, null, 'tests');
             }
@@ -296,8 +296,8 @@ final class DoctrineTest extends TestCase
         $db->default['DBDriver'] = 'SQLite3';
         $db->default['database'] = ':memory:';
 
-        \Daycry\Doctrine\Config\Services::resetDoctrine('default');
-        \Daycry\Doctrine\Config\Services::resetDoctrine('tests');
+        \Daycry\Doctrine\CodeIgniter4\Config\Services::resetDoctrine('default');
+        \Daycry\Doctrine\CodeIgniter4\Config\Services::resetDoctrine('tests');
 
         // 'default' is the default group (no suffix); 'tests' is a non-default
         // group (suffixed). Their cache pools must not collide.
@@ -319,8 +319,8 @@ final class DoctrineTest extends TestCase
         );
 
         $poolTests->clear();
-        \Daycry\Doctrine\Config\Services::resetDoctrine('default');
-        \Daycry\Doctrine\Config\Services::resetDoctrine('tests');
+        \Daycry\Doctrine\CodeIgniter4\Config\Services::resetDoctrine('default');
+        \Daycry\Doctrine\CodeIgniter4\Config\Services::resetDoctrine('tests');
     }
 
     public function testConvertDbConfigPreservesSqliteDsnPathCase()

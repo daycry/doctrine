@@ -14,7 +14,7 @@ php spark doctrine:publish
 Copies two files into your application:
 
 - `Config/Doctrine.php` → `app/Config/Doctrine.php` (extends
-  `Daycry\Doctrine\Config\Doctrine`).
+  `Daycry\Doctrine\CodeIgniter4\Config\Doctrine`).
 - `cli-config.php` → project root (used by the Doctrine ORM CLI below).
 
 Re-running the command prompts before overwriting an existing file. Type

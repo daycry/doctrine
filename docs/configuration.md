@@ -100,7 +100,7 @@ logger (CodeIgniter's `logger` service by default).
 
 namespace App\Config;
 
-use Daycry\Doctrine\Config\Doctrine as DoctrineBase;
+use Daycry\Doctrine\CodeIgniter4\Config\Doctrine as DoctrineBase;
 
 class Doctrine extends DoctrineBase
 {

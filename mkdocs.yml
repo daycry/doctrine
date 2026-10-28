@@ -122,6 +122,7 @@ nav:
   - Home: index.md
   - Getting Started:
       - Installation: installation.md
+      - Standalone: standalone.md
       - Configuration: configuration.md
       - Usage: usage.md
       - Major Migration: migration-major.md

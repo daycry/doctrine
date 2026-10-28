@@ -21,9 +21,10 @@
     </stubs>
     <projectFiles>
         <directory name="src/" />
+        <directory name="packages/codeigniter4/src/" />
         <ignoreFiles>
             <directory name="vendor" />
-            <file name="src/cli-config.php" />
+            <file name="packages/codeigniter4/src/cli-config.php" />
         </ignoreFiles>
     </projectFiles>
 

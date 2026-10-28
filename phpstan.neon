@@ -4,6 +4,7 @@ parameters:
 
     paths:
         - src/
+        - packages/codeigniter4/src/
         - tests/
 
     bootstrapFiles:
@@ -13,7 +14,7 @@ parameters:
         - vendor/codeigniter4/framework/system/Helpers
 
     excludePaths:
-        - src/cli-config.php
+        - packages/codeigniter4/src/cli-config.php
 
     # CI4 dynamic constants
     dynamicConstantNames:
@@ -31,7 +32,7 @@ parameters:
     # Tell phpstan-codeigniter where custom configs live
     codeigniter:
         additionalConfigNamespaces:
-            - Daycry\Doctrine\Config\
+            - Daycry\Doctrine\CodeIgniter4\Config\
         checkArgumentTypeOfFactories: true
         # Our services live in Daycry\Doctrine\Config\Services, not Config\Services
         checkArgumentTypeOfServices: false
@@ -50,11 +51,11 @@ parameters:
     ignoreErrors:
         # Our Redis/Memcached libs extend CI4 handlers to expose native client — intentional
         - identifier: codeigniter.cacheHandlerInstance
-          path: src/Doctrine.php
+          path: packages/codeigniter4/src/Doctrine.php
 
         # CI4 dynamic database group property access ($dbConfig->{$dbGroup})
         - message: '#Variable property access on Config\\Database#'
-          path: src/Doctrine.php
+          path: packages/codeigniter4/src/Doctrine.php
 
         # CI4 dynamic service resolution: doctrine() lives in Daycry\Doctrine\Config\Services
         - '#Call to an undefined static method (CodeIgniter\\Config\\Services|Config\\Services)::doctrine\(\)#'
@@ -65,7 +66,7 @@ parameters:
 
         # getSharedInstance() return type is mixed — @var annotation ensures proper type narrowing
         - identifier: varTag.type
-          path: src/Config/Services.php
+          path: packages/codeigniter4/src/Config/Services.php
 
         # ── Test-only relaxations ──────────────────────────────────────────────
 

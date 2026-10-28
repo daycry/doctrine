@@ -2,7 +2,7 @@
 
 # Doctrine
 
-Doctrine ORM 3 integration for CodeIgniter 4.
+Standalone Doctrine ORM toolkit for PHP 8.5, with an optional CodeIgniter 4 adapter.
 
 [![PHPUnit](https://github.com/daycry/doctrine/actions/workflows/phpunit.yml/badge.svg?branch=master)](https://github.com/daycry/doctrine/actions/workflows/phpunit.yml)
 [![PHPStan](https://github.com/daycry/doctrine/actions/workflows/phpstan.yml/badge.svg?branch=master)](https://github.com/daycry/doctrine/actions/workflows/phpstan.yml)
@@ -21,7 +21,8 @@ Doctrine ORM 3 integration for CodeIgniter 4.
 
 ## Features
 
-- ORM integration via `\Daycry\Doctrine\Doctrine` and `\Config\Services::doctrine()`.
+- Standalone ORM setup through `Daycry\Doctrine\Doctrine` with explicit configuration, PSR-6 pools and a PSR-3 logger.
+- ORM integration via `\Daycry\Doctrine\CodeIgniter4\Doctrine` and `\Config\Services::doctrine()`.
 - Server-side **DataTables Builder** with safe operator parsing, whitelisted columns, and `[><]` / `[IN]` / `[OR]` validation.
 - **CodeIgniter Debug Toolbar** collector with optional Second-Level Cache (SLC) statistics badge.
 - **Doctrine Second-Level Cache** wired to the framework cache backend (file, Redis, Memcached, array).
@@ -34,7 +35,7 @@ Doctrine ORM 3 integration for CodeIgniter 4.
 ## Requirements
 
 - PHP **^8.5**
-- CodeIgniter **^4.7**
+- CodeIgniter **^4.7** when installing the optional CI4 adapter
 - Doctrine ORM **^3.7**, DBAL **^4.5**
 - Symfony Cache/Console **^8**, DoctrineExtensions **^1.5**
 
@@ -60,10 +61,16 @@ See [`composer.json`](composer.json) for the complete dependency graph.
 This version requires PHP 8.5 and uses native lazy objects and the current ORM
 pagination API. See [the migration guide](docs/migration-major.md) before upgrading.
 
-## Installation
+## Standalone or CodeIgniter
+
+The next major version separates the framework-independent core from the CI4 adapter.
+See [standalone usage and package boundaries](docs/standalone.md). These changes are
+not yet published on Packagist; the guide includes local path installation.
+
+## CodeIgniter installation
 
 ```bash
-composer require daycry/doctrine
+composer require daycry/doctrine-codeigniter4:^6.0
 ```
 
 Then publish the configuration:
@@ -100,7 +107,7 @@ $reporting = doctrine_instance('reporting');  // alternate DB group
 ### Constructing manually
 
 ```php
-$doctrine = new \Daycry\Doctrine\Doctrine();
+$doctrine = new \Daycry\Doctrine\CodeIgniter4\Doctrine();
 $user     = $doctrine->em->getRepository(\App\Models\Entity\User::class)->find(1);
 ```
 
@@ -111,7 +118,7 @@ beyond the function import). It looks up `$cacheKey` in the configured result
 cache pool and falls back to the closure on miss.
 
 ```php
-use function Daycry\Doctrine\Helpers\getFromCacheOrQuery;
+use function Daycry\Doctrine\CodeIgniter4\Helpers\getFromCacheOrQuery;
 
 $rows = getFromCacheOrQuery(
     cacheKey: 'projects_list_v1',
@@ -201,7 +208,7 @@ inspect them in the CodeIgniter Debug Toolbar.
    ```php
    public $collectors = [
        // ...
-       \Daycry\Doctrine\Debug\Toolbar\Collectors\DoctrineCollector::class,
+       \Daycry\Doctrine\CodeIgniter4\Debug\Toolbar\Collectors\DoctrineCollector::class,
    ];
    ```
 
@@ -236,7 +243,7 @@ to read per-request hit ratios in the toolbar), register the filter:
 // app/Config/Filters.php
 public array $globals = [
     'before' => [
-        \Daycry\Doctrine\Debug\Filters\DoctrineSlcReset::class,
+        \Daycry\Doctrine\CodeIgniter4\Debug\Filters\DoctrineSlcReset::class,
     ],
 ];
 ```

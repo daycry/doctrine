@@ -33,6 +33,7 @@ return static function (RectorConfig $rectorConfig): void {
     // The paths to refactor (can also be supplied with CLI arguments)
     $rectorConfig->paths([
         __DIR__ . '/src/',
+        __DIR__ . '/packages/codeigniter4/src/',
         __DIR__ . '/tests/',
     ]);
 
@@ -58,7 +59,7 @@ return static function (RectorConfig $rectorConfig): void {
 
     // Are there files or rules you need to skip?
     $rectorConfig->skip([
-        __DIR__ . '/src/Views',
+        __DIR__ . '/packages/codeigniter4/src/Views',
 
         StringifyStrNeedlesRector::class,
 

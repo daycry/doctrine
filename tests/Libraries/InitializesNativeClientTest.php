@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Tests\Libraries;
 
 use CodeIgniter\Cache\Exceptions\CacheException;
-use Daycry\Doctrine\Libraries\InitializesNativeClient;
+use Daycry\Doctrine\CodeIgniter4\Libraries\InitializesNativeClient;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 

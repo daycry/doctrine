@@ -2,8 +2,9 @@
 
 ## Runtime requirements
 
-Use PHP 8.5, CodeIgniter 4.7+, Doctrine ORM 3.7+, DBAL 4.5+, Symfony Cache/Console 8,
+Use PHP 8.5, Doctrine ORM 3.7+, DBAL 4.5+, Symfony Cache/Console 8,
 and doctrineextensions 1.5+.
+CodeIgniter 4.7+ is required only by the adapter.
 Composer enforces these requirements. Security advisories remain enabled for the
 development environment; use a supported, patched PHP build for Composer updates.
 
@@ -11,6 +12,30 @@ Doctrine always uses native lazy objects. Remove `proxyFactory`, `proxies`,
 `proxiesNamespace`, and `setAutoGenerateProxyClasses` from app/Config/Doctrine.php.
 Do not generate proxy classes during deployment. The published config is now a
 minimal subclass of the package config, containing only application overrides.
+
+## Package and namespace split (6.x)
+
+The core `daycry/doctrine` no longer installs or boots CodeIgniter. CI4 applications
+must require `daycry/doctrine-codeigniter4:^6.0`, which also installs the core.
+The 6.x release is not yet published; [standalone usage](standalone.md) describes
+local path repositories.
+
+| Previous CI4 API | Adapter API |
+|---|---|
+| `Daycry\Doctrine\Doctrine` with CI4 config arguments | `Daycry\Doctrine\CodeIgniter4\Doctrine` |
+| `Daycry\Doctrine\Config\Doctrine` | `Daycry\Doctrine\CodeIgniter4\Config\Doctrine` |
+| `Daycry\Doctrine\Config\Services` | `Daycry\Doctrine\CodeIgniter4\Config\Services` |
+| `Daycry\Doctrine\Commands`, `Debug`, `Libraries`, `Boot` | Same suffixes under `Daycry\Doctrine\CodeIgniter4` |
+| `Daycry\Doctrine\Helpers\getFromCacheOrQuery` | `Daycry\Doctrine\CodeIgniter4\Helpers\getFromCacheOrQuery` |
+
+Update imports, toolbar/filter registrations and application config inheritance.
+Republish `cli-config.php` because its imports also changed. The service names,
+Spark command names and framework helper `doctrine_instance()` remain available
+through the adapter. No namespace aliases or legacy constructor shims are provided.
+
+Standalone code uses `Daycry\Doctrine\Configuration` and passes DBAL connection
+parameters to `Daycry\Doctrine\Doctrine`. Supply PSR-6 pools and a PSR-3 logger
+explicitly. `DataTables\Builder` now throws SPL `InvalidArgumentException`.
 
 ## DataTables API changes
 

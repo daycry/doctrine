@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Tests;
 
-use Daycry\Doctrine\Config\Doctrine as DoctrineConfig;
-use Daycry\Doctrine\Doctrine;
+use Daycry\Doctrine\CodeIgniter4\Config\Doctrine as DoctrineConfig;
+use Daycry\Doctrine\CodeIgniter4\Doctrine;
 use Doctrine\ORM\Tools\SchemaTool;
 use Psr\Log\LoggerInterface;
 use Tests\Support\Log\SpyLogger;

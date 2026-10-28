@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Tests;
 
-use CodeIgniter\Exceptions\ConfigException;
-use Daycry\Doctrine\Doctrine;
+use Daycry\Doctrine\CodeIgniter4\Doctrine;
 use Doctrine\ORM\Cache\Logging\StatisticsCacheLogger;
+use InvalidArgumentException;
 use Tests\Support\TestCase;
 
 /**
@@ -178,7 +178,7 @@ final class DoctrineSLCCoverageTest extends TestCase
 
     public function testConstructorThrowsOnNonExistentEntityPath(): void
     {
-        $this->expectException(ConfigException::class);
+        $this->expectException(InvalidArgumentException::class);
 
         $this->config->entities = ['/non/existent/path/that/does/not/exist'];
         new Doctrine($this->config, null, 'tests');

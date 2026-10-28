@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Commands;
 
-use Daycry\Doctrine\Config\Services;
+use Daycry\Doctrine\CodeIgniter4\Config\Services;
 use Psr\Cache\CacheItemPoolInterface;
 use Tests\Support\TestCase;
 

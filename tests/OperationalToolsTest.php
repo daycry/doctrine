@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Tests;
 
-use Daycry\Doctrine\Commands\DoctrineCacheWarmup;
-use Daycry\Doctrine\Commands\DoctrineDoctor;
-use Daycry\Doctrine\Doctrine;
+use Daycry\Doctrine\CodeIgniter4\Commands\DoctrineCacheWarmup;
+use Daycry\Doctrine\CodeIgniter4\Commands\DoctrineDoctor;
+use Daycry\Doctrine\CodeIgniter4\Doctrine;
 use Daycry\Doctrine\Tools\CacheWarmer;
 use Daycry\Doctrine\Tools\Diagnostics;
 use Psr\Cache\CacheItemInterface;

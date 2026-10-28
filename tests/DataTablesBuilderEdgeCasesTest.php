@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace Tests;
 
-use CodeIgniter\Exceptions\InvalidArgumentException;
 use CodeIgniter\Test\CIUnitTestCase;
 use Daycry\Doctrine\DataTables\Builder;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\Query\Expr;
 use Doctrine\ORM\QueryBuilder as ORMQueryBuilder;
+use InvalidArgumentException;
 
 /**
  * Additional edge case tests for DataTables Builder

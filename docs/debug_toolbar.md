@@ -6,11 +6,11 @@ per-request reset filter.
 
 ## Key Concepts
 
-- **Collector:** `Daycry\Doctrine\Debug\Toolbar\Collectors\DoctrineCollector`
+- **Collector:** `Daycry\Doctrine\CodeIgniter4\Debug\Toolbar\Collectors\DoctrineCollector`
   renders the Doctrine tab in the toolbar.
-- **Middleware:** `Daycry\Doctrine\Debug\Toolbar\Collectors\DoctrineQueryMiddleware`
+- **Middleware:** `Daycry\Doctrine\CodeIgniter4\Debug\Toolbar\Collectors\DoctrineQueryMiddleware`
   is wired into Doctrine's DBAL stack automatically when you instantiate
-  `\Daycry\Doctrine\Doctrine`. No manual setup required.
+  `\Daycry\Doctrine\CodeIgniter4\Doctrine`. No manual setup required.
 - **SLC stats badge:** appears when
   `Config\Doctrine::$secondLevelCacheStatistics = true`. The badge format is
   `SLC:hits/misses/puts (ratio%)` and a small stats table is rendered above
@@ -23,7 +23,7 @@ per-request reset filter.
    ```php
    public $collectors = [
        // …other collectors…
-       \Daycry\Doctrine\Debug\Toolbar\Collectors\DoctrineCollector::class,
+       \Daycry\Doctrine\CodeIgniter4\Debug\Toolbar\Collectors\DoctrineCollector::class,
    ];
    ```
 
@@ -80,7 +80,7 @@ Register it in `app/Config/Filters.php`:
 public array $globals = [
     'before' => [
         // …other before-filters…
-        \Daycry\Doctrine\Debug\Filters\DoctrineSlcReset::class,
+        \Daycry\Doctrine\CodeIgniter4\Debug\Filters\DoctrineSlcReset::class,
     ],
 ];
 ```

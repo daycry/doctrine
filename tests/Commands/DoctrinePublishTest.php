@@ -94,7 +94,7 @@ final class DoctrinePublishTest extends CIUnitTestCase
         // The Config\Doctrine class is rewritten with the host namespace and parent.
         $configContent = file_get_contents($this->configDest);
         $this->assertStringContainsString('namespace Config', (string) $configContent);
-        $this->assertStringContainsString('extends \\Daycry\\Doctrine\\Config\\Doctrine', (string) $configContent);
+        $this->assertStringContainsString('extends \\Daycry\\Doctrine\\CodeIgniter4\\Config\\Doctrine', (string) $configContent);
         $this->assertStringNotContainsString('namespace Daycry\\Doctrine\\Config', (string) $configContent);
         $this->assertStringNotContainsString('extends BaseConfig', (string) $configContent);
     }

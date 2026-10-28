@@ -5,7 +5,7 @@ folder with MkDocs Material).
 
 Modern integration of Doctrine ORM/DBAL into CodeIgniter 4. Highlights:
 
-- ORM bootstrap via `\Daycry\Doctrine\Doctrine` and `Services::doctrine()`
+- ORM bootstrap via `\Daycry\Doctrine\CodeIgniter4\Doctrine` and `Services::doctrine()`
 - Server-side **DataTables Builder** with safe operators and `[><]` / `[IN]` / `[OR]` validation
 - **Debug Toolbar** collector with optional SLC stats and a per-request reset filter
 - **Second-Level Cache** wired to the framework cache backend

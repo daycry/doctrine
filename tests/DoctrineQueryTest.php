@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Tests;
 
 use CodeIgniter\Test\DatabaseTestTrait;
-use Daycry\Doctrine\Doctrine;
+use Daycry\Doctrine\CodeIgniter4\Doctrine;
 use Override;
 use Tests\Support\Database\Seeds\TestSeeder;
 use Tests\Support\Models\Entities\TestAttribute;
