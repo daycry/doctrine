@@ -10,6 +10,8 @@ use Config\Services;
 use Daycry\Doctrine\Doctrine;
 use Doctrine\DBAL\Types\Type;
 use Doctrine\ORM\EntityManager;
+use Override;
+use PHPUnit\Framework\Attributes\RequiresPhpExtension;
 use Psr\Cache\CacheItemPoolInterface;
 use Psr\Log\LoggerInterface;
 use Tests\Support\Database\Seeds\TestSeeder;
@@ -29,11 +31,20 @@ final class DoctrineTest extends TestCase
 {
     use DatabaseTestTrait;
 
-    protected $migrate     = true;
+    #[Override]
+    protected $migrate = true;
+
+    #[Override]
     protected $migrateOnce = false;
-    protected $refresh     = true;
-    protected $seedOnce    = false;
-    protected $seed        = TestSeeder::class;
+
+    #[Override]
+    protected $refresh = true;
+
+    #[Override]
+    protected $seedOnce = false;
+
+    #[Override]
+    protected $seed = TestSeeder::class;
 
     protected function setUp(): void
     {
@@ -68,6 +79,7 @@ final class DoctrineTest extends TestCase
         $this->assertInstanceOf(EntityManager::class, $doctrine->em);
     }
 
+    #[RequiresPhpExtension('redis')]
     public function testInstanceDoctrineRedis()
     {
         /** @var Cache $cacheConf */
@@ -289,8 +301,8 @@ final class DoctrineTest extends TestCase
 
         // 'default' is the default group (no suffix); 'tests' is a non-default
         // group (suffixed). Their cache pools must not collide.
-        $poolDefault = (new Doctrine($this->config, $cache, 'default'))->em->getConfiguration()->getResultCache();
-        $poolTests   = (new Doctrine($this->config, $cache, 'tests'))->em->getConfiguration()->getResultCache();
+        $poolDefault = new Doctrine($this->config, $cache, 'default')->em->getConfiguration()->getResultCache();
+        $poolTests   = new Doctrine($this->config, $cache, 'tests')->em->getConfiguration()->getResultCache();
 
         $this->assertInstanceOf(CacheItemPoolInterface::class, $poolDefault);
         $this->assertInstanceOf(CacheItemPoolInterface::class, $poolTests);
@@ -365,10 +377,5 @@ final class DoctrineTest extends TestCase
         }
         $this->assertSame('bar', $options['foo']);
         $this->assertSame(123, $options['baz']);
-    }
-
-    protected function tearDown(): void
-    {
-        parent::tearDown();
     }
 }

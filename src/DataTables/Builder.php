@@ -6,22 +6,14 @@ namespace Daycry\Doctrine\DataTables;
 
 use Closure;
 use CodeIgniter\Exceptions\InvalidArgumentException;
-use Doctrine\DBAL\Query\QueryBuilder;
 use Doctrine\ORM\QueryBuilder as ORMQueryBuilder;
-use Doctrine\ORM\Tools\Pagination\Paginator;
+use Doctrine\ORM\Tools\Pagination\OffsetPaginator;
+use Doctrine\ORM\Tools\Pagination\Window;
+use Doctrine\ORM\Tools\Pagination\WindowPage;
 
 /**
- * Builder for DataTables integration with Doctrine ORM/DBAL.
+ * Builder for DataTables integration with Doctrine ORM.
  * Enables dynamic pagination, filtering, and ordering of results.
- *
- * @property bool                         $caseInsensitive   Case-insensitive search
- * @property array<string, string>        $columnAliases     Column aliases DataTables => DB
- * @property string                       $columnField       Column field ('data' or 'name')
- * @property string                       $indexColumn       Index column
- * @property ORMQueryBuilder|QueryBuilder $queryBuilder      Doctrine QueryBuilder
- * @property array<string, mixed>|null    $requestParams     DataTables request parameters
- * @property list<string>                 $searchableColumns Columns allowed for global LIKE search
- * @property bool                         $useOutputWalkers  Use OutputWalkers in paginator
  */
 class Builder
 {
@@ -38,11 +30,6 @@ class Builder
     protected string $columnField = 'data';
 
     /**
-     * Index column
-     */
-    protected string $indexColumn = '*';
-
-    /**
      * Case-insensitive search
      */
     protected bool $caseInsensitive = false;
@@ -50,7 +37,7 @@ class Builder
     /**
      * Doctrine QueryBuilder
      */
-    protected ORMQueryBuilder|QueryBuilder|null $queryBuilder = null;
+    protected ?ORMQueryBuilder $queryBuilder = null;
 
     /**
      * DataTables request parameters
@@ -62,7 +49,7 @@ class Builder
     /**
      * Use OutputWalkers in paginator
      */
-    protected ?bool $useOutputWalkers = null;
+    protected bool $useOutputWalkers = true;
 
     /**
      * Columns allowed for global LIKE search
@@ -81,9 +68,9 @@ class Builder
      * Hard cap on the page size (DataTables `length`). When greater than 0, any
      * request asking for more rows than this — including DataTables' "All"
      * sentinel `length=-1`, which otherwise produces an unbounded result set —
-     * is clamped to this value. 0 (default) keeps the legacy behaviour (no cap).
+     * is clamped to this value. The default is 200; unlimited page sizes are not supported.
      */
-    protected int $maxPageLength = 0;
+    protected int $maxPageLength = 200;
 
     /**
      * Whether the data Paginator fetches to-many collections via an id sub-query
@@ -143,12 +130,12 @@ class Builder
      *
      * Protects against resource exhaustion from `length=-1` ("All") or an
      * arbitrarily large `length`, which would otherwise hydrate the entire
-     * filtered table. Pass 0 to disable the cap (legacy behaviour).
+     * filtered table. The cap must be positive.
      */
     public function withMaxPageLength(int $maxPageLength): static
     {
-        if ($maxPageLength < 0) {
-            throw new InvalidArgumentException('maxPageLength must be 0 (disabled) or a positive integer.');
+        if ($maxPageLength < 1) {
+            throw new InvalidArgumentException('maxPageLength must be a positive integer.');
         }
 
         $this->maxPageLength = $maxPageLength;
@@ -181,28 +168,11 @@ class Builder
     }
 
     /**
-     * Returns paginated, filtered, and ordered data for DataTables.
-     *
-     * @return list<object>
-     *
-     * @throws InvalidArgumentException
+     * @return WindowPage<array<string, mixed>|object>
      */
-    public function getData(): array
+    public function getPage(): WindowPage
     {
-        $this->validate();
-        $query   = $this->getFilteredQuery();
-        $columns = $this->requestParams['columns'];
-        $this->applyOrdering($query, $columns);
-        $this->applyPagination($query);
-        $paginator = new Paginator($query, $this->fetchJoinCollection);
-        $paginator->setUseOutputWalkers($this->useOutputWalkers ?? true);
-        $result = [];
-
-        foreach ($paginator as $obj) {
-            $result[] = $obj;
-        }
-
-        return $result;
+        return $this->paginateQuery($this->getFilteredQuery());
     }
 
     /**
@@ -210,12 +180,12 @@ class Builder
      *
      * @throws InvalidArgumentException
      */
-    public function getFilteredQuery(): ORMQueryBuilder|QueryBuilder
+    public function getFilteredQuery(): ORMQueryBuilder
     {
         $this->validate();
-        $query   = clone $this->queryBuilder;
-        $columns = $this->requestParams['columns'];
-        $c       = count($columns);
+        $query           = clone $this->baseQuery();
+        $columns         = $this->requestParams['columns'];
+        $parameterPrefix = $this->parameterPrefix($query);
 
         // Reject regex search mode only when it would actually be applied (non-empty value).
         // DataTables clients commonly send `regex` keys for every column even when the value is
@@ -232,7 +202,18 @@ class Builder
             }
         }
 
-        // Search
+        $this->applyGlobalSearch($query, $columns, $parameterPrefix);
+        $this->applyColumnFilters($query, $columns, $parameterPrefix);
+
+        return $query;
+    }
+
+    /**
+     * @param list<array<string, mixed>> $columns
+     */
+    private function applyGlobalSearch(ORMQueryBuilder $query, array $columns, string $parameterPrefix): void
+    {
+        $c = count($columns);
         if (array_key_exists('search', $this->requestParams)) {
             $value = mb_substr(trim($this->requestParams['search']['value'] ?? ''), 0, 255);
             if ($value !== '') {
@@ -255,20 +236,27 @@ class Builder
 
                         if ($this->caseInsensitive) {
                             $searchColumn = 'lower(' . $fieldName . ')';
-                            $orX->add($query->expr()->like($searchColumn, 'lower(:search)'));
+                            $orX->add($query->expr()->like($searchColumn, "lower(:{$parameterPrefix}search)"));
                         } else {
-                            $orX->add($query->expr()->like($fieldName, ':search'));
+                            $orX->add($query->expr()->like($fieldName, ":{$parameterPrefix}search"));
                         }
                     }
                 }
                 if ($orX->count() >= 1) {
                     $query->andWhere($orX)
-                        ->setParameter('search', "%{$value}%");
+                        ->setParameter("{$parameterPrefix}search", "%{$value}%");
                 }
             }
         }
+    }
 
-        // Filter
+    /**
+     * @param list<array<string, mixed>> $columns
+     */
+    private function applyColumnFilters(ORMQueryBuilder $query, array $columns, string $parameterPrefix): void
+    {
+        $c = count($columns);
+
         for ($i = 0; $i < $c; $i++) {
             $column = $columns[$i];
             $andX   = $query->expr()->andX();
@@ -285,26 +273,26 @@ class Builder
                 [$operator, $value] = $this->parseFilterOperator($value);
                 if ($this->caseInsensitive) {
                     $searchColumn = 'lower(' . $fieldName . ')';
-                    $filter       = "lower(:filter_{$i})";
+                    $filter       = "lower(:{$parameterPrefix}filter_{$i})";
                 } else {
                     $searchColumn = $fieldName;
-                    $filter       = ":filter_{$i}";
+                    $filter       = ":{$parameterPrefix}filter_{$i}";
                 }
 
                 switch ($operator) {
                     case '!=':
                         $andX->add($query->expr()->neq($searchColumn, $filter));
-                        $query->setParameter("filter_{$i}", $value);
+                        $query->setParameter("{$parameterPrefix}filter_{$i}", $value);
                         break;
 
                     case '<':
                         $andX->add($query->expr()->lt($searchColumn, $filter));
-                        $query->setParameter("filter_{$i}", $value);
+                        $query->setParameter("{$parameterPrefix}filter_{$i}", $value);
                         break;
 
                     case '>':
                         $andX->add($query->expr()->gt($searchColumn, $filter));
-                        $query->setParameter("filter_{$i}", $value);
+                        $query->setParameter("{$parameterPrefix}filter_{$i}", $value);
                         break;
 
                     case 'IN':
@@ -319,12 +307,12 @@ class Builder
                         $params = [];
 
                         for ($j = 0; $j < count($valueArr); $j++) {
-                            $params[] = ":filter_{$i}_{$j}";
+                            $params[] = ":{$parameterPrefix}filter_{$i}_{$j}";
                         }
                         $andX->add($query->expr()->in($fieldName, implode(',', $params)));
 
                         for ($j = 0; $j < count($valueArr); $j++) {
-                            $query->setParameter("filter_{$i}_{$j}", trim($valueArr[$j]));
+                            $query->setParameter("{$parameterPrefix}filter_{$i}_{$j}", trim($valueArr[$j]));
                         }
                         break;
 
@@ -342,13 +330,13 @@ class Builder
                         for ($j = 0; $j < count($valueArr); $j++) {
                             // Honor caseInsensitive: $searchColumn is already lower()-wrapped
                             // when the flag is on; wrap each placeholder to match.
-                            $orPlaceholder = $this->caseInsensitive ? "lower(:filter_{$i}_{$j})" : ":filter_{$i}_{$j}";
+                            $orPlaceholder = $this->caseInsensitive ? "lower(:{$parameterPrefix}filter_{$i}_{$j})" : ":{$parameterPrefix}filter_{$i}_{$j}";
                             $orX->add($query->expr()->like($searchColumn, $orPlaceholder));
                         }
                         $andX->add($orX);
 
                         for ($j = 0; $j < count($valueArr); $j++) {
-                            $query->setParameter("filter_{$i}_{$j}", '%' . trim($valueArr[$j]) . '%');
+                            $query->setParameter("{$parameterPrefix}filter_{$i}_{$j}", '%' . trim($valueArr[$j]) . '%');
                         }
                         break;
 
@@ -360,20 +348,20 @@ class Builder
                                 count($valueArr),
                             ));
                         }
-                        $andX->add($query->expr()->between($fieldName, ":filter_{$i}_0", ":filter_{$i}_1"));
-                        $query->setParameter("filter_{$i}_0", trim($valueArr[0]));
-                        $query->setParameter("filter_{$i}_1", trim($valueArr[1]));
+                        $andX->add($query->expr()->between($fieldName, ":{$parameterPrefix}filter_{$i}_0", ":{$parameterPrefix}filter_{$i}_1"));
+                        $query->setParameter("{$parameterPrefix}filter_{$i}_0", trim($valueArr[0]));
+                        $query->setParameter("{$parameterPrefix}filter_{$i}_1", trim($valueArr[1]));
                         break;
 
                     case '=':
                         $andX->add($query->expr()->eq($searchColumn, $filter));
-                        $query->setParameter("filter_{$i}", $value);
+                        $query->setParameter("{$parameterPrefix}filter_{$i}", $value);
                         break;
 
                     case '%':
                     default:
                         $andX->add($query->expr()->like($searchColumn, $filter));
-                        $query->setParameter("filter_{$i}", "%{$value}%");
+                        $query->setParameter("{$parameterPrefix}filter_{$i}", "%{$value}%");
                         break;
                 }
             }
@@ -381,8 +369,33 @@ class Builder
                 $query->andWhere($andX);
             }
         }
+    }
 
-        return $query;
+    /**
+     * Reserve a parameter prefix without changing parameters on the base query.
+     */
+    private function parameterPrefix(ORMQueryBuilder $query): string
+    {
+        $prefix = '';
+        $names  = [];
+
+        foreach ($query->getParameters()->toArray() as $parameter) {
+            $names[] = (string) $parameter->getName();
+        }
+
+        do {
+            $collision = false;
+
+            foreach ($names as $name) {
+                if ($name === $prefix . 'search' || str_starts_with($name, $prefix . 'filter_')) {
+                    $prefix .= 'dt_';
+                    $collision = true;
+                    break;
+                }
+            }
+        } while ($collision);
+
+        return $prefix;
     }
 
     /**
@@ -416,18 +429,6 @@ class Builder
     }
 
     /**
-     * Returns the number of filtered records.
-     */
-    public function getRecordsFiltered(): int
-    {
-        $query     = $this->getFilteredQuery();
-        $paginator = new Paginator($query, $fetchJoinCollection = true);
-        $paginator->setUseOutputWalkers($this->useOutputWalkers ?? true);
-
-        return $paginator->count();
-    }
-
-    /**
      * Returns the total number of records (without filters).
      */
     public function getRecordsTotal(): int
@@ -438,11 +439,8 @@ class Builder
         }
 
         $this->validate();
-        $query     = clone $this->queryBuilder;
-        $paginator = new Paginator($query, $fetchJoinCollection = true);
-        $paginator->setUseOutputWalkers($this->useOutputWalkers ?? true);
 
-        return $paginator->count();
+        return new Counter()->count($this->baseQuery(), $this->useOutputWalkers);
     }
 
     /**
@@ -465,57 +463,39 @@ class Builder
     public function getResponse(): array
     {
         $this->validate();
-        $filteredQuery = $this->getFilteredQuery();
-        $columns       = $this->requestParams['columns'];
-
-        // Data (with ordering + pagination)
-        $dataQuery = clone $filteredQuery;
-        $this->applyOrdering($dataQuery, $columns);
-        $this->applyPagination($dataQuery);
-        $dataPaginator = new Paginator($dataQuery, $this->fetchJoinCollection);
-        $dataPaginator->setUseOutputWalkers($this->useOutputWalkers ?? true);
-        $data = [];
-
-        foreach ($dataPaginator as $obj) {
-            $data[] = $obj;
-        }
-
-        // Filtered count (reuses the already-built filtered query)
-        $filteredPaginator = new Paginator($filteredQuery, true);
-        $filteredPaginator->setUseOutputWalkers($this->useOutputWalkers ?? true);
-
-        // Total count (unfiltered) — use the injected/cached total when provided,
-        // otherwise compute it via a Paginator.
-        $recordsTotal = $this->resolveInjectedRecordsTotal();
-        if ($recordsTotal === null) {
-            $totalQuery     = clone $this->queryBuilder;
-            $totalPaginator = new Paginator($totalQuery, true);
-            $totalPaginator->setUseOutputWalkers($this->useOutputWalkers ?? true);
-            $recordsTotal = $totalPaginator->count();
-        }
+        $filteredQuery   = $this->getFilteredQuery();
+        $page            = $this->paginateQuery($filteredQuery);
+        $recordsFiltered = $page->getTotalCount();
+        $recordsTotal    = $this->resolveInjectedRecordsTotal();
+        $recordsTotal ??= $filteredQuery->getDQL() === $this->baseQuery()->getDQL()
+            ? $recordsFiltered
+            : new Counter()->count($this->baseQuery(), $this->useOutputWalkers);
 
         return [
-            'data'            => $data,
-            'draw'            => $this->requestParams['draw'] ?? 0,
-            'recordsFiltered' => $filteredPaginator->count(),
+            'data'            => $page->getItems(),
+            'draw'            => max(0, (int) ($this->requestParams['draw'] ?? 0)),
+            'recordsFiltered' => $recordsFiltered,
             'recordsTotal'    => $recordsTotal,
         ];
     }
 
     /**
-     * Sets the index column.
+     * @return WindowPage<array<string, mixed>|object>
      */
-    public function withIndexColumn(string $indexColumn): static
+    private function paginateQuery(ORMQueryBuilder $query): WindowPage
     {
-        $this->indexColumn = $indexColumn;
+        $query = clone $query;
+        $this->applyOrdering($query, $this->requestParams['columns']);
+        $this->applyPagination($query);
+        $window = new Window($query->getFirstResult(), $query->getMaxResults() ?? $this->maxPageLength);
 
-        return $this;
+        return new OffsetPaginator($this->fetchJoinCollection, $this->useOutputWalkers)->paginate($query, $window);
     }
 
     /**
      * Sets useOutputWalkers for the paginator.
      */
-    public function setUseOutputWalkers(bool $useOutputWalkers): static
+    public function withOutputWalkers(bool $useOutputWalkers): static
     {
         $this->useOutputWalkers = $useOutputWalkers;
 
@@ -557,7 +537,7 @@ class Builder
     /**
      * Sets the Doctrine QueryBuilder.
      */
-    public function withQueryBuilder(ORMQueryBuilder|QueryBuilder $queryBuilder): static
+    public function withQueryBuilder(ORMQueryBuilder $queryBuilder): static
     {
         $this->queryBuilder = $queryBuilder;
 
@@ -576,14 +556,17 @@ class Builder
         return $this;
     }
 
+    private function baseQuery(): ORMQueryBuilder
+    {
+        return $this->queryBuilder ?? throw new InvalidArgumentException('QueryBuilder is not set.');
+    }
+
     /**
      * Validates that required properties are set.
      */
     protected function validate(): void
     {
-        if ($this->queryBuilder === null) {
-            throw new InvalidArgumentException('QueryBuilder is not set.');
-        }
+        $this->baseQuery();
         if (! is_array($this->requestParams) || empty($this->requestParams['columns'])) {
             throw new InvalidArgumentException('Request parameters or columns are not set.');
         }
@@ -594,7 +577,7 @@ class Builder
      *
      * @param array<int|string, mixed> $columns
      */
-    protected function applyOrdering(ORMQueryBuilder|QueryBuilder $query, array $columns): void
+    protected function applyOrdering(ORMQueryBuilder $query, array $columns): void
     {
         if (array_key_exists('order', $this->requestParams)) {
             $order = $this->requestParams['order'];
@@ -626,23 +609,15 @@ class Builder
     /**
      * Applies offset and limit to the query.
      */
-    protected function applyPagination(ORMQueryBuilder|QueryBuilder $query): void
+    protected function applyPagination(ORMQueryBuilder $query): void
     {
-        if (array_key_exists('start', $this->requestParams)) {
-            $query->setFirstResult((int) ($this->requestParams['start']));
+        $start  = (int) ($this->requestParams['start'] ?? 0);
+        $length = (int) ($this->requestParams['length'] ?? 10);
+        if ($start < 0 || ($length !== -1 && $length < 1)) {
+            throw new InvalidArgumentException('start must be non-negative and length must be positive or -1.');
         }
-
-        $length = array_key_exists('length', $this->requestParams)
-            ? (int) ($this->requestParams['length'])
-            : 0;
-
-        if ($this->maxPageLength > 0) {
-            // Clamp unbounded ("All"/length<=0) or oversized requests to the cap.
-            $effective = ($length <= 0 || $length > $this->maxPageLength) ? $this->maxPageLength : $length;
-            $query->setMaxResults($effective);
-        } elseif ($length > 0) {
-            $query->setMaxResults($length);
-        }
+        $query->setFirstResult($start);
+        $query->setMaxResults($length === -1 ? $this->maxPageLength : min($length, $this->maxPageLength));
     }
 
     /**

@@ -8,6 +8,7 @@ use CodeIgniter\CLI\BaseCommand;
 use CodeIgniter\CLI\CLI;
 use Daycry\Doctrine\Config\Services;
 use Doctrine\ORM\Tools\Console\EntityManagerProvider\SingleManagerProvider;
+use Override;
 use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\ArrayInput;
@@ -21,6 +22,7 @@ use Symfony\Component\Console\Output\BufferedOutput;
  */
 abstract class DoctrineCommand extends BaseCommand
 {
+    #[Override]
     protected $group = 'Doctrine';
 
     /**

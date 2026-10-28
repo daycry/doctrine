@@ -16,11 +16,6 @@ use Tests\Support\TestCase;
  */
 final class DoctrineCollectorCoverageTest extends TestCase
 {
-    protected function setUp(): void
-    {
-        parent::setUp();
-    }
-
     public function testResetClearsQueries(): void
     {
         $collector = new DoctrineCollector();

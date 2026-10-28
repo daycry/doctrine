@@ -102,7 +102,7 @@ See **[Installation](installation.md)** and **[Configuration](configuration.md)*
 
 ## Requirements
 
-- PHP **≥ 8.2**
-- CodeIgniter **^4**
-- Doctrine ORM **^3**, DBAL **^4**
-- Symfony Cache **^7**
+- PHP **^8.5**
+- CodeIgniter **^4.7**
+- Doctrine ORM **^3.7**, DBAL **^4.5**
+- Symfony Cache/Console **^8**, DoctrineExtensions **^1.5**

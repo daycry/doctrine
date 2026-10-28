@@ -103,22 +103,10 @@ use Scienta\DoctrineJsonFunctions\Query\AST\Functions\Mysql\JsonValid;
 
 class Doctrine extends BaseConfig
 {
-    public bool $setAutoGenerateProxyClasses = ENVIRONMENT === 'development';
-
     /**
      * @var list<string>
      */
     public array $entities = [APPPATH . 'Models/Entity'];
-
-    public string $proxies          = APPPATH . 'Models/Proxies';
-    public string $proxiesNamespace = 'DoctrineProxies';
-
-    /**
-     * Enable native lazy objects (PHP 8.4+).
-     * When true, Doctrine uses PHP native lazy objects instead of generated proxy classes.
-     * Set to false to keep using generated proxies (required for PHP < 8.4).
-     */
-    public bool $proxyFactory = true;
 
     public bool $queryCache               = true;
     public string $queryCacheNamespace    = 'doctrine_queries';
@@ -156,6 +144,11 @@ class Doctrine extends BaseConfig
      * - >0:   use this TTL for SLC entries and regions.
      */
     public ?int $secondLevelCacheTtl = null;
+
+    /**
+     * FileLockRegion directory; null uses WRITEPATH/cache/doctrine/locks per group.
+     */
+    public ?string $secondLevelCacheLockPath = null;
 
     /**
      * Custom DQL string functions (beberlei/doctrineextensions + user-defined).

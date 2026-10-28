@@ -20,14 +20,12 @@ existing files; choose `n` to abort safely.
 
 ## Options reference
 
-### Proxies
+### Entity mapping and lazy objects
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `setAutoGenerateProxyClasses` | `bool` | `ENVIRONMENT === 'development'` | Auto-regenerates Doctrine proxies in development. |
-| `proxies` | `string` | `APPPATH . 'Models/Proxies'` | Filesystem path for generated proxies. |
-| `proxiesNamespace` | `string` | `'DoctrineProxies'` | Namespace assigned to generated proxies. |
-| `proxyFactory` | `bool` | `true` | On PHP ≥ 8.4 enables the engine's **native lazy objects** as proxy factory (skipping proxy class generation entirely). On PHP < 8.4 the flag has no effect — Doctrine falls back to generated proxies. Set to `false` to keep generated proxies even on PHP 8.4+ when running tools that don't yet support native lazy objects. |
+PHP 8.5 native lazy objects are always enabled. Generated proxies and their
+configuration (`proxyFactory`, `proxies`, `proxiesNamespace`, and
+`setAutoGenerateProxyClasses`) have been removed. No proxy directory is needed.
+Configure `entities` with the directories containing PHP attributes or XML mappings.
 
 ### Caches
 
@@ -38,7 +36,7 @@ existing files; choose `n` to abort safely.
 
 !!! info "Per-group isolation"
     Cache namespaces are automatically suffixed with the database group name for
-    every **non-default** group (e.g. `doctrine_results_reporting`), so multiple
+    every **non-default** group (e.g. `doctrine_results_7265706f7274696e67`), so multiple
     groups sharing one cache backend never collide on the same keys. The default
     group keeps the unsuffixed namespaces shown above.
 
@@ -71,8 +69,7 @@ existing files; choose `n` to abort safely.
 
 ### Extension points
 
-All of the following are additive and default to "off" (empty / `null` / `false`),
-so existing configs are unaffected.
+The following extension points default to off (empty / `null` / `false`).
 
 | Option | Type | Description |
 |--------|------|-------------|
@@ -107,10 +104,7 @@ use Daycry\Doctrine\Config\Doctrine as DoctrineBase;
 
 class Doctrine extends DoctrineBase
 {
-    public bool   $setAutoGenerateProxyClasses = ENVIRONMENT === 'development';
     public array  $entities                    = [APPPATH . 'Models/Entity'];
-    public string $proxies                     = APPPATH . 'Models/Proxies';
-    public string $proxiesNamespace            = 'DoctrineProxies';
 
     public bool   $queryCache              = true;
     public bool   $resultsCache             = true;
@@ -140,3 +134,28 @@ class Doctrine extends DoctrineBase
 - For multi-database setups (`Services::doctrine(true, 'reporting')`), the
   same `Config\Doctrine` is used for every group; each group resolves its own
   Doctrine instance from `Config\Database->{$dbGroup}`.
+
+## Cache lifetime and storage policy
+
+Query and metadata pools inherit `Config\Cache::$ttl`. Result-cache pools have a
+zero default lifetime, so `getFromCacheOrQuery(..., ttl: 0, ...)` does not expire just
+because the framework cache has a nonzero default. Always pass the intended lifetime
+to the helper or to Doctrine's result-cache API for data that must expire.
+
+The file backend uses PhpFilesAdapter for query/metadata caches and FilesystemAdapter
+for results and SLC. Dynamic data therefore does not consume OPcache entries.
+In-memory pools for queries, results and metadata are independent.
+
+`doctrine:publish` now generates a minimal Config\Doctrine subclass. Only declare
+application-specific overrides; inherited defaults continue to receive package fixes.
+Remove the deleted generated-proxy options from application configuration when migrating to this major version.
+
+`secondLevelCacheLockPath` configures the FileLockRegion directory for READ_WRITE
+regions. By default it is `WRITEPATH/cache/doctrine/locks` with a database-group
+suffix when needed. Applications sharing an SLC backend across hosts must use a
+shared lock directory or provide a suitable ConcurrentRegion implementation.
+
+Non-default cache namespaces append the hex-encoded database group name. This
+preserves exact group identity even though framework service keys are lowercased.
+
+See [the major-version migration guide](migration-major.md) for requirements and removed APIs.

@@ -30,7 +30,7 @@ class DoctrineSlcReset implements FilterInterface
     public function before(RequestInterface $request, $arguments = null): RequestInterface|ResponseInterface|string|null
     {
         try {
-            Services::doctrine()->resetSecondLevelCacheStatistics();
+            Services::peekDoctrine()?->resetSecondLevelCacheStatistics();
         } catch (Throwable) {
             // Toolbar filter must never break the request pipeline.
         }

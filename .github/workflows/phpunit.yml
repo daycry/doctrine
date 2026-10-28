@@ -1,5 +1,8 @@
 name: PHPUnit Tests
 
+permissions:
+  contents: read
+
 on:
   schedule:
     - cron: "0 12 * * *"
@@ -11,14 +14,19 @@ on:
 
 jobs:
   tests:
-    name: PHP ${{ matrix.php-versions }} - MySQL ${{ matrix.mysql-versions }}
+    name: PHP ${{ matrix.php-versions }} - MySQL ${{ matrix.mysql-versions }} - ${{ matrix.dependencies }}
     runs-on: ubuntu-latest
 
     strategy:
       fail-fast: false
       matrix:
-        php-versions: ['8.2', '8.3', '8.4', '8.5']
+        php-versions: ['8.5']
         mysql-versions: ['8.0', '8.4']
+        dependencies: ['highest']
+        include:
+          - php-versions: '8.5'
+            mysql-versions: '8.0'
+            dependencies: 'lowest'
 
     services:
       mysql:
@@ -58,8 +66,8 @@ jobs:
         with:
           php-version: ${{ matrix.php-versions }}
           tools: composer
-          extensions: redis, memcached
-          coverage: xdebug
+          extensions: redis, memcached, mysqli, sqlite3, pdo_sqlite
+          coverage: ${{ matrix.php-versions == '8.5' && matrix.mysql-versions == '8.0' && matrix.dependencies == 'highest' && 'xdebug' || 'none' }}
         env:
           update: true
 
@@ -71,34 +79,34 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ steps.composercache.outputs.dir }}
-          key: ${{ runner.os }}-php${{ matrix.php-versions }}-composer-${{ hashFiles('**/composer.lock') }}
+          key: ${{ runner.os }}-php${{ matrix.php-versions }}-composer-${{ matrix.dependencies }}-${{ hashFiles('**/composer.lock') }}
           restore-keys: ${{ runner.os }}-php${{ matrix.php-versions }}-composer-
 
-      - name: Install dependencies
+      - name: Install latest dependencies
+        if: matrix.dependencies == 'highest'
         run: composer update --no-interaction --prefer-dist --ansi
 
+      - name: Install minimum non-vulnerable dependencies
+        if: matrix.dependencies == 'lowest'
+        run: composer update --prefer-lowest --prefer-stable --no-interaction --prefer-dist --ansi
+
+      - name: Check required test extensions
+        run: |
+          php -r 'foreach (["redis", "memcached", "mysqli", "sqlite3"] as $extension) { if (!extension_loaded($extension)) { throw new RuntimeException("Missing test extension " . $extension); } }'
+
+      - name: Run PHPUnit without coverage
+        if: ${{ !(matrix.php-versions == '8.5' && matrix.mysql-versions == '8.0' && matrix.dependencies == 'highest') }}
+        run: composer test -- --color=always --no-coverage
+
       - name: Run PHPUnit with coverage
+        if: matrix.php-versions == '8.5' && matrix.mysql-versions == '8.0' && matrix.dependencies == 'highest'
         run: composer test -- --color=always --coverage-clover=build/logs/clover.xml
 
       - name: Upload coverage to Coveralls
-        if: matrix.php-versions == '8.5' && matrix.mysql-versions == '8.0'
+        if: matrix.php-versions == '8.5' && matrix.mysql-versions == '8.0' && matrix.dependencies == 'highest'
         uses: coverallsapp/github-action@v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           flag-name: PHP-${{ matrix.php-versions }}-MySQL-${{ matrix.mysql-versions }}
-          parallel: true
           file: build/logs/clover.xml
           format: clover
-
-  coveralls-finish:
-    name: Coveralls Finished
-    runs-on: ubuntu-latest
-    needs: [tests]
-    if: always()
-    steps:
-      - name: Coveralls Finished
-        uses: coverallsapp/github-action@v2
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          parallel-finished: true
-          carryforward: "PHP-8.5-MySQL-8.0"

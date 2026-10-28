@@ -59,13 +59,9 @@ parameters:
         # CI4 dynamic service resolution: doctrine() lives in Daycry\Doctrine\Config\Services
         - '#Call to an undefined static method (CodeIgniter\\Config\\Services|Config\\Services)::doctrine\(\)#'
 
-        # __call() magic forwarding on DBAL Connection — variable method call is intentional
+        # Same __call() forwarding, consolidated from the toolbar and logger wrappers.
         - identifier: method.dynamicName
-          path: src/Debug/Toolbar/Collectors/DoctrineQueryMiddleware.php
-
-        # Same intentional __call() forwarding in the query-logging middleware
-        - identifier: method.dynamicName
-          path: src/Logging/QueryLoggerMiddleware.php
+          path: src/Logging/QueryMiddleware.php
 
         # getSharedInstance() return type is mixed — @var annotation ensures proper type narrowing
         - identifier: varTag.type

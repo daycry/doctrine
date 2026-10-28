@@ -28,7 +28,7 @@ final class GetFromCacheOrQueryTest extends TestCase
 
         $this->config->resultsCache = true;
         $this->doctrine             = new Doctrine($this->config, config('Cache'), 'tests');
-        Services::injectMock('doctrine_default', $this->doctrine);
+        Services::injectMock('doctrine_' . bin2hex('tests'), $this->doctrine);
     }
 
     protected function tearDown(): void
@@ -78,7 +78,7 @@ final class GetFromCacheOrQueryTest extends TestCase
         // Recreate Doctrine with results cache disabled
         $this->config->resultsCache = false;
         $doctrine                   = new Doctrine($this->config, config('Cache'), 'tests');
-        Services::injectMock('doctrine_default', $doctrine);
+        Services::injectMock('doctrine_' . bin2hex('tests'), $doctrine);
 
         $calls   = 0;
         $queryFn = static function () use (&$calls) {

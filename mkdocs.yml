@@ -124,6 +124,7 @@ nav:
       - Installation: installation.md
       - Configuration: configuration.md
       - Usage: usage.md
+      - Major Migration: migration-major.md
   - DataTables:
       - Builder: datatables.md
       - Search Modes: search_modes.md
@@ -133,3 +134,4 @@ nav:
   - Tooling:
       - CLI Commands: cli_commands.md
       - Debug Toolbar: debug_toolbar.md
+      - Maintenance: maintenance.md

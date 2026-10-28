@@ -2,7 +2,7 @@
 
 ## Key Concepts
 
-- **Service:** `\Config\Services::doctrine($getShared = true, ?string $dbGroup = null)` returns a shared `Daycry\Doctrine\Doctrine` keyed by the (lower-cased) DB group name.
+- **Service:** `\Config\Services::doctrine($getShared = true, ?string $dbGroup = null)` returns a shared `Daycry\Doctrine\Doctrine` keyed by the exact, case-sensitive DB group name.
 - **Helper:** `doctrine_instance(?string $dbGroup = null)` is a convenience wrapper around the service for use with the `doctrine_helper`.
 - **EntityManager access:** `$doctrine->em` (direct property) or `$doctrine->getEm()` (throws if not initialised).
 - **Multi-DB:** every `Config\Database` group resolves to its own cached Doctrine instance — see [Multi-Database Groups](#multi-database-groups).
@@ -59,8 +59,7 @@ $doctrine->reOpen();
 ```
 
 `reOpen()` rebuilds the `EntityManager` from the existing DBAL connection and
-re-applies every entry in `customTypeMappings`. It throws if `getEm()` is
-`null`.
+re-applies every entry in `customTypeMappings`. It uses the original constructor configuration.
 
 ## Multi-Database Groups
 
@@ -75,9 +74,9 @@ $reporting = \Config\Services::doctrine(true, 'reporting');
 $reporting = doctrine_instance('reporting');
 ```
 
-Group names are case-insensitive and stored in the singleton cache as
-`doctrine_<lowercase_group>`. Pass `false` for `$getShared` to force a fresh
-instance:
+Group names are case-sensitive, matching Config\Database property names.
+Internal service keys encode the exact group name. Pass `false` for `$getShared`
+to force a fresh instance:
 
 ```php
 $fresh = \Config\Services::doctrine(false, 'reporting'); // new every time
@@ -86,8 +85,8 @@ $fresh = \Config\Services::doctrine(false, 'reporting'); // new every time
 To drop a cached instance (eg. between tests):
 
 ```php
-\Config\Services::resetDoctrine();             // drops 'doctrine_default'
-\Config\Services::resetDoctrine('reporting');  // drops 'doctrine_reporting'
+\Config\Services::resetDoctrine();             // drops the effective default group
+\Config\Services::resetDoctrine('reporting');  // drops only the reporting group
 ```
 
 ## Manual Result Caching
@@ -171,3 +170,15 @@ The package also ships a filter that performs this reset automatically — see
   server, etc.) the Doctrine service raises `CacheException` at construction
   with a descriptive message and the underlying error chained as `previous`.
 - See `src/Doctrine.php` for runtime checks, cache wiring, and SLC setup.
+
+## Reopening and shared service identity
+
+`reOpen()` uses the configuration supplied to that Doctrine instance, including
+explicit constructor configuration. Configured listeners, subscribers and enabled
+filters are recreated from that configuration. Runtime changes to filter state and
+filter parameters must be reapplied after reopening; managed entities are detached.
+
+Implicit and explicit requests for the same effective database group share one
+instance. Under CodeIgniter's testing environment, the implicit group is `tests`.
+`Services::resetDoctrine()` resets that same effective group. Named groups retain
+case-sensitive identity in services and cache namespaces.

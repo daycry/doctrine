@@ -1,5 +1,9 @@
 # Auditoría exhaustiva — `daycry/doctrine`
 
+> Historical audit from 2026-06-06. Findings below describe that revision and include
+> issues already fixed. See [the current maintenance review](docs/maintenance.md)
+> for the status of the 2026-10-28 changes.
+
 **Fecha:** 2026-06-06 · **Rama:** `refactor/audit-and-docs` · **Alcance:** capacidades, rendimiento, optimización, correctitud, seguridad, calidad, dependencias, tests y docs.
 
 **Método:** 13 auditores en paralelo (uno por dimensión, leyendo el código real) → verificación adversarial *finding-por-finding* contra el código citado → crítico de completitud → síntesis. 112 agentes, 97 hallazgos, **95 verificados**, 2 rechazados. Cada hallazgo cita `archivo:línea` real.

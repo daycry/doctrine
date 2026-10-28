@@ -117,3 +117,14 @@ class Product
   [`debug_toolbar.md`](debug_toolbar.md)
 - Statistics API and counters reset:
   [`second_level_cache_stats.md`](second_level_cache_stats.md)
+
+## READ_WRITE locking
+
+READ_WRITE regions use Doctrine's FileLockRegion. Set
+`Config\Doctrine::$secondLevelCacheLockPath` to override the default writable lock
+directory. All processes sharing cached entities must also share the lock directory.
+The default path is scoped to the database group. With `secondLevelCacheTtl = null`,
+a framework cache TTL of zero is inherited as zero (no expiration).
+
+Non-default cache namespaces append the hex-encoded database group name. This
+preserves exact group identity even though framework service keys are lowercased.

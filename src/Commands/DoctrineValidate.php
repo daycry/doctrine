@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Daycry\Doctrine\Commands;
 
 use Doctrine\ORM\Tools\Console\Command\ValidateSchemaCommand;
+use Override;
 
 /**
  * Spark wrapper for `orm:validate-schema`: validates the mapping and that the
@@ -12,11 +13,20 @@ use Doctrine\ORM\Tools\Console\Command\ValidateSchemaCommand;
  */
 class DoctrineValidate extends DoctrineCommand
 {
-    protected $name        = 'doctrine:validate';
+    #[Override]
+    protected $name = 'doctrine:validate';
+
+    #[Override]
     protected $description = 'Validate the Doctrine mapping files and database schema.';
-    protected $usage       = 'doctrine:validate [--group <db_group>]';
-    protected $arguments   = [];
-    protected $options     = [
+
+    #[Override]
+    protected $usage = 'doctrine:validate [--group <db_group>]';
+
+    #[Override]
+    protected $arguments = [];
+
+    #[Override]
+    protected $options = [
         '--group' => 'Database group (default: default group).',
     ];
 

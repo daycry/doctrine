@@ -74,7 +74,7 @@ final class DoctrineSlcResetTest extends TestCase
         $this->assertSame(1, $logger->getPutCount());
 
         // Inject the doctrine service so the filter resets the same logger.
-        Services::injectMock('doctrine_default', $doctrine);
+        Services::injectMock('doctrine_' . bin2hex('tests'), $doctrine);
 
         $filter = new DoctrineSlcReset();
         $filter->before($this->createStub(IncomingRequest::class));

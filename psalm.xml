@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
 <psalm
     errorLevel="6"
+    cacheDirectory="build/psalm"
     resolveFromConfigFile="true"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xmlns="https://getpsalm.org/schema/config"
@@ -11,6 +12,13 @@
     allFunctionsGlobal="true"
     autoloader="vendor/codeigniter4/framework/system/Test/bootstrap.php"
 >
+    <!-- Optional runtime backends are analyzed even when the local DLLs are absent. -->
+    <enableExtensions>
+        <extension name="redis" />
+    </enableExtensions>
+    <stubs>
+        <file name="vendor/vimeo/psalm/stubs/extensions/memcached.phpstub" />
+    </stubs>
     <projectFiles>
         <directory name="src/" />
         <ignoreFiles>
@@ -27,7 +35,7 @@
         <PossiblyUnusedParam errorLevel="suppress" />
         <PossiblyUnusedReturnValue errorLevel="suppress" />
 
-        <!-- #[Override] was added in PHP 8.3; this project targets PHP >=8.2 -->
+        <!-- Method override annotations are optional under the project coding standard. -->
         <MissingOverrideAttribute errorLevel="suppress" />
 
         <!-- INFO-level items: CI4 framework type limitations + acceptable patterns -->
@@ -40,13 +48,7 @@
         <PossiblyNullArrayAccess errorLevel="suppress" />
         <PossiblyNullIterator errorLevel="suppress" />
         <PossiblyNullReference errorLevel="suppress" />
-        <!-- DBAL/ORM union types: Builder supports both DBAL and ORM QueryBuilders -->
-        <PossiblyInvalidArgument errorLevel="suppress" />
-        <PossiblyInvalidOperand errorLevel="suppress" />
         <PossiblyInvalidCast errorLevel="suppress" />
-        <InvalidOperand errorLevel="suppress" />
-        <!-- DBAL QueryBuilder expression methods (orX/andX/between) exist at runtime -->
-        <PossiblyUndefinedMethod errorLevel="suppress" />
         <PossiblyUndefinedArrayOffset errorLevel="suppress" />
         <!-- Docblock type refinements that Psalm reads too strictly -->
         <DocblockTypeContradiction errorLevel="suppress" />

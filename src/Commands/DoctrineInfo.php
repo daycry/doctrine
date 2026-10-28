@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Daycry\Doctrine\Commands;
 
 use Doctrine\ORM\Tools\Console\Command\InfoCommand;
+use Override;
 
 /**
  * Spark wrapper for `orm:info`: lists the mapped entities and reports mapping
@@ -12,11 +13,20 @@ use Doctrine\ORM\Tools\Console\Command\InfoCommand;
  */
 class DoctrineInfo extends DoctrineCommand
 {
-    protected $name        = 'doctrine:info';
+    #[Override]
+    protected $name = 'doctrine:info';
+
+    #[Override]
     protected $description = 'Show mapped entities for a database group.';
-    protected $usage       = 'doctrine:info [--group <db_group>]';
-    protected $arguments   = [];
-    protected $options     = [
+
+    #[Override]
+    protected $usage = 'doctrine:info [--group <db_group>]';
+
+    #[Override]
+    protected $arguments = [];
+
+    #[Override]
+    protected $options = [
         '--group' => 'Database group (default: default group).',
     ];
 

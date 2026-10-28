@@ -2,12 +2,15 @@
 
 declare(strict_types=1);
 
+namespace Tests;
+
 use CodeIgniter\Test\CIUnitTestCase;
 use Daycry\Doctrine\Config\Doctrine as DoctrineConfig;
 use Daycry\Doctrine\Doctrine;
 use Doctrine\ORM\Cache\CacheConfiguration;
 use Doctrine\ORM\Tools\SchemaTool;
 use Tests\Support\Models\Entities\CacheableProduct;
+use Throwable;
 
 /**
  * @internal

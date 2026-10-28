@@ -3,7 +3,7 @@
 ## Key Concepts
 
 - Package: `daycry/doctrine` provides Doctrine ORM 3 integration for CodeIgniter 4.
-- Requirements: PHP ≥ 8.2, CodeIgniter ^4, Doctrine ORM ^3, Symfony Cache ^7.
+- Requirements: PHP ^8.5, CodeIgniter ^4.7, ORM ^3.7, DBAL ^4.5, Symfony Cache/Console ^8 and DoctrineExtensions ^1.5.
 - Autoload: when installing manually, register the `Daycry\Doctrine` namespace in `app/Config/Autoload.php`.
 
 ## Via Composer
@@ -63,3 +63,5 @@ See [`usage.md`](usage.md) for the cache-aside example.
 The package ships a Debug Toolbar collector and an optional per-request reset
 filter for SLC statistics. See [`debug_toolbar.md`](debug_toolbar.md) for the
 collector + filter setup steps.
+
+For an existing application, follow [the major-version migration guide](migration-major.md).

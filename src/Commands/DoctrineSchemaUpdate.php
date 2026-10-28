@@ -6,6 +6,7 @@ namespace Daycry\Doctrine\Commands;
 
 use CodeIgniter\CLI\CLI;
 use Doctrine\ORM\Tools\Console\Command\SchemaTool\UpdateCommand;
+use Override;
 
 /**
  * Spark wrapper for `orm:schema-tool:update`. Without --force it only dumps the
@@ -13,11 +14,20 @@ use Doctrine\ORM\Tools\Console\Command\SchemaTool\UpdateCommand;
  */
 class DoctrineSchemaUpdate extends DoctrineCommand
 {
-    protected $name        = 'doctrine:schema:update';
+    #[Override]
+    protected $name = 'doctrine:schema:update';
+
+    #[Override]
     protected $description = 'Update the database schema to match the entity mappings.';
-    protected $usage       = 'doctrine:schema:update [--force] [--dump-sql] [--group <db_group>]';
-    protected $arguments   = [];
-    protected $options     = [
+
+    #[Override]
+    protected $usage = 'doctrine:schema:update [--force] [--dump-sql] [--group <db_group>]';
+
+    #[Override]
+    protected $arguments = [];
+
+    #[Override]
+    protected $options = [
         '--force'    => 'Apply the schema changes to the database.',
         '--dump-sql' => 'Print the SQL that would be executed (default when --force is absent).',
         '--group'    => 'Database group (default: default group).',

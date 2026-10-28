@@ -21,7 +21,6 @@ abstract class TestCase extends CIUnitTestCase
 
         $this->config           = config('Doctrine');
         $this->config->entities = [SUPPORTPATH . 'Models/Entities'];
-        $this->config->proxies  = SUPPORTPATH . 'Models/Proxies';
     }
 
     private function _getDatabaseConfig(): Database

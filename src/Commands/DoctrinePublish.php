@@ -7,12 +7,18 @@ namespace Daycry\Doctrine\Commands;
 use CodeIgniter\CLI\BaseCommand;
 use CodeIgniter\CLI\CLI;
 use Config\Autoload;
+use Override;
 use Throwable;
 
 class DoctrinePublish extends BaseCommand
 {
-    protected $group       = 'Doctrine';
-    protected $name        = 'doctrine:publish';
+    #[Override]
+    protected $group = 'Doctrine';
+
+    #[Override]
+    protected $name = 'doctrine:publish';
+
+    #[Override]
     protected $description = 'Doctrine config file publisher.';
 
     /**
@@ -70,15 +76,19 @@ class DoctrinePublish extends BaseCommand
      */
     protected function publishConfig(): void
     {
-        $path    = "{$this->sourcePath}/Config/Doctrine.php";
-        $content = file_get_contents($path);
-        if ($content === false) {
-            CLI::error("Unable to read source file: {$path}");
+        $content = <<<'PHP'
+            <?php
 
-            exit(1);
-        }
-        $content = str_replace('namespace Daycry\\Doctrine\\Config', 'namespace Config', $content);
-        $content = str_replace('extends BaseConfig', 'extends \\Daycry\\Doctrine\\Config\\Doctrine', $content);
+            declare(strict_types=1);
+
+            namespace Config;
+
+            class Doctrine extends \Daycry\Doctrine\Config\Doctrine
+            {
+                // Override only the settings that differ from the package defaults.
+            }
+            PHP;
+        $content .= "\n";
         $this->writeFile('Config/Doctrine.php', $content);
     }
 
@@ -91,11 +101,15 @@ class DoctrinePublish extends BaseCommand
         $config = new Autoload();
 
         $appPath = $config->psr4[APP_NAMESPACE] ?? null;
-        if ($appPath === null) {
+        if (is_array($appPath)) {
+            $appPath = $appPath[0] ?? null;
+        }
+        if (! is_string($appPath) || $appPath === '') {
             CLI::error('APP_NAMESPACE "' . APP_NAMESPACE . '" not found in autoload psr4 configuration.');
 
             exit(1);
         }
+        $appPath   = rtrim($appPath, '/\\') . DIRECTORY_SEPARATOR;
         $directory = dirname($appPath . $path);
         if (! is_dir($directory)) {
             mkdir($directory, 0777, true);

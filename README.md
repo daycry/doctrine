@@ -29,14 +29,14 @@ Doctrine ORM 3 integration for CodeIgniter 4.
 - **Multi-database group support** — get a separate Doctrine instance per `Config\Database` group.
 - **Extensible** via config: custom DBAL **Types**, **SQL Filters** (soft-delete / multi-tenant), **event listeners/subscribers**, composable **DBAL middlewares** and a **default repository class**.
 - **Production query logging** (PSR-3) with an optional slow-query threshold — independent of the debug toolbar.
-- **Spark commands** (`doctrine:cache:clear`, `doctrine:validate`, `doctrine:info`, `doctrine:schema:update`) and a multi-group ORM CLI (`--em=<group>`).
+- **Spark commands** (`doctrine:doctor`, `doctrine:cache:warmup`, `doctrine:cache:clear`, `doctrine:validate`, `doctrine:info`, `doctrine:schema:update`) and a multi-group ORM CLI (`--em=<group>`).
 
 ## Requirements
 
-- PHP **≥ 8.2**
-- CodeIgniter **^4**
-- Doctrine ORM **^3**, DBAL **^4**
-- Symfony Cache **^7**
+- PHP **^8.5**
+- CodeIgniter **^4.7**
+- Doctrine ORM **^3.7**, DBAL **^4.5**
+- Symfony Cache/Console **^8**, DoctrineExtensions **^1.5**
 
 See [`composer.json`](composer.json) for the complete dependency graph.
 
@@ -54,6 +54,11 @@ See [`composer.json`](composer.json) for the complete dependency graph.
 - [Second-Level Cache (SLC)](docs/second_level_cache.md)
 - [SLC Statistics](docs/second_level_cache_stats.md)
 - [Changelog](CHANGELOG.md)
+
+## Major-version migration
+
+This version requires PHP 8.5 and uses native lazy objects and the current ORM
+pagination API. See [the migration guide](docs/migration-major.md) before upgrading.
 
 ## Installation
 
@@ -135,7 +140,6 @@ Use the generated `cli-config.php` from the project root:
 php cli-config.php orm:validate-schema          # check mappings vs. database
 php cli-config.php orm:schema-tool:update --dump-sql   # preview schema changes
 php cli-config.php orm:schema-tool:update --force      # apply them
-php cli-config.php orm:generate-proxies app/Models/Proxies
 php cli-config.php orm:info                      # list mapped entities
 php cli-config.php orm:run-dql "SELECT u FROM App\Models\Entity\User u"
 ```
@@ -170,7 +174,7 @@ return $this->response->setJSON($datatables->getResponse());
 ```
 
 If pagination throws *"Not all identifier properties can be found in the
-ResultSetMapping"*, set `->setUseOutputWalkers(false)` on the Builder.
+ResultSetMapping"*, set `->withOutputWalkers(false)` on the Builder.
 
 ### Search modes
 
@@ -245,7 +249,7 @@ details.
 
 ## Extending the EntityManager
 
-`Config\Doctrine` exposes additive, backward-compatible hooks (all default to
+`Config\Doctrine` exposes extension hooks (all default to
 off) for the common Doctrine extension points:
 
 ```php

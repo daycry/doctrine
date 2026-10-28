@@ -1,6 +1,6 @@
 # CLI Commands
 
-The package exposes one CodeIgniter Spark command and ships a Doctrine ORM
+The package exposes CodeIgniter Spark commands and ships a Doctrine ORM
 CLI bootstrap (`cli-config.php`).
 
 ## Package Commands
@@ -41,6 +41,42 @@ php spark doctrine:schema:update [--dump-sql] [--force] [--group <db_group>]
 `doctrine:schema:update` defaults to a non-destructive `--dump-sql` dry run;
 pass `--force` to apply the changes.
 
+### Readiness diagnostics
+
+```bash
+php spark doctrine:doctor --group reporting
+php spark doctrine:doctor --group reporting --json
+```
+
+The doctor checks whether the EntityManager is open, connectivity with the database platform's dummy SELECT, mapping
+consistency, and read/write/delete access to enabled query/result/metadata pools.
+Each cache probe uses its own random key with a five-second TTL and deletes that
+key afterwards. It does not clear application caches or change the schema.
+
+The JSON output contains `group`, `healthy`, and `checks`. Each check has `status`
+(`ok`, `warning`, `disabled`, or `error`) and `detail`. Exit code 0 means there are
+no failed checks; exit code 1 means initialization or a probe failed. A process-local
+ArrayAdapter produces a warning, but remains a valid backend. Disabled optional
+caches are reported as disabled. The report omits credentials, DSNs, and exception
+messages. SLC reports configuration only; it does not verify cached region contents.
+Use `doctrine:validate` to check whether the database schema matches the mapping.
+
+### Deployment cache warmup
+
+```bash
+php spark doctrine:cache:warmup --group reporting
+```
+
+Loads all mapped metadata into the enabled metadata cache. Native lazy objects
+are mandatory; proxy files are neither needed nor generated. A cache write/read
+probe must succeed before warmup proceeds. The command returns 1 on a configuration, mapping, or cache-access error.
+It never creates or updates database tables. Use a persistent metadata pool for
+warmup across processes; array/disabled caches produce a warning.
+
+Result caches, SLC data, and query caches are not populated: doing that requires
+application-specific queries and invalidation rules. Warm up after deploying entity
+mappings and before routing traffic to the new release.
+
 ## Doctrine ORM CLI
 
 These commands operate on the `cli-config.php` file generated above. Run them
@@ -59,9 +95,6 @@ php cli-config.php orm:schema-tool:update --force
 # Create / drop the full schema
 php cli-config.php orm:schema-tool:create
 php cli-config.php orm:schema-tool:drop --force
-
-# Generate proxy classes
-php cli-config.php orm:generate-proxies app/Models/Proxies
 
 # Inspect mappings and run ad-hoc DQL
 php cli-config.php orm:info

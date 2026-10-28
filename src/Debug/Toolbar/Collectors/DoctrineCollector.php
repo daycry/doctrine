@@ -7,14 +7,22 @@ namespace Daycry\Doctrine\Debug\Toolbar\Collectors;
 use CodeIgniter\Debug\Toolbar\Collectors\BaseCollector;
 use Config\Services;
 use Doctrine\ORM\Cache\Logging\StatisticsCacheLogger;
+use Override;
 use Throwable;
 
 class DoctrineCollector extends BaseCollector
 {
-    protected $hasTimeline   = true;
+    #[Override]
+    protected $hasTimeline = true;
+
+    #[Override]
     protected $hasTabContent = true;
-    protected $hasVarData    = false;
-    protected $title         = 'Doctrine';
+
+    #[Override]
+    protected $hasVarData = false;
+
+    #[Override]
+    protected $title = 'Doctrine';
 
     /**
      * Optional injected SLC logger for testing/override
@@ -113,8 +121,8 @@ class DoctrineCollector extends BaseCollector
             $misses   = $logger->getMissCount();
             $puts     = $logger->getPutCount();
             $total    = $hits + $misses;
-            $ratio    = $total > 0 ? round(($hits / $total) * 100) : 0;
-            $slcBadge = ' SLC:' . $hits . '/' . $misses . '/' . $puts . ' (' . $ratio . '%)';
+            $ratio    = $total > 0 ? round(((float) $hits / (float) $total) * 100.0) : 0.0;
+            $slcBadge = sprintf(' SLC:%d/%d/%d (%d%%)', $hits, $misses, $puts, $ratio);
             $details  = trim($details . $slcBadge);
         }
 
@@ -227,10 +235,11 @@ class DoctrineCollector extends BaseCollector
 
         foreach ($queries as $query) {
             $sql      = $query['sql'] ?? '';
-            $shortSql = preg_replace('/(select)(.+?)(from)/is', '$1 ... $3', $sql);
+            $sql      = is_string($sql) ? $sql : 'SQL unavailable';
+            $shortSql = preg_replace('/(select)(.+?)(from)/is', '$1 ... $3', $sql) ?? $sql;
             $params   = htmlspecialchars(json_encode($query['params'] ?? []), ENT_QUOTES, 'UTF-8');
             $time     = isset($query['duration']) ? number_format($query['duration'], 4) : '';
-            $html .= '<tr class="{class}" title="' . htmlspecialchars((string) $sql, ENT_QUOTES, 'UTF-8') . '" data-toggle="' . md5((string) $sql) . '-trace">';
+            $html .= '<tr class="{class}" title="' . htmlspecialchars($sql, ENT_QUOTES, 'UTF-8') . '" data-toggle="' . md5($sql) . '-trace">';
             $html .= '<td class="narrow">' . $time . ' ms</td>';
             // Shorten SQL if too long (over 120 chars), show full SQL in tooltip
             $maxLen     = 120;
@@ -244,7 +253,7 @@ class DoctrineCollector extends BaseCollector
     }
 
     /**
-     * @return array<int, array<string, mixed>>
+     * @return list<array<string, mixed>>
      */
     protected function formatTimelineData(): array
     {

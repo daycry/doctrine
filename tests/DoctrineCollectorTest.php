@@ -12,11 +12,6 @@ use Tests\Support\TestCase;
  */
 final class DoctrineCollectorTest extends TestCase
 {
-    protected function setUp(): void
-    {
-        parent::setUp();
-    }
-
     public function testAddQueryAndGetQueries()
     {
         $collector = new DoctrineCollector();

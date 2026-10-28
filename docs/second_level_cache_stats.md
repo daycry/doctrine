@@ -76,7 +76,7 @@ See [`debug_toolbar.md`](debug_toolbar.md) for the toolbar integration.
 
 ## Notes
 
-- Clear metadata / proxies after changing the `#[ORM\Cache]` attributes of
+- Clear metadata after changing the `#[ORM\Cache]` attributes of
   an entity to avoid stale state.
 - Associations require the target entity to be cacheable for join caching
   to work.

@@ -97,8 +97,8 @@ final class BuilderCoverageTest extends TestCase
             ->select('t.id, t.name')
             ->from(TestAttribute::class, 't');
 
-        $result = (new Builder())
-            ->setUseOutputWalkers(false)
+        $result = new Builder()
+            ->withOutputWalkers(false)
             ->withColumnAliases(['name' => 't.name'])
             ->withQueryBuilder($qb)
             ->withRequestParams([
@@ -117,7 +117,7 @@ final class BuilderCoverageTest extends TestCase
                 ],
                 'order' => [['column' => 0, 'dir' => 'asc']],
             ])
-            ->getData();
+            ->getPage()->getItems();
 
         $this->assertIsArray($result);
         $this->assertSame([], $result);
@@ -153,8 +153,8 @@ final class BuilderCoverageTest extends TestCase
             ->select('t.id, t.name')
             ->from(TestAttribute::class, 't');
 
-        $result = (new Builder())
-            ->setUseOutputWalkers(false)
+        $result = new Builder()
+            ->withOutputWalkers(false)
             ->withColumnAliases(['name' => 't.name'])
             ->withQueryBuilder($qb)
             ->withRequestParams([
@@ -173,7 +173,7 @@ final class BuilderCoverageTest extends TestCase
                 ],
                 'order' => [['column' => 0, 'dir' => 'asc']],
             ])
-            ->getData();
+            ->getPage()->getItems();
 
         $this->assertIsArray($result);
         $this->assertCount(2, $result);
@@ -214,8 +214,8 @@ final class BuilderCoverageTest extends TestCase
             ->select('t.id, t.name')
             ->from(TestAttribute::class, 't');
 
-        $result = (new Builder())
-            ->setUseOutputWalkers(false)
+        $result = new Builder()
+            ->withOutputWalkers(false)
             ->withColumnAliases(['name' => 't.name'])
             ->withSearchableColumns(['t.name'])
             ->withQueryBuilder($qb)
@@ -235,7 +235,7 @@ final class BuilderCoverageTest extends TestCase
                 ],
                 'order' => [['column' => 0, 'dir' => 'asc']],
             ])
-            ->getData();
+            ->getPage()->getItems();
 
         $this->assertIsArray($result);
         $this->assertCount(1, $result);
@@ -273,8 +273,8 @@ final class BuilderCoverageTest extends TestCase
             ->select('t.id, t.name')
             ->from(TestAttribute::class, 't');
 
-        $count = (new Builder())
-            ->setUseOutputWalkers(false)
+        $count = new Builder()
+            ->withOutputWalkers(false)
             ->withColumnAliases(['name' => 't.name'])
             ->withQueryBuilder($qb)
             ->withRequestParams([
@@ -293,7 +293,7 @@ final class BuilderCoverageTest extends TestCase
                 ],
                 'order' => [['column' => 0, 'dir' => 'asc']],
             ])
-            ->getRecordsFiltered();
+            ->getPage()->getTotalCount();
 
         $this->assertSame(1, $count);
 
@@ -331,8 +331,8 @@ final class BuilderCoverageTest extends TestCase
             ->select('t.id, t.name')
             ->from(TestAttribute::class, 't');
 
-        $total = (new Builder())
-            ->setUseOutputWalkers(false)
+        $total = new Builder()
+            ->withOutputWalkers(false)
             ->withColumnAliases(['name' => 't.name'])
             ->withQueryBuilder($qb)
             ->withRequestParams([
@@ -384,8 +384,8 @@ final class BuilderCoverageTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('IN filter exceeds maximum allowed values');
 
-        (new Builder())
-            ->setUseOutputWalkers(false)
+        new Builder()
+            ->withOutputWalkers(false)
             ->withColumnAliases(['name' => 't.name'])
             ->withMaxFilterValues(2)
             ->withQueryBuilder($qb)
@@ -406,7 +406,7 @@ final class BuilderCoverageTest extends TestCase
                 ],
                 'order' => [['column' => 0, 'dir' => 'asc']],
             ])
-            ->getData();
+            ->getPage()->getItems();
 
         try {
             $tool->dropSchema([$em->getClassMetadata(TestAttribute::class)]);
@@ -437,8 +437,8 @@ final class BuilderCoverageTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('OR filter exceeds maximum allowed values');
 
-        (new Builder())
-            ->setUseOutputWalkers(false)
+        new Builder()
+            ->withOutputWalkers(false)
             ->withColumnAliases(['name' => 't.name'])
             ->withMaxFilterValues(2)
             ->withQueryBuilder($qb)
@@ -459,7 +459,7 @@ final class BuilderCoverageTest extends TestCase
                 ],
                 'order' => [['column' => 0, 'dir' => 'asc']],
             ])
-            ->getData();
+            ->getPage()->getItems();
 
         try {
             $tool->dropSchema([$em->getClassMetadata(TestAttribute::class)]);

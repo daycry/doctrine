@@ -16,7 +16,10 @@ $finder = Finder::create()
         __DIR__ . '/rector.php',
     ]);
 
-$overrides = [];
+$overrides = [
+    // Match Rector's PHP 8.5 syntax: new expressions can be called directly.
+    'new_expression_parentheses' => ['use_parentheses' => false],
+];
 
 $options = [
     'finder'    => $finder,

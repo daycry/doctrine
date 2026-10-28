@@ -78,7 +78,7 @@ $provider = new class (config('Doctrine')) implements EntityManagerProvider {
 
     public function getManager(string $name): EntityManagerInterface
     {
-        return $this->managers[$name] ??= (new Doctrine($this->config, null, $name))->getEm();
+        return $this->managers[$name] ??= new Doctrine($this->config, null, $name)->getEm();
     }
 };
 

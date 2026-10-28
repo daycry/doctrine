@@ -38,7 +38,7 @@ function getFromCacheOrQuery(string $cacheKey, int $ttl, callable $queryFn, ?str
     // appended hash of the original key keeps distinct keys from colliding.
     $key = $cacheKey;
     if (preg_match('~[{}()/\\\\@:]~', $key) === 1) {
-        $key = preg_replace('~[{}()/\\\\@:]~', '_', $key) . '_' . substr(sha1($cacheKey), 0, 12);
+        $key = (preg_replace('~[{}()/\\\\@:]~', '_', $key) ?? $key) . '_' . substr(sha1($cacheKey), 0, 12);
     }
 
     $item = $pool->getItem($key);

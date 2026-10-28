@@ -2,10 +2,13 @@
 
 declare(strict_types=1);
 
+namespace Tests;
+
 use CodeIgniter\Test\CIUnitTestCase;
 use Daycry\Doctrine\Debug\Toolbar\Collectors\DoctrineCollector;
 use Doctrine\ORM\Cache\EntityCacheKey;
 use Doctrine\ORM\Cache\Logging\StatisticsCacheLogger;
+use stdClass;
 
 /**
  * @internal
@@ -33,11 +36,6 @@ final class DoctrineCollectorSlcTest extends CIUnitTestCase
         }
 
         return $logger;
-    }
-
-    protected function setUp(): void
-    {
-        parent::setUp();
     }
 
     public function testTitleDetailsShowsSlcBadge(): void

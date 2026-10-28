@@ -11,17 +11,24 @@ use Daycry\Doctrine\Doctrine;
 
 class Services extends BaseService
 {
-    private static string $prefix       = 'doctrine';
-    private static string $defaultGroup = 'default';
+    private static string $prefix = 'doctrine';
 
     public static function doctrine(bool $getShared = true, ?string $dbGroup = null): Doctrine
     {
-        $key = $dbGroup === null ? self::$prefix . '_' . self::$defaultGroup : self::$prefix . '_' . strtolower($dbGroup);
+        $dbGroup = DatabaseGroup::resolve($dbGroup);
+        $key     = self::$prefix . '_' . DatabaseGroup::key($dbGroup);
+
+        $mock = static::$mocks[$key] ?? null;
+        if ($getShared && $mock !== null) {
+            if (! $mock instanceof Doctrine) {
+                throw new ConfigException('The shared Doctrine mock must be a Doctrine instance.');
+            }
+
+            return $mock;
+        }
 
         if ($getShared) {
-            if (! isset(static::$instances[$key])) {
-                static::$instances[$key] = static::createDoctrineInstance($dbGroup);
-            }
+            static::$instances[$key] ??= static::createDoctrineInstance($dbGroup);
 
             /** @var Doctrine $instance */
             $instance = static::getSharedInstance($key);
@@ -49,19 +56,32 @@ class Services extends BaseService
     }
 
     /**
-     * Remove one or all shared Doctrine instances from the framework service registry.
+     * Remove the shared Doctrine instance from the framework service registry.
      *
      * Examples:
-     *   Services::resetDoctrine();            // clears default (doctrine_default)
-     *   Services::resetDoctrine('reporting'); // clears only doctrine_reporting
+     *   Services::resetDoctrine();            // clears the effective default group
+     *   Services::resetDoctrine('reporting'); // clears only the reporting group
      */
     public static function resetDoctrine(?string $dbGroup = null): void
     {
-        $key = $dbGroup !== null
-            ? self::$prefix . '_' . strtolower($dbGroup)
-            : self::$prefix . '_' . self::$defaultGroup;
+        $key = self::$prefix . '_' . DatabaseGroup::key(DatabaseGroup::resolve($dbGroup));
 
         static::resetSingle($key);
+    }
+
+    /**
+     * Return an existing instance without initializing a connection.
+     */
+    public static function peekDoctrine(?string $dbGroup = null): ?Doctrine
+    {
+        $key = self::$prefix . '_' . DatabaseGroup::key(DatabaseGroup::resolve($dbGroup));
+
+        $instance = static::$mocks[$key] ?? static::$instances[$key] ?? null;
+        if ($instance !== null && ! $instance instanceof Doctrine) {
+            throw new ConfigException('The shared Doctrine service must be a Doctrine instance.');
+        }
+
+        return $instance;
     }
 
     public static function doctrineCollector(bool $getShared = true): DoctrineCollector

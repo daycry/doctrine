@@ -6,17 +6,27 @@ namespace Daycry\Doctrine\Commands;
 
 use CodeIgniter\CLI\CLI;
 use Daycry\Doctrine\Config\Services;
+use Override;
 
 /**
  * Clears the Doctrine query, result and metadata caches for a database group.
  */
 class DoctrineCacheClear extends DoctrineCommand
 {
-    protected $name        = 'doctrine:cache:clear';
+    #[Override]
+    protected $name = 'doctrine:cache:clear';
+
+    #[Override]
     protected $description = 'Clear the Doctrine query, result and metadata caches.';
-    protected $usage       = 'doctrine:cache:clear [--group <db_group>]';
-    protected $arguments   = [];
-    protected $options     = [
+
+    #[Override]
+    protected $usage = 'doctrine:cache:clear [--group <db_group>]';
+
+    #[Override]
+    protected $arguments = [];
+
+    #[Override]
+    protected $options = [
         '--group' => 'Database group whose caches to clear (default: default group).',
     ];
 
