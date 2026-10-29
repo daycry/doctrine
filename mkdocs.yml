@@ -1,4 +1,4 @@
-site_name: Daycry Doctrine
+site_name: Doctrine ORM Toolkit for PHP and CodeIgniter 4
 site_description: Standalone Doctrine ORM toolkit for PHP 8.5, with PSR caching/logging, DataTables and an optional CodeIgniter 4 adapter.
 site_author: Daycry
 site_url: https://daycry.github.io/doctrine/

@@ -1,6 +1,6 @@
 [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/donate?business=SYC5XDT23UZ5G&no_recurring=0&item_name=Thank+you%21&currency_code=EUR)
 
-# Daycry Doctrine
+# Doctrine ORM Toolkit for PHP and CodeIgniter 4
 
 Standalone Doctrine ORM toolkit for PHP 8.5, with an optional CodeIgniter 4 adapter.
 
