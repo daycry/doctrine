@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests;
 
 use Daycry\Doctrine\CodeIgniter4\Debug\Toolbar\Collectors\DoctrineCollector;
+use Daycry\Doctrine\CodeIgniter4\Debug\Toolbar\Collectors\DoctrineCollectorState;
 use Doctrine\ORM\Cache\Logging\StatisticsCacheLogger;
 use Tests\Support\TestCase;
 
@@ -18,7 +19,7 @@ final class DoctrineCollectorCoverageTest extends TestCase
 {
     public function testResetClearsQueries(): void
     {
-        $collector = new DoctrineCollector();
+        $collector = new DoctrineCollector(new DoctrineCollectorState());
         $collector->addQuery(['sql' => 'SELECT 1', 'params' => [], 'duration' => 0.01]);
         $collector->addQuery(['sql' => 'SELECT 2', 'params' => [], 'duration' => 0.02]);
 
@@ -33,14 +34,14 @@ final class DoctrineCollectorCoverageTest extends TestCase
 
     public function testResetOnEmptyCollectorIsIdempotent(): void
     {
-        $collector = new DoctrineCollector();
+        $collector = new DoctrineCollector(new DoctrineCollectorState());
         $collector->reset();
         $this->assertSame([], $collector->getQueries());
     }
 
     public function testAddQueryEvictsOldestWhenMaxQueriesReached(): void
     {
-        $collector = new DoctrineCollector();
+        $collector = new DoctrineCollector(new DoctrineCollectorState());
         $collector->setMaxQueries(2);
 
         $collector->addQuery(['sql' => 'SELECT 1', 'params' => [], 'duration' => 0.0]);
@@ -53,7 +54,7 @@ final class DoctrineCollectorCoverageTest extends TestCase
 
     public function testSetMaxQueriesWithZeroDisablesTheCap(): void
     {
-        $collector = new DoctrineCollector();
+        $collector = new DoctrineCollector(new DoctrineCollectorState());
         $collector->setMaxQueries(0);
 
         for ($i = 0; $i < 5; $i++) {
@@ -65,7 +66,7 @@ final class DoctrineCollectorCoverageTest extends TestCase
 
     public function testSetMaxQueriesNormalisesNegativeToZero(): void
     {
-        $collector = new DoctrineCollector();
+        $collector = new DoctrineCollector(new DoctrineCollectorState());
         $collector->setMaxQueries(-3);
 
         for ($i = 0; $i < 3; $i++) {
@@ -77,7 +78,7 @@ final class DoctrineCollectorCoverageTest extends TestCase
 
     public function testIconReturnsPngDataUrl(): void
     {
-        $collector = new DoctrineCollector();
+        $collector = new DoctrineCollector(new DoctrineCollectorState());
         $icon      = $collector->icon();
 
         $this->assertStringStartsWith('data:image/png;base64,', $icon);
@@ -86,7 +87,7 @@ final class DoctrineCollectorCoverageTest extends TestCase
 
     public function testFormatTimelineDataViaSubclass(): void
     {
-        $collector = new class () extends DoctrineCollector {
+        $collector = new class (new DoctrineCollectorState()) extends DoctrineCollector {
             /**
              * @return array<int, array<string, mixed>>
              */
@@ -126,7 +127,7 @@ final class DoctrineCollectorCoverageTest extends TestCase
 
     public function testFormatTimelineDataWithMissingFields(): void
     {
-        $collector = new class () extends DoctrineCollector {
+        $collector = new class (new DoctrineCollectorState()) extends DoctrineCollector {
             /**
              * @return array<int, array<string, mixed>>
              */
@@ -148,7 +149,7 @@ final class DoctrineCollectorCoverageTest extends TestCase
 
     public function testGetDataContainsQueriesKey(): void
     {
-        $collector = new DoctrineCollector();
+        $collector = new DoctrineCollector(new DoctrineCollectorState());
         $collector->addQuery([
             'sql'      => 'SELECT id FROM test',
             'params'   => [],
@@ -164,7 +165,7 @@ final class DoctrineCollectorCoverageTest extends TestCase
 
     public function testGetDataWithSlcLoggerReturnsSlcSection(): void
     {
-        $collector = new DoctrineCollector();
+        $collector = new DoctrineCollector(new DoctrineCollectorState());
 
         // Add some queries so display() exercises the full path
         $collector->addQuery(['sql' => 'SELECT 1', 'params' => [], 'duration' => 0.01]);
@@ -176,7 +177,7 @@ final class DoctrineCollectorCoverageTest extends TestCase
 
     public function testGetDataWithInjectedSlcLoggerPopulatesSlcSection(): void
     {
-        $collector = new DoctrineCollector();
+        $collector = new DoctrineCollector(new DoctrineCollectorState());
         $logger    = new StatisticsCacheLogger();
         $collector->setSecondLevelCacheLogger($logger);
 
@@ -191,7 +192,7 @@ final class DoctrineCollectorCoverageTest extends TestCase
 
     public function testGetTitleDetailsWithInjectedSlcLogger(): void
     {
-        $collector = new DoctrineCollector();
+        $collector = new DoctrineCollector(new DoctrineCollectorState());
         $logger    = new StatisticsCacheLogger();
         $collector->setSecondLevelCacheLogger($logger);
 

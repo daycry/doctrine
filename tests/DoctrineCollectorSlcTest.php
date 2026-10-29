@@ -6,6 +6,7 @@ namespace Tests;
 
 use CodeIgniter\Test\CIUnitTestCase;
 use Daycry\Doctrine\CodeIgniter4\Debug\Toolbar\Collectors\DoctrineCollector;
+use Daycry\Doctrine\CodeIgniter4\Debug\Toolbar\Collectors\DoctrineCollectorState;
 use Doctrine\ORM\Cache\EntityCacheKey;
 use Doctrine\ORM\Cache\Logging\StatisticsCacheLogger;
 use stdClass;
@@ -40,7 +41,7 @@ final class DoctrineCollectorSlcTest extends CIUnitTestCase
 
     public function testTitleDetailsShowsSlcBadge(): void
     {
-        $collector = new DoctrineCollector();
+        $collector = new DoctrineCollector(new DoctrineCollectorState());
         $collector->setSecondLevelCacheLogger(self::makeLogger(5, 3, 7));
         $details = $collector->getTitleDetails();
         $this->assertStringContainsString('SLC:', $details);
@@ -50,7 +51,7 @@ final class DoctrineCollectorSlcTest extends CIUnitTestCase
 
     public function testDisplayContainsSlcTable(): void
     {
-        $collector = new DoctrineCollector();
+        $collector = new DoctrineCollector(new DoctrineCollectorState());
         $collector->setSecondLevelCacheLogger(self::makeLogger(5, 3, 7));
         // Add a dummy query to avoid early return
         $collector->addQuery([

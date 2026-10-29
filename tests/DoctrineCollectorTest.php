@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests;
 
 use Daycry\Doctrine\CodeIgniter4\Debug\Toolbar\Collectors\DoctrineCollector;
+use Daycry\Doctrine\CodeIgniter4\Debug\Toolbar\Collectors\DoctrineCollectorState;
 use Tests\Support\TestCase;
 
 /**
@@ -14,7 +15,7 @@ final class DoctrineCollectorTest extends TestCase
 {
     public function testAddQueryAndGetQueries()
     {
-        $collector = new DoctrineCollector();
+        $collector = new DoctrineCollector(new DoctrineCollectorState());
         $query     = [
             'sql'      => 'SELECT * FROM users WHERE id = ?',
             'params'   => [1],
@@ -30,7 +31,7 @@ final class DoctrineCollectorTest extends TestCase
 
     public function testDisplayReturnsHtml()
     {
-        $collector = new DoctrineCollector();
+        $collector = new DoctrineCollector(new DoctrineCollectorState());
         $collector->addQuery([
             'sql'      => 'SELECT * FROM users',
             'params'   => [],
@@ -43,7 +44,7 @@ final class DoctrineCollectorTest extends TestCase
 
     public function testIsEmpty()
     {
-        $collector = new DoctrineCollector();
+        $collector = new DoctrineCollector(new DoctrineCollectorState());
         $this->assertTrue($collector->isEmpty());
         $collector->addQuery([
             'sql'      => 'SELECT 1',
@@ -55,7 +56,7 @@ final class DoctrineCollectorTest extends TestCase
 
     public function testGetTitleAndDetails()
     {
-        $collector = new DoctrineCollector();
+        $collector = new DoctrineCollector(new DoctrineCollectorState());
         $this->assertSame('Doctrine', $collector->getTitle());
         $this->assertSame('', $collector->getTitleDetails());
         $collector->addQuery([
@@ -68,7 +69,7 @@ final class DoctrineCollectorTest extends TestCase
 
     public function testDebugToolbarDisplayHighlightsKeywords()
     {
-        $collector = new DoctrineCollector();
+        $collector = new DoctrineCollector(new DoctrineCollectorState());
         $sql       = 'SELECT * FROM users WHERE id = 1';
 
         // The highlighter is a protected method; verify via display() output.
@@ -84,7 +85,7 @@ final class DoctrineCollectorTest extends TestCase
 
     public function testGetBadgeValue()
     {
-        $collector = new DoctrineCollector();
+        $collector = new DoctrineCollector(new DoctrineCollectorState());
         $this->assertSame(0, $collector->getBadgeValue());
         $collector->addQuery([
             'sql'      => 'SELECT 1',
@@ -96,7 +97,7 @@ final class DoctrineCollectorTest extends TestCase
 
     public function testGetData()
     {
-        $collector = new DoctrineCollector();
+        $collector = new DoctrineCollector(new DoctrineCollectorState());
         $collector->addQuery([
             'sql'      => 'SELECT 1',
             'params'   => [],
@@ -109,7 +110,7 @@ final class DoctrineCollectorTest extends TestCase
 
     public function testDisplayWithNoQueries()
     {
-        $collector = new DoctrineCollector();
+        $collector = new DoctrineCollector(new DoctrineCollectorState());
         $html      = $collector->display();
         $this->assertStringContainsString('No Doctrine queries executed', $html);
     }

@@ -107,3 +107,21 @@ reviewers verified the corrections in attempt 2 with no remaining findings. Cove
 now includes both packages and a new regression verifies entity-path inheritance/export.
 Security and performance reviews reported no findings. No production benchmark,
 local coverage percentage or remote workflow result is claimed in this record.
+
+## Issue 21: missing Doctrine toolbar tab
+
+The installed 6.0.0 adapter reproduced the problem with PHP 8.5.12 and CI4 4.7.5:
+a real SQL query reached the middleware's collector, while the collector created
+by the framework toolbar contained no queries. CI4 hides empty collectors.
+
+The adapter now shares collector state through its service registry. Query limits
+and toolbar resets operate on the same buffer. SLC statistics come from an existing
+adapter manager, without initializing one during rendering or caching an early
+empty result. Unit collector fixtures explicitly inject isolated state.
+
+The initial five integration cases failed before the fix. Six integration cases
+now cover both construction orders, rendered data, shared limits, reset behavior,
+SLC-only requests and reading an empty toolbar before initializing Doctrine.
+The complete integration suite passes 205 tests and 539 assertions with the two
+existing SSL/custom-option skips. PHPStan, Psalm, Rector and strict MkDocs pass.
+This fix is distributed in adapter 6.0.1; the standalone core remains at 6.0.0.

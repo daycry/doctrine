@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## CodeIgniter adapter 6.0.1 - 2026-10-29
+
+### Fixed
+- Fix the CodeIgniter adapter's missing Doctrine toolbar tab (#21): share request
+  query data between DBAL middleware and the collector instantiated by CI4.
+- Resolve SLC statistics from an existing adapter manager and avoid stale toolbar
+  data without initializing a database connection just to render the toolbar.
+
 ## [6.0.0] - 2026-10-29
 
 ### Breaking changes

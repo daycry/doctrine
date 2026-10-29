@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Daycry\Doctrine\CodeIgniter4\Debug\Toolbar\Collectors;
 
 use CodeIgniter\Debug\Toolbar\Collectors\BaseCollector;
-use Config\Services;
+use Daycry\Doctrine\CodeIgniter4\Config\Services;
 use Doctrine\ORM\Cache\Logging\StatisticsCacheLogger;
 use Override;
 use Throwable;
@@ -24,52 +24,27 @@ class DoctrineCollector extends BaseCollector
     #[Override]
     protected $title = 'Doctrine';
 
-    /**
-     * Optional injected SLC logger for testing/override
-     */
-    protected ?StatisticsCacheLogger $slcLogger = null;
+    private readonly DoctrineCollectorState $state;
 
-    /**
-     * Cached resolved SLC logger (separate sentinel: false = not yet resolved).
-     */
-    private false|StatisticsCacheLogger|null $resolvedLogger = false;
-
-    /**
-     * Cached payload returned by getData() to avoid duplicate Service lookups
-     * during a single render (isEmpty() then display() call it).
-     *
-     * @var array<string, mixed>|null
-     */
-    private ?array $cachedData = null;
-
-    /**
-     * Maximum number of queries to keep in memory. Older entries are dropped
-     * (FIFO) once the cap is reached. Use 0 to disable the cap.
-     */
-    protected int $maxQueries = 1000;
-
-    /**
-     * Queries collected during the request.
-     *
-     * @var array<int, array<string, mixed>>
-     */
-    protected array $queries = [];
+    public function __construct(?DoctrineCollectorState $state = null)
+    {
+        $this->state = $state ?? Services::doctrineCollectorState();
+    }
 
     /**
      * @param array<string, mixed> $query
      */
     public function addQuery(array $query): void
     {
-        if ($this->maxQueries > 0 && count($this->queries) >= $this->maxQueries) {
-            array_shift($this->queries);
+        if ($this->state->maxQueries > 0 && count($this->state->queries) >= $this->state->maxQueries) {
+            array_shift($this->state->queries);
         }
-        $this->queries[]  = $query;
-        $this->cachedData = null;
+        $this->state->queries[] = $query;
     }
 
     public function setMaxQueries(int $maxQueries): void
     {
-        $this->maxQueries = max(0, $maxQueries);
+        $this->state->maxQueries = max(0, $maxQueries);
     }
 
     /**
@@ -77,9 +52,7 @@ class DoctrineCollector extends BaseCollector
      */
     public function reset(): void
     {
-        $this->queries        = [];
-        $this->cachedData     = null;
-        $this->resolvedLogger = false;
+        $this->state->queries = [];
     }
 
     /**
@@ -87,9 +60,7 @@ class DoctrineCollector extends BaseCollector
      */
     public function setSecondLevelCacheLogger(StatisticsCacheLogger $logger): void
     {
-        $this->slcLogger      = $logger;
-        $this->resolvedLogger = false;
-        $this->cachedData     = null;
+        $this->state->slcLogger = $logger;
     }
 
     /**
@@ -97,7 +68,7 @@ class DoctrineCollector extends BaseCollector
      */
     public function getQueries(): array
     {
-        return $this->queries;
+        return $this->state->queries;
     }
 
     public function getTitle(bool $safe = false): string
@@ -107,12 +78,12 @@ class DoctrineCollector extends BaseCollector
 
     public function getBadgeValue(): int
     {
-        return count($this->queries);
+        return count($this->state->queries);
     }
 
     public function getTitleDetails(): string
     {
-        $queryCount = count($this->queries);
+        $queryCount = count($this->state->queries);
         $details    = $queryCount > 0 ? "({$queryCount} quer" . ($queryCount > 1 ? 'ies' : 'y') . ')' : '';
 
         $logger = $this->resolveSlcLogger();
@@ -130,37 +101,22 @@ class DoctrineCollector extends BaseCollector
     }
 
     /**
-     * Resolve and memoize the Second-Level Cache logger.
-     * Returns null when SLC stats are not enabled or not yet wired up.
+     * Read existing manager statistics without creating a Doctrine service.
      */
     private function resolveSlcLogger(): ?StatisticsCacheLogger
     {
-        if ($this->resolvedLogger !== false) {
-            return $this->resolvedLogger;
-        }
-
         try {
-            if ($this->slcLogger !== null) {
-                return $this->resolvedLogger = $this->slcLogger;
-            }
-
-            if (class_exists('Config\\Services') && method_exists(Services::class, 'doctrine')) {
-                $doctrine = Services::doctrine();
-                if (method_exists($doctrine, 'getSecondLevelCacheLogger')) {
-                    return $this->resolvedLogger = $doctrine->getSecondLevelCacheLogger();
-                }
-            }
+            return $this->state->slcLogger ?? Services::peekDoctrine()?->getSecondLevelCacheLogger();
         } catch (Throwable) {
             // Toolbar must never break the app.
+            return null;
         }
-
-        return $this->resolvedLogger = null;
     }
 
     public function isEmpty(): bool
     {
         // If we collected queries, the panel must render.
-        if (! empty($this->queries)) {
+        if (! empty($this->state->queries)) {
             return false;
         }
         // No queries: still render the panel if SLC stats are enabled.
@@ -174,10 +130,6 @@ class DoctrineCollector extends BaseCollector
      */
     public function getData(): array
     {
-        if ($this->cachedData !== null) {
-            return $this->cachedData;
-        }
-
         $slc = [
             'enabled' => false,
             'hits'    => null,
@@ -193,7 +145,7 @@ class DoctrineCollector extends BaseCollector
             $slc['puts']    = $logger->getPutCount();
         }
 
-        return $this->cachedData = [
+        return [
             'queries' => $this->getQueries(),
             'slc'     => $slc,
         ];
@@ -259,7 +211,7 @@ class DoctrineCollector extends BaseCollector
     {
         $data = [];
 
-        foreach ($this->queries as $query) {
+        foreach ($this->state->queries as $query) {
             $data[] = [
                 'name'      => 'Doctrine Query',
                 'component' => 'Doctrine',

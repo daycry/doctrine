@@ -107,6 +107,7 @@ validation:
 # The docs folder README is an index for GitHub, not a site page.
 exclude_docs: |
   README.md
+  knowledge/candidates/
 
 extra_css:
   - stylesheets/extra.css
