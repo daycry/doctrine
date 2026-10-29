@@ -7,6 +7,7 @@ namespace Daycry\Doctrine\CodeIgniter4\Config;
 use CodeIgniter\Config\BaseService;
 use CodeIgniter\Exceptions\ConfigException;
 use Daycry\Doctrine\CodeIgniter4\Debug\Toolbar\Collectors\DoctrineCollector;
+use Daycry\Doctrine\CodeIgniter4\Debug\Toolbar\Collectors\DoctrineCollectorState;
 use Daycry\Doctrine\CodeIgniter4\Doctrine;
 
 class Services extends BaseService
@@ -94,5 +95,17 @@ class Services extends BaseService
         }
 
         return new DoctrineCollector();
+    }
+
+    public static function doctrineCollectorState(bool $getShared = true): DoctrineCollectorState
+    {
+        if ($getShared) {
+            /** @var DoctrineCollectorState $instance */
+            $instance = static::getSharedInstance('doctrineCollectorState');
+
+            return $instance;
+        }
+
+        return new DoctrineCollectorState();
     }
 }

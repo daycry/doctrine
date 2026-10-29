@@ -43,6 +43,12 @@ and a *Doctrine* tab will appear in the toolbar with:
 - per-query SQL, bound parameters and duration
 - (when SLC stats are on) an SLC summary table and a `SLC:n/m/p (r%)` badge
 
+CI4 constructs the displayed collector itself. That collector and Doctrine's
+middleware share request data through the adapter service registry, so queries
+remain visible regardless of which is created first. Reading the toolbar does
+not initialize a Doctrine manager. SLC statistics are read from the existing
+effective default manager.
+
 ## Memory Management
 
 The collector keeps every captured query in memory. For long-running CLI
@@ -65,7 +71,9 @@ $collector = \Config\Services::doctrineCollector();
 $collector->reset();
 ```
 
-`reset()` also invalidates the memoised SLC stats payload.
+`reset()` clears the shared query buffer for all collector instances. CI4's
+toolbar reset uses the same operation in worker mode. SLC statistics are read
+when rendered; reset their counters separately as described below.
 
 ## Resetting Stats per Request
 
