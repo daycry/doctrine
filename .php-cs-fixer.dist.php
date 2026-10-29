@@ -8,6 +8,7 @@ $finder = Finder::create()
     ->files()
     ->in([
         __DIR__ . '/src/',
+        __DIR__ . '/packages/codeigniter4/src/',
         __DIR__ . '/tests/',
     ])
     ->exclude('build')
@@ -16,7 +17,10 @@ $finder = Finder::create()
         __DIR__ . '/rector.php',
     ]);
 
-$overrides = [];
+$overrides = [
+    // Match Rector's PHP 8.5 syntax: new expressions can be called directly.
+    'new_expression_parentheses' => ['use_parentheses' => false],
+];
 
 $options = [
     'finder'    => $finder,

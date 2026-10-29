@@ -2,13 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Daycry\Doctrine\Tests;
+namespace Tests;
 
-use CodeIgniter\Exceptions\InvalidArgumentException;
 use CodeIgniter\Test\CIUnitTestCase;
 use Daycry\Doctrine\DataTables\Builder;
+use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\Query\Expr;
 use Doctrine\ORM\QueryBuilder as ORMQueryBuilder;
+use InvalidArgumentException;
 
 /**
  * Additional edge case tests for DataTables Builder
@@ -401,6 +402,7 @@ final class DataTablesBuilderEdgeCasesTest extends CIUnitTestCase
 
         $qb = $this->createMock(ORMQueryBuilder::class);
         $qb->method('expr')->willReturn(new Expr());
+        $qb->method('getParameters')->willReturn(new ArrayCollection());
 
         Builder::create()
             ->withQueryBuilder($qb)
@@ -423,6 +425,7 @@ final class DataTablesBuilderEdgeCasesTest extends CIUnitTestCase
 
         $qb = $this->createMock(ORMQueryBuilder::class);
         $qb->method('expr')->willReturn(new Expr());
+        $qb->method('getParameters')->willReturn(new ArrayCollection());
 
         Builder::create()
             ->withQueryBuilder($qb)
@@ -445,6 +448,7 @@ final class DataTablesBuilderEdgeCasesTest extends CIUnitTestCase
 
         $qb = $this->createMock(ORMQueryBuilder::class);
         $qb->method('expr')->willReturn(new Expr());
+        $qb->method('getParameters')->willReturn(new ArrayCollection());
 
         Builder::create()
             ->withQueryBuilder($qb)
@@ -464,6 +468,7 @@ final class DataTablesBuilderEdgeCasesTest extends CIUnitTestCase
 
         $qb = $this->createMock(ORMQueryBuilder::class);
         $qb->method('expr')->willReturn(new Expr());
+        $qb->method('getParameters')->willReturn(new ArrayCollection());
 
         Builder::create()
             ->withQueryBuilder($qb)

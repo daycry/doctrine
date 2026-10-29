@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Tests\Commands;
 
-use Daycry\Doctrine\Commands\DoctrineInfo;
-use Daycry\Doctrine\Commands\DoctrineSchemaUpdate;
-use Daycry\Doctrine\Commands\DoctrineValidate;
-use Daycry\Doctrine\Config\Services;
+use Daycry\Doctrine\CodeIgniter4\Commands\DoctrineInfo;
+use Daycry\Doctrine\CodeIgniter4\Commands\DoctrineSchemaUpdate;
+use Daycry\Doctrine\CodeIgniter4\Commands\DoctrineValidate;
+use Daycry\Doctrine\CodeIgniter4\Config\Services;
 use Doctrine\ORM\Tools\SchemaTool;
 use Tests\Support\TestCase;
 

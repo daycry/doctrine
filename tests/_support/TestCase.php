@@ -6,7 +6,7 @@ namespace Tests\Support;
 
 use CodeIgniter\Test\CIUnitTestCase;
 use Config\Database;
-use Daycry\Doctrine\Config\Doctrine as DoctrineConfig;
+use Daycry\Doctrine\CodeIgniter4\Config\Doctrine as DoctrineConfig;
 
 abstract class TestCase extends CIUnitTestCase
 {
@@ -21,7 +21,6 @@ abstract class TestCase extends CIUnitTestCase
 
         $this->config           = config('Doctrine');
         $this->config->entities = [SUPPORTPATH . 'Models/Entities'];
-        $this->config->proxies  = SUPPORTPATH . 'Models/Proxies';
     }
 
     private function _getDatabaseConfig(): Database

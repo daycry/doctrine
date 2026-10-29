@@ -1,0 +1,56 @@
+name: Standalone packages
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches: [master, feat/standalone-core]
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+jobs:
+  core:
+    name: Core without CodeIgniter
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        dependencies: [highest, lowest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: pdo_sqlite
+          tools: composer
+          coverage: none
+      - run: php scripts/prepare-isolation.php core
+      - name: Resolve current dependencies
+        if: matrix.dependencies == 'highest'
+        run: composer update --working-dir=build/isolation-core --no-interaction --prefer-dist
+      - name: Resolve minimum non-vulnerable dependencies
+        if: matrix.dependencies == 'lowest'
+        run: composer update --working-dir=build/isolation-core --prefer-lowest --prefer-stable --no-interaction --prefer-dist
+      - name: Test without the framework installed
+        env:
+          DOCTRINE_TEST_AUTOLOAD: build/isolation-core/vendor/autoload.php
+          DOCTRINE_REQUIRE_FRAMEWORK_FREE: '1'
+        run: php build/isolation-core/vendor/bin/phpunit -c phpunit.standalone.xml.dist --no-coverage
+      - name: Exercise the installed console binary
+        run: php build/isolation-core/vendor/bin/daycry-doctrine tests/Standalone/cli-bootstrap.php doctrine:doctor --json
+
+  adapter:
+    name: Installed CodeIgniter adapter
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: sqlite3
+          tools: composer
+          coverage: none
+      - run: php scripts/prepare-isolation.php adapter
+      - run: composer update --working-dir=build/isolation-adapter --no-interaction --prefer-dist
+      - run: php scripts/check-adapter-install.php

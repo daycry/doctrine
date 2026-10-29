@@ -4,12 +4,14 @@ namespace Tests\Support\Database\Migrations;
 
 use CodeIgniter\Database\Migration;
 use CodeIgniter\Database\RawSql;
+use Override;
 
 /**
  * @internal
  */
 final class CreateTableTest extends Migration
 {
+    #[Override]
     protected $DBGroup = 'tests';
 
     public function up()

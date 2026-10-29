@@ -7,9 +7,9 @@ namespace Tests;
 use CodeIgniter\HTTP\IncomingRequest;
 use CodeIgniter\HTTP\Response;
 use CodeIgniter\HTTP\ResponseInterface;
-use Daycry\Doctrine\Config\Services;
-use Daycry\Doctrine\Debug\Filters\DoctrineSlcReset;
-use Daycry\Doctrine\Doctrine;
+use Daycry\Doctrine\CodeIgniter4\Config\Services;
+use Daycry\Doctrine\CodeIgniter4\Debug\Filters\DoctrineSlcReset;
+use Daycry\Doctrine\CodeIgniter4\Doctrine;
 use Doctrine\ORM\Cache\EntityCacheKey;
 use stdClass;
 use Tests\Support\TestCase;
@@ -74,7 +74,7 @@ final class DoctrineSlcResetTest extends TestCase
         $this->assertSame(1, $logger->getPutCount());
 
         // Inject the doctrine service so the filter resets the same logger.
-        Services::injectMock('doctrine_default', $doctrine);
+        Services::injectMock('doctrine_' . bin2hex('tests'), $doctrine);
 
         $filter = new DoctrineSlcReset();
         $filter->before($this->createStub(IncomingRequest::class));

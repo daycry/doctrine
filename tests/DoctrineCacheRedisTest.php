@@ -4,14 +4,16 @@ declare(strict_types=1);
 
 namespace Tests;
 
-use Daycry\Doctrine\Doctrine;
+use Daycry\Doctrine\CodeIgniter4\Doctrine;
 use Doctrine\ORM\EntityManager;
+use PHPUnit\Framework\Attributes\RequiresPhpExtension;
 use Psr\Cache\CacheItemPoolInterface;
 use Tests\Support\TestCase;
 
 /**
  * @internal
  */
+#[RequiresPhpExtension('redis')]
 final class DoctrineCacheRedisTest extends TestCase
 {
     public function testDoctrineWithRedisCache()

@@ -14,7 +14,7 @@ use Doctrine\DBAL\Types\Type;
  */
 final class CustomStringType extends Type
 {
-    public const NAME = 'custom_string';
+    public const string NAME = 'custom_string';
 
     /**
      * @param array<string, mixed> $column

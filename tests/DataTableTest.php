@@ -6,9 +6,10 @@ namespace Tests;
 
 use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
-use Daycry\Doctrine\Config\Services;
+use Daycry\Doctrine\CodeIgniter4\Config\Services;
+use Daycry\Doctrine\CodeIgniter4\Doctrine;
 use Daycry\Doctrine\DataTables\Builder;
-use Daycry\Doctrine\Doctrine;
+use Override;
 use Tests\Support\Database\Seeds\TestSeeder;
 use Tests\Support\Models\Entities\TestAttribute;
 use Tests\Support\TestCase;
@@ -21,6 +22,7 @@ final class DataTableTest extends TestCase
     use DatabaseTestTrait;
     use FeatureTestTrait;
 
+    #[Override]
     protected $seed = TestSeeder::class;
 
     public function testDataTableDefault()
@@ -29,15 +31,14 @@ final class DataTableTest extends TestCase
 
         $doctrine = new Doctrine($this->config);
 
-        $datatables = (new Builder())
+        $datatables = new Builder()
             ->withColumnAliases(
                 [
                     'id'   => 't.id',
                     'name' => 't.name',
                 ],
             )
-            ->withIndexColumn('qlu.id')
-            ->setUseOutputWalkers(false)
+            ->withOutputWalkers(false)
             ->withCaseInsensitive(true)
             ->withColumnField('data')
             ->withQueryBuilder(
@@ -83,15 +84,14 @@ final class DataTableTest extends TestCase
 
         $doctrine = new Doctrine($this->config);
 
-        $datatables = (new Builder())
+        $datatables = new Builder()
             ->withColumnAliases(
                 [
                     'id'   => 't.id',
                     'name' => 't.name',
                 ],
             )
-            ->withIndexColumn('qlu.id')
-            ->setUseOutputWalkers(false)
+            ->withOutputWalkers(false)
             ->withCaseInsensitive(false)
             ->withColumnField('name')
             ->withQueryBuilder(
@@ -138,7 +138,7 @@ final class DataTableTest extends TestCase
         $doctrine  = new Doctrine($this->config);
         $collector = Services::doctrineCollector();
 
-        $builder = (new Builder())
+        $builder = new Builder()
             ->withColumnAliases(['id' => 't.id', 'name' => 't.name'])
             ->withRecordsTotal(999)
             ->withQueryBuilder(
@@ -168,7 +168,7 @@ final class DataTableTest extends TestCase
 
         $doctrine = new Doctrine($this->config);
 
-        $builder = (new Builder())
+        $builder = new Builder()
             ->withColumnAliases(['id' => 't.id', 'name' => 't.name'])
             ->withRecordsTotal(static fn (): int => 1234)
             ->withQueryBuilder(
@@ -194,7 +194,7 @@ final class DataTableTest extends TestCase
         $doctrine  = new Doctrine($this->config);
         $collector = Services::doctrineCollector();
 
-        $build = static fn (): Builder => (new Builder())
+        $build = static fn (): Builder => new Builder()
             ->withColumnAliases(['id' => 't.id', 'name' => 't.name'])
             ->withQueryBuilder(
                 $doctrine->em->createQueryBuilder()->select('t')->from(TestAttribute::class, 't'),
@@ -211,12 +211,12 @@ final class DataTableTest extends TestCase
 
         // Default fetchJoinCollection=true issues an id sub-query + WHERE-IN fetch.
         $collector->reset();
-        $build()->getData();
+        $build()->getPage()->getItems();
         $withJoin = count($collector->getQueries());
 
         // Opting out collapses the page fetch into a single query.
         $collector->reset();
-        $build()->withFetchJoinCollection(false)->getData();
+        $build()->withFetchJoinCollection(false)->getPage()->getItems();
         $withoutJoin = count($collector->getQueries());
 
         $this->assertLessThan($withJoin, $withoutJoin);
@@ -228,9 +228,9 @@ final class DataTableTest extends TestCase
 
         $doctrine = new Doctrine($this->config);
 
-        $datatables = (new Builder())
+        $datatables = new Builder()
             ->withColumnAliases(['id' => 't.id', 'name' => 't.name'])
-            ->setUseOutputWalkers(false)
+            ->withOutputWalkers(false)
             ->withQueryBuilder(
                 $doctrine->em->createQueryBuilder()
                     ->select('t.id, t.name')
@@ -258,7 +258,7 @@ final class DataTableTest extends TestCase
 
         $doctrine = new Doctrine($this->config);
 
-        $query = (new Builder())
+        $query = new Builder()
             ->withColumnAliases(['name' => 't.name'])
             ->withCaseInsensitive(true)
             ->withColumnField('name')
@@ -288,9 +288,9 @@ final class DataTableTest extends TestCase
 
         $doctrine = new Doctrine($this->config);
 
-        $datatables = (new Builder())
+        $datatables = new Builder()
             ->withColumnAliases(['id' => 't.id', 'name' => 't.name'])
-            ->setUseOutputWalkers(false)
+            ->withOutputWalkers(false)
             ->withMaxPageLength(1)
             ->withQueryBuilder(
                 $doctrine->em->createQueryBuilder()
@@ -308,7 +308,7 @@ final class DataTableTest extends TestCase
             ]);
 
         // Two rows are seeded; the cap must limit the unbounded "All" request to 1.
-        $this->assertCount(1, $datatables->getData());
+        $this->assertCount(1, $datatables->getPage()->getItems());
     }
 
     public function testDataTableSearchColumnWithPercent()
@@ -317,15 +317,14 @@ final class DataTableTest extends TestCase
 
         $doctrine = new Doctrine($this->config);
 
-        $datatables = (new Builder())
+        $datatables = new Builder()
             ->withColumnAliases(
                 [
                     'id'   => 't.id',
                     'name' => 't.name',
                 ],
             )
-            ->withIndexColumn('qlu.id')
-            ->setUseOutputWalkers(false)
+            ->withOutputWalkers(false)
             ->withCaseInsensitive(false)
             ->withColumnField('name')
             ->withQueryBuilder(
@@ -371,15 +370,14 @@ final class DataTableTest extends TestCase
 
         $doctrine = new Doctrine($this->config);
 
-        $datatables = (new Builder())
+        $datatables = new Builder()
             ->withColumnAliases(
                 [
                     'id'   => 't.id',
                     'name' => 't.name',
                 ],
             )
-            ->withIndexColumn('qlu.id')
-            ->setUseOutputWalkers(false)
+            ->withOutputWalkers(false)
             ->withCaseInsensitive(false)
             ->withColumnField('name')
             ->withQueryBuilder(
@@ -428,13 +426,12 @@ final class DataTableTest extends TestCase
         $doctrine = new Doctrine($this->config);
 
         // [LIKE] synonym
-        $datatablesLike = (new Builder())
+        $datatablesLike = new Builder()
             ->withColumnAliases([
                 'id'   => 't.id',
                 'name' => 't.name',
             ])
-            ->withIndexColumn('qlu.id')
-            ->setUseOutputWalkers(false)
+            ->withOutputWalkers(false)
             ->withCaseInsensitive(false)
             ->withColumnField('name')
             ->withQueryBuilder(
@@ -469,13 +466,12 @@ final class DataTableTest extends TestCase
         $respLike = $datatablesLike->getResponse();
 
         // [%%] synonym
-        $datatablesDoublePct = (new Builder())
+        $datatablesDoublePct = new Builder()
             ->withColumnAliases([
                 'id'   => 't.id',
                 'name' => 't.name',
             ])
-            ->withIndexColumn('qlu.id')
-            ->setUseOutputWalkers(false)
+            ->withOutputWalkers(false)
             ->withCaseInsensitive(false)
             ->withColumnField('name')
             ->withQueryBuilder(
@@ -522,13 +518,12 @@ final class DataTableTest extends TestCase
         $doctrine = new Doctrine($this->config);
 
         // Global search 'am' should apply only to valid fields; numeric 'data' should be ignored
-        $datatables = (new Builder())
+        $datatables = new Builder()
             ->withColumnAliases([
                 'id'   => 't.id',
                 'name' => 't.name',
             ])
-            ->withIndexColumn('qlu.id')
-            ->setUseOutputWalkers(false)
+            ->withOutputWalkers(false)
             ->withCaseInsensitive(true)
             ->withColumnField('data')
             ->withSearchableColumns(['t.name'])
@@ -577,13 +572,12 @@ final class DataTableTest extends TestCase
 
         // Dataset has names like 'name1', 'name2', 'name3'. We'll test lowercase/uppercase mixing.
         // OR operator with case-insensitive LIKE
-        $builderOr = (new Builder())
+        $builderOr = new Builder()
             ->withColumnAliases([
                 'id'   => 't.id',
                 'name' => 't.name',
             ])
-            ->withIndexColumn('qlu.id')
-            ->setUseOutputWalkers(false)
+            ->withOutputWalkers(false)
             ->withCaseInsensitive(true)
             ->withColumnField('name')
             ->withQueryBuilder(
@@ -621,13 +615,12 @@ final class DataTableTest extends TestCase
         $this->assertCount(2, $respOr['data']);
 
         // IN operator should be case-insensitive irrelevant (exact match on ids)
-        $builderIn = (new Builder())
+        $builderIn = new Builder()
             ->withColumnAliases([
                 'id'   => 't.id',
                 'name' => 't.name',
             ])
-            ->withIndexColumn('qlu.id')
-            ->setUseOutputWalkers(false)
+            ->withOutputWalkers(false)
             ->withCaseInsensitive(true)
             ->withColumnField('data')
             ->withQueryBuilder(
@@ -664,13 +657,12 @@ final class DataTableTest extends TestCase
         $this->assertCount(2, $respIn['data']);
 
         // BETWEEN (><) on ids
-        $builderBetween = (new Builder())
+        $builderBetween = new Builder()
             ->withColumnAliases([
                 'id'   => 't.id',
                 'name' => 't.name',
             ])
-            ->withIndexColumn('qlu.id')
-            ->setUseOutputWalkers(false)
+            ->withOutputWalkers(false)
             ->withCaseInsensitive(true)
             ->withColumnField('data')
             ->withQueryBuilder(
@@ -714,13 +706,12 @@ final class DataTableTest extends TestCase
         $doctrine = new Doctrine($this->config);
 
         // Combina búsqueda global '%am%' (sobre 'name') y filtro por columna 'id' con IN
-        $datatables = (new Builder())
+        $datatables = new Builder()
             ->withColumnAliases([
                 'id'   => 't.id',
                 'name' => 't.name',
             ])
-            ->withIndexColumn('qlu.id')
-            ->setUseOutputWalkers(false)
+            ->withOutputWalkers(false)
             ->withCaseInsensitive(true)
             ->withColumnField('data')
             ->withSearchableColumns(['t.name'])
@@ -766,15 +757,14 @@ final class DataTableTest extends TestCase
 
         $doctrine = new Doctrine($this->config);
 
-        $datatables = (new Builder())
+        $datatables = new Builder()
             ->withColumnAliases(
                 [
                     'id'   => 't.id',
                     'name' => 't.name',
                 ],
             )
-            ->withIndexColumn('qlu.id')
-            ->setUseOutputWalkers(false)
+            ->withOutputWalkers(false)
             ->withCaseInsensitive(false)
             ->withColumnField('name')
             ->withQueryBuilder(
@@ -820,15 +810,14 @@ final class DataTableTest extends TestCase
 
         $doctrine = new Doctrine($this->config);
 
-        $datatables = (new Builder())
+        $datatables = new Builder()
             ->withColumnAliases(
                 [
                     'id'   => 't.id',
                     'name' => 't.name',
                 ],
             )
-            ->withIndexColumn('qlu.id')
-            ->setUseOutputWalkers(false)
+            ->withOutputWalkers(false)
             ->withCaseInsensitive(false)
             ->withColumnField('name')
             ->withQueryBuilder(
@@ -874,15 +863,14 @@ final class DataTableTest extends TestCase
 
         $doctrine = new Doctrine($this->config);
 
-        $datatables = (new Builder())
+        $datatables = new Builder()
             ->withColumnAliases(
                 [
                     'id'   => 't.id',
                     'name' => 't.name',
                 ],
             )
-            ->withIndexColumn('qlu.id')
-            ->setUseOutputWalkers(false)
+            ->withOutputWalkers(false)
             ->withCaseInsensitive(false)
             ->withColumnField('name')
             ->withQueryBuilder(
@@ -928,15 +916,14 @@ final class DataTableTest extends TestCase
 
         $doctrine = new Doctrine($this->config);
 
-        $datatables = (new Builder())
+        $datatables = new Builder()
             ->withColumnAliases(
                 [
                     'id'   => 't.id',
                     'name' => 't.name',
                 ],
             )
-            ->withIndexColumn('qlu.id')
-            ->setUseOutputWalkers(false)
+            ->withOutputWalkers(false)
             ->withCaseInsensitive(false)
             ->withColumnField('name')
             ->withQueryBuilder(
@@ -982,15 +969,14 @@ final class DataTableTest extends TestCase
 
         $doctrine = new Doctrine($this->config);
 
-        $datatables = (new Builder())
+        $datatables = new Builder()
             ->withColumnAliases(
                 [
                     'id'   => 't.id',
                     'name' => 't.name',
                 ],
             )
-            ->withIndexColumn('qlu.id')
-            ->setUseOutputWalkers(false)
+            ->withOutputWalkers(false)
             ->withCaseInsensitive(false)
             ->withColumnField('name')
             ->withQueryBuilder(
@@ -1036,15 +1022,14 @@ final class DataTableTest extends TestCase
 
         $doctrine = new Doctrine($this->config);
 
-        $datatables = (new Builder())
+        $datatables = new Builder()
             ->withColumnAliases(
                 [
                     'id'   => 't.id',
                     'name' => 't.name',
                 ],
             )
-            ->withIndexColumn('qlu.id')
-            ->setUseOutputWalkers(false)
+            ->withOutputWalkers(false)
             ->withCaseInsensitive(false)
             ->withColumnField('name')
             ->withQueryBuilder(
@@ -1090,15 +1075,14 @@ final class DataTableTest extends TestCase
 
         $doctrine = new Doctrine($this->config);
 
-        $datatables = (new Builder())
+        $datatables = new Builder()
             ->withColumnAliases(
                 [
                     'id'   => 't.id',
                     'name' => 't.name',
                 ],
             )
-            ->withIndexColumn('qlu.id')
-            ->setUseOutputWalkers(false)
+            ->withOutputWalkers(false)
             ->withCaseInsensitive(false)
             ->withColumnField('name')
             ->withQueryBuilder(

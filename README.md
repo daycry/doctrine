@@ -1,8 +1,8 @@
 [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/donate?business=SYC5XDT23UZ5G&no_recurring=0&item_name=Thank+you%21&currency_code=EUR)
 
-# Doctrine
+# Daycry Doctrine
 
-Doctrine ORM 3 integration for CodeIgniter 4.
+Standalone Doctrine ORM toolkit for PHP 8.5, with an optional CodeIgniter 4 adapter.
 
 [![PHPUnit](https://github.com/daycry/doctrine/actions/workflows/phpunit.yml/badge.svg?branch=master)](https://github.com/daycry/doctrine/actions/workflows/phpunit.yml)
 [![PHPStan](https://github.com/daycry/doctrine/actions/workflows/phpstan.yml/badge.svg?branch=master)](https://github.com/daycry/doctrine/actions/workflows/phpstan.yml)
@@ -14,275 +14,164 @@ Doctrine ORM 3 integration for CodeIgniter 4.
 [![Monthly Downloads](https://img.shields.io/packagist/dm/daycry/doctrine)](https://packagist.org/packages/daycry/doctrine)
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/daycry/doctrine)](https://packagist.org/packages/daycry/doctrine)
 [![GitHub stars](https://img.shields.io/github/stars/daycry/doctrine)](https://packagist.org/packages/daycry/doctrine)
-[![GitHub license](https://img.shields.io/github/license/daycry/doctrine)](https://github.com/daycry/doctrine/blob/master/LICENSE)
+[![GitHub license](https://img.shields.io/github/license/daycry/doctrine)](https://github.com/daycry/doctrine/blob/master/LICENSE.md)
 [![Documentation](https://img.shields.io/badge/docs-daycry.github.io%2Fdoctrine-blue?logo=materialformkdocs&logoColor=white)](https://daycry.github.io/doctrine/)
 
 📖 **Documentation:** <https://daycry.github.io/doctrine/>
 
-## Features
+## Packages and release status
 
-- ORM integration via `\Daycry\Doctrine\Doctrine` and `\Config\Services::doctrine()`.
-- Server-side **DataTables Builder** with safe operator parsing, whitelisted columns, and `[><]` / `[IN]` / `[OR]` validation.
-- **CodeIgniter Debug Toolbar** collector with optional Second-Level Cache (SLC) statistics badge.
-- **Doctrine Second-Level Cache** wired to the framework cache backend (file, Redis, Memcached, array).
-- `getFromCacheOrQuery()` cache-aside helper backed by the configured PSR-6 result cache.
-- **Multi-database group support** — get a separate Doctrine instance per `Config\Database` group.
-- **Extensible** via config: custom DBAL **Types**, **SQL Filters** (soft-delete / multi-tenant), **event listeners/subscribers**, composable **DBAL middlewares** and a **default repository class**.
-- **Production query logging** (PSR-3) with an optional slow-query threshold — independent of the debug toolbar.
-- **Spark commands** (`doctrine:cache:clear`, `doctrine:validate`, `doctrine:info`, `doctrine:schema:update`) and a multi-group ORM CLI (`--em=<group>`).
+This documentation describes **version 6.0**, with breaking API and namespace
+changes. See the [migration guide](docs/migration-major.md) before upgrading.
+Published package badges can refer to an earlier release.
 
-## Requirements
+| Package | Role |
+|---|---|
+| `daycry/doctrine` | Standalone core: ORM configuration, DataTables, PSR-6 caching, PSR-3 logging, named managers and console tools |
+| `daycry/doctrine-codeigniter4` | Optional adapter: CI4 configuration/services, database groups, cache backends, helpers, toolbar and Spark |
 
-- PHP **≥ 8.2**
-- CodeIgniter **^4**
-- Doctrine ORM **^3**, DBAL **^4**
-- Symfony Cache **^7**
-
-See [`composer.json`](composer.json) for the complete dependency graph.
-
-## Documentation Index
-
-📖 **Full documentation site:** <https://daycry.github.io/doctrine/>
-
-- [Installation](docs/installation.md)
-- [Configuration](docs/configuration.md)
-- [Usage](docs/usage.md) — service, helper, multi-DB, `getFromCacheOrQuery`, advanced API
-- [CLI Commands](docs/cli_commands.md)
-- [DataTables Builder](docs/datatables.md)
-- [DataTables Search Modes](docs/search_modes.md) — canonical operator reference
-- [Debug Toolbar](docs/debug_toolbar.md) — query log + SLC stats + per-request reset filter
-- [Second-Level Cache (SLC)](docs/second_level_cache.md)
-- [SLC Statistics](docs/second_level_cache_stats.md)
-- [Changelog](CHANGELOG.md)
+The core has no CodeIgniter runtime dependency. Both packages require PHP **^8.5**;
+the core uses ORM **^3.7**, DBAL **^4.5**, Symfony Cache/Console **^8** and
+DoctrineExtensions **^1.5**. The adapter also requires CI4 **^4.7**.
 
 ## Installation
 
+Choose one package from Packagist:
+
 ```bash
-composer require daycry/doctrine
+# Standalone core
+composer require daycry/doctrine:^6.0
+
+# CodeIgniter application: installs the core and framework too
+composer require daycry/doctrine-codeigniter4:^6.0
 ```
 
-Then publish the configuration:
+Local path repositories are also available for development.
+
+## Standalone quick start
+
+```php
+require __DIR__ . '/vendor/autoload.php';
+
+use Daycry\Doctrine\Configuration;
+use Daycry\Doctrine\Doctrine;
+
+$config = new Configuration();
+$config->connection = ['driver' => 'pdo_sqlite', 'memory' => true];
+$doctrine = new Doctrine($config);
+
+echo $doctrine->getEm()->getConnection()->fetchOne('SELECT 1');
+```
+
+For mapped entities, assign existing directories to `$config->entities` before
+constructing Doctrine. Native lazy objects are always enabled; no proxy files are
+generated. See [standalone usage](docs/standalone.md) for persistent cache pools,
+logging, named managers and lifecycle handling.
+
+## CodeIgniter quick start
 
 ```bash
 php spark doctrine:publish
 ```
 
-This copies `Config/Doctrine.php` into your app namespace and `cli-config.php`
-into the project root for use with the Doctrine ORM CLI.
-
-## Quick Start
-
-### As a service
+The publisher writes `app/Config/Doctrine.php` and `cli-config.php`. The config
+extends `Daycry\Doctrine\CodeIgniter4\Config\Doctrine` and contains application
+overrides. Configure connections through `Config\Database` and caches through
+`Config\Cache`.
 
 ```php
-$doctrine = \Config\Services::doctrine();
-$user     = $doctrine->em->getRepository(\App\Models\Entity\User::class)->find(1);
+$doctrine = service('doctrine');
+$em = $doctrine->getEm();
+
+// An explicitly named database group:
+$reporting = \Daycry\Doctrine\CodeIgniter4\Config\Services::doctrine(true, 'reporting');
 ```
 
-### As a helper
-
-Add `doctrine_helper` to your `BaseController::$helpers`:
-
-```php
-protected $helpers = ['doctrine_helper'];
-```
-
-```php
-$doctrine  = doctrine_instance();             // default DB group
-$reporting = doctrine_instance('reporting');  // alternate DB group
-```
-
-### Constructing manually
-
-```php
-$doctrine = new \Daycry\Doctrine\Doctrine();
-$user     = $doctrine->em->getRepository(\App\Models\Entity\User::class)->find(1);
-```
-
-## Manual Result Caching
-
-`getFromCacheOrQuery()` is autoloaded as a global function (no `use` is needed
-beyond the function import). It looks up `$cacheKey` in the configured result
-cache pool and falls back to the closure on miss.
-
-```php
-use function Daycry\Doctrine\Helpers\getFromCacheOrQuery;
-
-$rows = getFromCacheOrQuery(
-    cacheKey: 'projects_list_v1',
-    ttl: 300,
-    queryFn: fn () => $doctrine->em
-        ->createQueryBuilder()
-        ->select('p')
-        ->from(\App\Models\Entity\Project::class, 'p')
-        ->getQuery()
-        ->getArrayResult(),
-);
-```
-
-When the result cache is disabled (`Config\Doctrine::$resultsCache = false`)
-the closure runs every time. PSR-6 reserved characters (`{}()/\@:`) in the key
-are normalised automatically, so any key string is accepted.
-
-See [docs/usage.md](docs/usage.md) for advanced API: `getEm()`, `reOpen()`,
-multi-database groups, `Services::resetDoctrine()`, and more.
-
-## Doctrine ORM CLI
-
-Use the generated `cli-config.php` from the project root:
-
-```bash
-php cli-config.php orm:validate-schema          # check mappings vs. database
-php cli-config.php orm:schema-tool:update --dump-sql   # preview schema changes
-php cli-config.php orm:schema-tool:update --force      # apply them
-php cli-config.php orm:generate-proxies app/Models/Proxies
-php cli-config.php orm:info                      # list mapped entities
-php cli-config.php orm:run-dql "SELECT u FROM App\Models\Entity\User u"
-```
-
-> Doctrine ORM 3 removed `orm:convert-mapping` and `orm:generate-entities`.
-> Reverse-engineering an existing schema into entities is no longer part of the
-> ORM toolchain; map your entities with PHP attributes (or XML) directly.
-
-The same commands are also available through Spark — see
-[docs/cli_commands.md](docs/cli_commands.md).
+See [CI4 usage](docs/usage.md) for shared services, helpers and group resets, and
+[debug toolbar](docs/debug_toolbar.md) for collector/filter registration.
 
 ## DataTables
 
+The Builder works in either package and accepts an ORM QueryBuilder and a request
+array. It does not require an HTTP framework:
+
 ```php
-$datatables = (new \Daycry\Doctrine\DataTables\Builder())
-    ->withColumnAliases([
-        'id'   => 'p.id',
-        'name' => 'p.name',
-    ])
+use Daycry\Doctrine\DataTables\Builder;
+
+$response = Builder::create()
+    ->withQueryBuilder($queryBuilder)
+    ->withColumnAliases(['id' => 'p.id', 'name' => 'p.name'])
     ->withSearchableColumns(['p.name'])
-    ->withCaseInsensitive(true)
-    ->withMaxFilterValues(500) // cap [IN] / [OR] value lists; default 500
-    ->withMaxPageLength(200)   // cap page size; clamps length=-1 ("All") — default 0 (no cap)
-    ->withQueryBuilder(
-        $this->doctrine->em->createQueryBuilder()
-            ->select('p.id, p.name')
-            ->from(\App\Models\Entity\Project::class, 'p'),
-    )
-    ->withRequestParams($this->request->getGet());
-
-return $this->response->setJSON($datatables->getResponse());
+    ->withRequestParams($requestParams)
+    ->getResponse();
 ```
 
-If pagination throws *"Not all identifier properties can be found in the
-ResultSetMapping"*, set `->setUseOutputWalkers(false)` on the Builder.
+The query must use the `p` alias in this example. The response contains `draw`,
+`recordsTotal`, `recordsFiltered` and `data`. The default page cap is **200**;
+`length=-1` is clamped to it, and the cap must remain positive.
+Use `getPage()` for a WindowPage with items and filtered total.
+See [Builder API](docs/datatables.md) and [search operators](docs/search_modes.md).
 
-### Search modes
+## Caching, logging and extension points
 
-The Builder supports bracket-prefixed operators per column:
+- Inject `CachePools` into the core for query/result/metadata/SLC storage; defaults
+  are independent process-local ArrayAdapters. The CI4 adapter creates pools from
+  its framework backend.
+- Use `Cache\CacheAside` directly in standalone code. The adapter also autoloads the
+  namespaced `Daycry\Doctrine\CodeIgniter4\Helpers\getFromCacheOrQuery` function.
+- Enable SLC, statistics, custom DBAL types, SQL filters, event listeners/subscribers,
+  DBAL middlewares and a default repository through [configuration](docs/configuration.md).
+- Query logging accepts a PSR-3 logger and a slow-query threshold. The core requires
+  an injected logger; the adapter resolves CI4's logger service.
 
-```
-[%]   (LIKE, default)   [=]   [!=]   [>]   [<]   [IN]   [OR]   [><]
-```
+See [SLC configuration](docs/second_level_cache.md) and
+[cache statistics](docs/second_level_cache_stats.md).
 
-Synonyms `[LIKE]` and `[%%]` map to `[%]`. Unknown prefixes silently fall
-back to `[%]`. The DataTables `regex: true` flag is **not supported** —
-sending it raises `InvalidArgumentException`.
+## Console
 
-See **[`docs/search_modes.md`](docs/search_modes.md)** for the full operator
-matrix, validation rules, case-insensitivity behaviour and examples.
+The standalone console loads an application bootstrap returning Doctrine or a
+ManagerRegistry. Spark commands use the CI4 adapter:
 
-## Debug Toolbar
+```bash
+php vendor/bin/daycry-doctrine doctrine-bootstrap.php orm:info
+php vendor/bin/daycry-doctrine doctrine-bootstrap.php doctrine:doctor --json
+php vendor/bin/daycry-doctrine doctrine-bootstrap.php doctrine:cache:warmup
 
-A `DoctrineCollector` automatically captures every DBAL query so you can
-inspect them in the CodeIgniter Debug Toolbar.
-
-1. Register the collector in `app/Config/Toolbar.php`:
-
-   ```php
-   public $collectors = [
-       // ...
-       \Daycry\Doctrine\Debug\Toolbar\Collectors\DoctrineCollector::class,
-   ];
-   ```
-
-2. Use Doctrine as usual — the middleware self-registers when you instantiate
-   the service.
-
-For long-running CLI workers you can cap the in-memory query log:
-
-```php
-\Config\Services::doctrineCollector()->setMaxQueries(500); // FIFO; 0 disables the cap
+php spark doctrine:doctor --group reporting --json
+php spark doctrine:cache:warmup --group reporting
 ```
 
-See [docs/debug_toolbar.md](docs/debug_toolbar.md) for the full collector API,
-the SLC stats badge, and the per-request reset filter.
-
-## Second-Level Cache (SLC)
-
-Doctrine's Second-Level Cache reuses the framework cache backend
-(file / Redis / Memcached / array) and its `ttl`. Enable in
-`app/Config/Doctrine.php`:
-
-```php
-public bool $secondLevelCache           = true;
-public bool $secondLevelCacheStatistics = true;  // optional: hits/misses/puts badge
-public ?int $secondLevelCacheTtl        = null;   // null = inherit Config\Cache::$ttl; 0 = no expiry
-```
-
-To reset SLC statistics at the start of every request (useful in development
-to read per-request hit ratios in the toolbar), register the filter:
-
-```php
-// app/Config/Filters.php
-public array $globals = [
-    'before' => [
-        \Daycry\Doctrine\Debug\Filters\DoctrineSlcReset::class,
-    ],
-];
-```
-
-The filter is a no-op unless `secondLevelCacheStatistics` is enabled.
-
-See [docs/second_level_cache.md](docs/second_level_cache.md) and
-[docs/second_level_cache_stats.md](docs/second_level_cache_stats.md) for full
-details.
-
-## Extending the EntityManager
-
-`Config\Doctrine` exposes additive, backward-compatible hooks (all default to
-off) for the common Doctrine extension points:
-
-```php
-// app/Config/Doctrine.php
-public array  $customTypes            = ['uuid' => \Ramsey\Uuid\Doctrine\UuidType::class];
-public array  $sqlFilters             = ['soft_delete' => \App\Doctrine\SoftDeleteFilter::class];
-public array  $enabledFilters         = ['soft_delete'];
-public array  $eventListeners         = ['onFlush' => [\App\Doctrine\AuditListener::class]];
-public array  $eventSubscribers       = [\App\Doctrine\TimestampSubscriber::class];
-public array  $dbalMiddlewares        = [\App\Doctrine\RetryMiddleware::class];
-public ?string $defaultRepositoryClass = \App\Repositories\BaseRepository::class;
-
-// Production query logging (PSR-3) — independent of the debug toolbar
-public bool   $queryLogging        = true;
-public float  $slowQueryThreshold  = 0.5;  // log queries slower than 500 ms
-public string $queryLogLevel       = 'warning';
-```
-
-All are re-applied across `Doctrine::reOpen()`. See
-[docs/configuration.md](docs/configuration.md#extension-points) for the full
-reference.
+Doctor and warmup do not change the schema. They report connection/mapping/cache
+failures through nonzero exit codes. The [console guide](docs/cli_commands.md)
+explains the bootstrap, named managers and native ORM commands.
 
 ## Development
 
-Available Composer scripts for contributors:
-
 ```bash
-composer test          # PHPUnit test suite
-composer phpstan       # PHPStan (level 6)
-composer psalm         # Psalm static analysis
-composer rector        # Rector dry-run
-composer analyze       # phpstan + psalm + rector
-composer cs            # PHP-CS-Fixer dry-run
-composer cs-fix        # PHP-CS-Fixer apply
+composer install
+composer test
+php vendor/bin/phpunit -c phpunit.standalone.xml.dist --no-coverage
+composer analyze
+composer cs
+python -m mkdocs build --strict --site-dir build/docs
 ```
+
+The integration suite needs its configured test database and optional cache
+services. The native core suite uses SQLite and a separate bootstrap.
+CI also installs isolated consumers to verify the core without CI4 installed and
+the adapter's framework discovery. See [validation records](docs/maintenance.md).
+
+## Documentation
+
+- [Installation](docs/installation.md)
+- [Standalone core](docs/standalone.md)
+- [Configuration](docs/configuration.md)
+- [CI4 services and helpers](docs/usage.md)
+- [DataTables](docs/datatables.md)
+- [Console commands](docs/cli_commands.md)
+- [6.x migration](docs/migration-major.md)
+- [Changelog](CHANGELOG.md)
 
 ## License
 
-[MIT](LICENSE.md). Issues and PRs welcome at
-<https://github.com/daycry/doctrine>.
+[MIT](LICENSE.md).

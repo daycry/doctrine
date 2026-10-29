@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests;
 
-use Daycry\Doctrine\Debug\Toolbar\Collectors\DoctrineCollector;
+use Daycry\Doctrine\CodeIgniter4\Debug\Toolbar\Collectors\DoctrineCollector;
 use Tests\Support\TestCase;
 
 /**
@@ -12,11 +12,6 @@ use Tests\Support\TestCase;
  */
 final class DoctrineCollectorTest extends TestCase
 {
-    protected function setUp(): void
-    {
-        parent::setUp();
-    }
-
     public function testAddQueryAndGetQueries()
     {
         $collector = new DoctrineCollector();

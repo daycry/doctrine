@@ -1,13 +1,16 @@
 {
     "name": "daycry/doctrine",
-    "description": "Doctrine for Codeigniter 4",
-    "keywords":
-    [
-        "doctrine", "ORM", "codeigniter", "codeigniter4", "mysql", "dataTables"
+    "description": "Standalone Doctrine ORM toolkit with an optional CodeIgniter 4 adapter",
+    "keywords": [
+        "doctrine",
+        "ORM",
+        "codeigniter",
+        "codeigniter4",
+        "mysql",
+        "dataTables"
     ],
     "homepage": "https://github.com/daycry/doctrine",
-    "authors":
-    [
+    "authors": [
         {
             "name": "daycry",
             "homepage": "https://github.com/daycry",
@@ -16,52 +19,54 @@
     ],
     "license": "MIT",
     "require": {
-        "php": ">=8.2",
-        "beberlei/doctrineextensions": "^1.0",
-        "doctrine/dbal": "^4",
-        "doctrine/orm": "^3",
+        "php": "^8.5",
+        "beberlei/doctrineextensions": "^1.5",
+        "doctrine/dbal": "^4.5",
+        "doctrine/orm": "^3.7",
         "scienta/doctrine-json-functions": "^6.5",
-        "symfony/cache": "^7"
+        "symfony/cache": "^8",
+        "symfony/console": "^8",
+        "psr/cache": "^3",
+        "psr/log": "^3",
+        "doctrine/event-manager": "^2"
     },
-    "require-dev":
-    {
-        "codeigniter4/framework": "^4",
-        "codeigniter/phpstan-codeigniter": "^1.4",
+    "require-dev": {
+        "codeigniter/phpstan-codeigniter": "^1.6",
         "codeigniter4/devkit": "^1",
-        "daycry/phpunit-extension-vcr": "^1.0",
         "ergebnis/composer-normalize": "^2.28",
-        "php-vcr/php-vcr": "^1",
+        "friendsofphp/php-cs-fixer": "^3.95",
         "phpstan/phpstan-strict-rules": "^2",
-        "phpunit/phpcov": "^10"
+        "phpunit/phpcov": "^10",
+        "rector/rector": "^2.8",
+        "roave/security-advisories": "dev-latest",
+        "vimeo/psalm": "^6.20",
+        "codeigniter4/framework": "^4.7"
     },
     "autoload": {
         "psr-4": {
             "Daycry\\Doctrine\\": "src/"
-        },
-        "files": [
-            "src/Helpers/getFromCacheOrQuery.php"
-        ]
+        }
     },
     "suggest": {
         "doctrine/migrations": "Versioned schema migrations integration for the Doctrine ORM CLI (php cli-config.php / spark doctrine:*)",
         "ext-memcached": "Required for the Memcached cache backend",
         "ext-redis": "Required for the Redis cache backend",
-        "jms/serializer-bundle": "Only if your entities use JMS Serializer annotations (e.g. when reverse-engineering mappings)"
+        "daycry/doctrine-codeigniter4": "CodeIgniter 4 services, configuration, Spark commands and toolbar integration"
     },
-    "autoload-dev":
-    {
-        "psr-4":
-        {
-            "Tests\\": "tests/",
-            "Tests\\Support\\": "tests/_support"
-        }
-    },
-    "scripts":
-    {
-        "post-update-cmd":
-        [
-            "@composer dump-autoload"
+    "autoload-dev": {
+        "exclude-from-classmap": [
+            "/tests/_support/Database/Migrations/"
         ],
+        "psr-4": {
+            "Tests\\": "tests/",
+            "Tests\\Support\\": "tests/_support",
+            "Daycry\\Doctrine\\CodeIgniter4\\": "packages/codeigniter4/src/"
+        },
+        "files": [
+            "packages/codeigniter4/src/Helpers/getFromCacheOrQuery.php"
+        ]
+    },
+    "scripts": {
         "test": "vendor/bin/phpunit",
         "cs-fix": "php-cs-fixer fix --ansi --verbose --diff",
         "cs": "php-cs-fixer fix --ansi --verbose --dry-run --diff",
@@ -75,12 +80,30 @@
             "@rector"
         ]
     },
-    "minimum-stability": "dev",
     "prefer-stable": true,
     "config": {
         "allow-plugins": {
             "phpstan/extension-installer": true,
             "ergebnis/composer-normalize": true
         }
+    },
+    "bin": [
+        "bin/daycry-doctrine"
+    ],
+    "archive": {
+        "exclude": [
+            "/packages/",
+            "/vendor/",
+            "/composer.lock",
+            "/.vscode/",
+            "/.idea/",
+            "/build/",
+            "/tests/",
+            "/scripts/",
+            "/.github/",
+            "/.claude/",
+            "/.codex/",
+            "/.agents/"
+        ]
     }
 }

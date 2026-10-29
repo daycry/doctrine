@@ -28,11 +28,12 @@ use Rector\Set\ValueObject\SetList;
 use Rector\ValueObject\PhpVersion;
 
 return static function (RectorConfig $rectorConfig): void {
-    $rectorConfig->sets([SetList::DEAD_CODE, LevelSetList::UP_TO_PHP_82, PHPUnitSetList::PHPUNIT_CODE_QUALITY, PHPUnitSetList::PHPUNIT_100]);
+    $rectorConfig->sets([SetList::DEAD_CODE, LevelSetList::UP_TO_PHP_85, PHPUnitSetList::PHPUNIT_CODE_QUALITY, PHPUnitSetList::COMPOSER_BASED]);
     $rectorConfig->parallel();
     // The paths to refactor (can also be supplied with CLI arguments)
     $rectorConfig->paths([
         __DIR__ . '/src/',
+        __DIR__ . '/packages/codeigniter4/src/',
         __DIR__ . '/tests/',
     ]);
 
@@ -51,14 +52,14 @@ return static function (RectorConfig $rectorConfig): void {
     }
 
     // Set the target version for refactoring
-    $rectorConfig->phpVersion(PhpVersion::PHP_82);
+    $rectorConfig->phpVersion(PhpVersion::PHP_85);
 
     // Auto-import fully qualified class names
     $rectorConfig->importNames();
 
     // Are there files or rules you need to skip?
     $rectorConfig->skip([
-        __DIR__ . '/src/Views',
+        __DIR__ . '/packages/codeigniter4/src/Views',
 
         StringifyStrNeedlesRector::class,
 

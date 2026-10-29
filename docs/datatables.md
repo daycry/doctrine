@@ -3,6 +3,11 @@
 `Daycry\Doctrine\DataTables\Builder` provides server-side pagination, ordering
 and filtering for DataTables, built on top of a Doctrine `QueryBuilder`.
 
+This API belongs to the standalone core and also works through the CI4 adapter.
+Supply a server-created ORM QueryBuilder and the request parameters as an array.
+Convert `getResponse()` to JSON using the application's HTTP layer; the Builder
+does not require a framework request or response object.
+
 For the canonical operator reference (modes, validation, exceptions) see
 [`search_modes.md`](search_modes.md). This document focuses on the Builder API
 and end-to-end examples.
@@ -26,20 +31,18 @@ and end-to-end examples.
 | Method | Description |
 |--------|-------------|
 | `Builder::create()` | Static factory; equivalent to `new Builder()`. |
-| `withQueryBuilder($qb)` | Set the base DQL `QueryBuilder` (ORM or DBAL). |
+| `withQueryBuilder($qb)` | Set the base DQL `QueryBuilder` (ORM only; DBAL builders are rejected). |
 | `withRequestParams(array $params)` | Set the DataTables request payload. |
 | `withColumnAliases(array $aliases)` | Map DataTables column identifiers to DQL paths. |
 | `withColumnField(string $field)` | DataTables column property used as field name (`'data'` or `'name'`). |
 | `withSearchableColumns(array $cols)` | Whitelist DQL fields for the global LIKE search. |
 | `withCaseInsensitive(bool $flag)` | Enable case-insensitive LIKE / equality via `lower()`. |
-| `withIndexColumn(string $col)` | Override the index column used in pagination. |
 | `withMaxFilterValues(int $max)` | Cap the values accepted by `[IN]` and `[OR]`. Throws `InvalidArgumentException` if `< 1`. Use `PHP_INT_MAX` to disable. **Default: 500**, intended as a DoS guard. |
-| `withMaxPageLength(int $max)` | Hard cap on the page size. Clamps DataTables' `length=-1` ("All") and oversized requests, which would otherwise hydrate the whole filtered table. **Default: 0** (no cap). Throws on a negative value. |
+| `withMaxPageLength(int $max)` | Hard cap on the page size. Clamps DataTables' `length=-1` ("All") and oversized requests, which would otherwise hydrate the whole filtered table. **Default: 200**. Must be positive; zero cannot disable the cap. |
 | `withFetchJoinCollection(bool $flag)` | Whether the data Paginator fetches to-many collections via an id sub-query. **Default: true.** Set `false` for scalar/single-entity SELECTs to collapse the page fetch into a single query. |
 | `withRecordsTotal(int\|Closure $total)` | Inject or cache the unfiltered total so `getRecordsTotal()` / `getResponse()` skip the COUNT query across draws. Invalidation is the caller's responsibility. |
-| `setUseOutputWalkers(bool $flag)` | Toggle Doctrine `Paginator` output walkers. Set `false` when pagination fails with scalar-select queries (eg. *"Not all identifier properties can be found in the ResultSetMapping"*). |
-| `getData()` | Execute and return the paginated, filtered, ordered result. |
-| `getRecordsFiltered()` | Count records matching the current filters (no pagination). |
+| `withOutputWalkers(bool $flag)` | Toggle Doctrine `OffsetPaginator` output walkers. Set `false` when pagination fails with scalar-select queries (eg. *"Not all identifier properties can be found in the ResultSetMapping"*). |
+| `getPage()` | Return an immutable Doctrine `WindowPage` containing items, total filtered count, and window metadata. |
 | `getRecordsTotal()` | Count records with no filter applied. |
 | `getResponse()` | Return the full DataTables response array (`draw`, `recordsTotal`, `recordsFiltered`, `data`). |
 
@@ -143,8 +146,7 @@ $builder->withRequestParams([
 
 - **Cap the page size.** `withMaxPageLength(200)` clamps DataTables' "All"
   sentinel (`length=-1`) and oversized `length` values so a single request
-  cannot hydrate the entire filtered table. Off by default (`0`) for backward
-  compatibility — set it on public/unauthenticated endpoints.
+  cannot hydrate the entire filtered table. The default cap is 200 and must stay positive.
 - **Skip the unneeded fetch-join query.** For the common scalar or
   single-entity SELECT (no to-many fetch join), `withFetchJoinCollection(false)`
   collapses the data fetch from two queries (id sub-query + `WHERE IN`) into one.
@@ -193,7 +195,7 @@ $builder = Builder::create()
     ])
     ->withSearchableColumns(['p.name', 'p.companyName', 'ps.name'])
     ->withCaseInsensitive(true)
-    ->setUseOutputWalkers(false);
+    ->withOutputWalkers(false);
 
 return $this->response->setJSON($builder->getResponse());
 ```
@@ -202,7 +204,7 @@ return $this->response->setJSON($builder->getResponse());
 
 - *"Not all identifier properties can be found in the ResultSetMapping"* —
   scalar-select queries don't expose entity identifiers. Call
-  `setUseOutputWalkers(false)` on the Builder.
+  `withOutputWalkers(false)` on the Builder.
 - *"Expected =, <, <=, <>, >, >=, !=, got 'LIKE'"* — caused by an invalid
   column identifier (eg. a numeric index `6`) leaking into the global
   search. Always provide `withColumnAliases([...])` and
@@ -215,3 +217,36 @@ return $this->response->setJSON($builder->getResponse());
 cover global and per-column searches, every supported operator, fallback to
 `[%]` for unknown prefixes, the `[><]` arity validation, the regex rejection,
 and the numeric-column dropout.
+
+## Compatibility and query parameters
+
+The Builder accepts Doctrine ORM queries. Passing a DBAL QueryBuilder raises a TypeError at the typed boundary. Existing base query parameters
+are preserved: generated search/filter parameters use a collision-free prefix.
+
+`withIndexColumn()`, `getData()`, `getRecordsFiltered()`, and `setUseOutputWalkers()`
+have been removed. Use `getPage()->getItems()`, `getPage()->getTotalCount()`, and
+`withOutputWalkers()` instead. Store one page when both its data and count are needed.
+
+When no filters are applied, `getResponse()` reuses the filtered count as the total.
+An explicitly supplied `withRecordsTotal()` remains independent of the filtered count.
+
+## Page results and query budget
+
+```php
+$page = $builder->getPage();
+$rows = $page->getItems();
+$filteredCount = $page->getTotalCount();
+$hasNextPage = $page->hasNextPage();
+```
+
+Use one page instance for its items and count. `getResponse()` builds that page once.
+With `withFetchJoinCollection(false)`, an unfiltered response needs one data SELECT
+and one count SELECT. A filtered response adds one independent unfiltered count.
+`Counter` performs that count with Doctrine's count walkers, without fetching an
+unfiltered page. Grouped queries with HAVING require output walkers.
+
+The default page size is 10 and the default maximum is 200. `length=-1` selects the
+configured maximum, not an unlimited export. Zero/other negative lengths and negative
+start offsets are rejected. Set a positive `withMaxPageLength()` for another bound.
+
+See [the migration guide](migration-major.md) for removed methods.

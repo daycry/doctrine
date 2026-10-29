@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Tests;
 
-use Daycry\Doctrine\Debug\Toolbar\Collectors\DoctrineCollector;
-use Daycry\Doctrine\Doctrine;
+use Daycry\Doctrine\CodeIgniter4\Debug\Toolbar\Collectors\DoctrineCollector;
+use Daycry\Doctrine\CodeIgniter4\Doctrine;
 use Doctrine\ORM\Tools\SchemaTool;
 use Tests\Support\Models\Entities\TestAttribute;
 use Tests\Support\TestCase;

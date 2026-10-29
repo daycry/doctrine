@@ -2,12 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Daycry\Doctrine\Tests;
+namespace Tests;
 
-use CodeIgniter\Exceptions\InvalidArgumentException;
 use CodeIgniter\Test\CIUnitTestCase;
 use Daycry\Doctrine\DataTables\Builder;
 use Doctrine\ORM\QueryBuilder;
+use InvalidArgumentException;
+use ReflectionMethod;
 
 /**
  * Comprehensive tests for DataTables Builder
@@ -222,8 +223,7 @@ final class DataTablesBuilderTest extends CIUnitTestCase
             ->withColumnAliases(['name' => 'u.name'])
             ->withCaseInsensitive(true)
             ->withColumnField('data')
-            ->withIndexColumn('id')
-            ->setUseOutputWalkers(false);
+            ->withOutputWalkers(false);
 
         $this->assertSame($this->builder, $result);
     }
@@ -239,7 +239,7 @@ final class DataTablesBuilderTest extends CIUnitTestCase
 
         $this->builder
             ->withRequestParams(['columns' => [['data' => 'name']]])
-            ->getData();
+            ->getPage()->getItems();
     }
 
     /**
@@ -255,7 +255,7 @@ final class DataTablesBuilderTest extends CIUnitTestCase
         $this->builder
             ->withQueryBuilder($queryBuilder)
             ->withRequestParams([])
-            ->getData();
+            ->getPage()->getItems();
     }
 
     /**
@@ -271,7 +271,7 @@ final class DataTablesBuilderTest extends CIUnitTestCase
         $this->builder
             ->withQueryBuilder($queryBuilder)
             ->withRequestParams(['columns' => []])
-            ->getData();
+            ->getPage()->getItems();
     }
 
     /**
@@ -279,46 +279,28 @@ final class DataTablesBuilderTest extends CIUnitTestCase
      */
     public function testFilterOperatorParsing(): void
     {
-        $builder = new class () extends Builder {
-            public function testParseOperator(string $value): string
-            {
-                // Simulate the operator parsing logic from getFilteredQuery
-                $operator = preg_match('~^\[(?<operator>[A-Z!=%<>•]+)\].*$~i', $value, $matches) ? strtoupper($matches['operator']) : '%•';
-
-                // Normalize operator
-                if (in_array($operator, ['LIKE', '%%'], true)) {
-                    $operator = '%';
-                }
-
-                $validOperators = ['!=', '<', '>', 'IN', 'OR', '><', '=', '%'];
-                if (! in_array($operator, $validOperators, true)) {
-                    $operator = '%';
-                }
-
-                return $operator;
-            }
-        };
+        $parse = static fn (string $value): string => new ReflectionMethod(Builder::class, 'parseFilterOperator')->invoke(Builder::create(), $value)[0];
 
         // Test valid operators
-        $this->assertSame('=', $builder->testParseOperator('[=]test'));
-        $this->assertSame('!=', $builder->testParseOperator('[!=]test'));
-        $this->assertSame('<', $builder->testParseOperator('[<]10'));
-        $this->assertSame('>', $builder->testParseOperator('[>]10'));
-        $this->assertSame('%', $builder->testParseOperator('[%]test'));
-        $this->assertSame('IN', $builder->testParseOperator('[IN]val1,val2'));
-        $this->assertSame('OR', $builder->testParseOperator('[OR]val1,val2'));
-        $this->assertSame('><', $builder->testParseOperator('[><]1,10'));
+        $this->assertSame('=', $parse('[=]test'));
+        $this->assertSame('!=', $parse('[!=]test'));
+        $this->assertSame('<', $parse('[<]10'));
+        $this->assertSame('>', $parse('[>]10'));
+        $this->assertSame('%', $parse('[%]test'));
+        $this->assertSame('IN', $parse('[IN]val1,val2'));
+        $this->assertSame('OR', $parse('[OR]val1,val2'));
+        $this->assertSame('><', $parse('[><]1,10'));
 
         // Test operator normalization
-        $this->assertSame('%', $builder->testParseOperator('[LIKE]test'));
-        $this->assertSame('%', $builder->testParseOperator('[%%]test'));
+        $this->assertSame('%', $parse('[LIKE]test'));
+        $this->assertSame('%', $parse('[%%]test'));
 
         // Test invalid operators default to %
-        $this->assertSame('%', $builder->testParseOperator('[INVALID]test'));
-        $this->assertSame('%', $builder->testParseOperator('[XYZ]test'));
+        $this->assertSame('%', $parse('[INVALID]test'));
+        $this->assertSame('%', $parse('[XYZ]test'));
 
         // Test no operator defaults to %
-        $this->assertSame('%', $builder->testParseOperator('test'));
+        $this->assertSame('%', $parse('test'));
     }
 
     /**

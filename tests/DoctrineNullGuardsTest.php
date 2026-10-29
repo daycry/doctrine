@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests;
 
-use Daycry\Doctrine\Doctrine;
+use Daycry\Doctrine\CodeIgniter4\Doctrine;
 use Doctrine\ORM\Cache\Logging\StatisticsCacheLogger;
 use ReflectionProperty;
 use RuntimeException;

@@ -30,14 +30,16 @@
 	<source>
 		<include>
 			<directory suffix=".php">./src</directory>
+			<directory suffix=".php">./packages/codeigniter4/src</directory>
 		</include>
 		<exclude>
-			<file>./src/cli-config.php</file>
+			<file>./packages/codeigniter4/src/cli-config.php</file>
 		</exclude>
 	</source>
 	<testsuites>
 		<testsuite name="Doctrine">
 			<directory>./tests</directory>
+            <exclude>./tests/Standalone</exclude>
 		</testsuite>
 	</testsuites>
 	<logging>

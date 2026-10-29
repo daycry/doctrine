@@ -1,0 +1,23 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+use Daycry\Doctrine\Console\ApplicationFactory;
+
+require $_composer_autoload_path ?? dirname(__DIR__) . '/vendor/autoload.php';
+
+$bootstrap = $argv[1] ?? null;
+if ($bootstrap === null || ! is_file($bootstrap)) {
+    fwrite(STDERR, "Usage: daycry-doctrine <bootstrap.php> [command] [options]\n");
+    exit(1);
+}
+array_splice($argv, 1, 1);
+
+try {
+    $registry = require $bootstrap;
+    exit(ApplicationFactory::create($registry)->run(new Symfony\Component\Console\Input\ArgvInput($argv)));
+} catch (Throwable $error) {
+    fwrite(STDERR, 'Doctrine CLI failed (' . $error::class . "). Check bootstrap and configuration.\n");
+    exit(1);
+}

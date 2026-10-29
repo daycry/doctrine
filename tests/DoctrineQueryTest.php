@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace Tests;
 
 use CodeIgniter\Test\DatabaseTestTrait;
-use Daycry\Doctrine\Doctrine;
+use Daycry\Doctrine\CodeIgniter4\Doctrine;
+use Override;
 use Tests\Support\Database\Seeds\TestSeeder;
 use Tests\Support\Models\Entities\TestAttribute;
 use Tests\Support\TestCase;
@@ -17,11 +18,20 @@ final class DoctrineQueryTest extends TestCase
 {
     use DatabaseTestTrait;
 
-    protected $migrate     = true;
+    #[Override]
+    protected $migrate = true;
+
+    #[Override]
     protected $migrateOnce = false;
-    protected $refresh     = true;
-    protected $seedOnce    = false;
-    protected $seed        = TestSeeder::class;
+
+    #[Override]
+    protected $refresh = true;
+
+    #[Override]
+    protected $seedOnce = false;
+
+    #[Override]
+    protected $seed = TestSeeder::class;
 
     protected function setUp(): void
     {
@@ -40,10 +50,5 @@ final class DoctrineQueryTest extends TestCase
 
         $this->assertSame(1, $data->getId());
         $this->assertSame('name1', $data->getName());
-    }
-
-    protected function tearDown(): void
-    {
-        parent::tearDown();
     }
 }

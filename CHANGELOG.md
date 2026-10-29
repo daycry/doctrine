@@ -7,7 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [6.0.0] - 2026-10-29
+
+### Breaking changes
+- Split the standalone core from the independently installable `daycry/doctrine-codeigniter4` adapter for version 6.0.
+- Move CI4 configuration, services, helpers, toolbar and Spark classes under `Daycry\Doctrine\CodeIgniter4`; use explicit DBAL/PSR configuration in the core.
+- Use SPL InvalidArgumentException for framework-independent validation.
+- Require PHP ^8.5, ORM ^3.7, DBAL ^4.5, Symfony Cache/Console ^8, and doctrineextensions ^1.5; the CI4 adapter also requires CodeIgniter ^4.7.
+- Use native lazy objects exclusively; remove generated-proxy configuration.
+- Replace Builder getData/getRecordsFiltered with getPage and its WindowPage accessors.
+- Rename setUseOutputWalkers to withOutputWalkers and remove withIndexColumn.
+- Accept only ORM QueryBuilder instances and enforce a positive page cap (default 200).
+- Remove unused VCR dependencies and the redundant post-update Composer script.
+
+### Fixed
+- Preserve base query parameters when DataTables adds global and column filters.
+- Reopen EntityManagers using their original constructor configuration.
+- Share and reset Doctrine services by the effective, case-sensitive database group.
+- Reject unsupported DBAL QueryBuilders with a clear exception.
+- Honor cache-aside ttl=0 independently of the framework TTL; isolate array pools.
+- Configure SLC READ_WRITE file locking and correctly inherit a zero framework TTL.
+- Avoid initializing Doctrine solely to reset SLC statistics.
+
+### Changed
+- Analyze optional Redis/Memcached backends through Psalm extension stubs even when local extensions are absent.
+- Use Rector's current Composer-based PHPUnit migration set and PHP 8.5 rules.
+- Reuse a single count for unfiltered DataTables responses.
+- Share DBAL query instrumentation between the toolbar and production logger.
+- Use filesystem storage for dynamic file-cache results/SLC, keeping PHP files for metadata/query caches.
+- Publish a minimal application configuration inheriting package defaults.
+
 ### Added
+- `doctrine:doctor [--group <group>] [--json]` checks database connectivity, mappings and cache pools without revealing exception secrets.
+- `doctrine:cache:warmup [--group <group>]` warms metadata without changing the schema; native lazy objects need no proxy files.
+- CI checks minimum non-vulnerable dependencies and collects coverage in one representative matrix job.
 - **Custom DBAL Types** — `Config\Doctrine::$customTypes` registers
   `Doctrine\DBAL\Types\Type` subclasses via `Type::addType()` (idempotent),
   applied on construction and `reOpen()`.
@@ -36,8 +69,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   scalar/single-entity SELECTs.
 - `Daycry\Doctrine\DataTables\Builder::withRecordsTotal(int|Closure)` — inject or
   cache the unfiltered total so the COUNT query is skipped across draws.
-- `Daycry\Doctrine\Helpers\getFromCacheOrQuery()` cache-aside helper, autoloaded
-  as a global function via `composer.json` `autoload.files`. Backed by the
+- `Daycry\Doctrine\CodeIgniter4\Helpers\getFromCacheOrQuery()` cache-aside helper, autoloaded
+  as a namespaced function via the adapter `composer.json` `autoload.files`. Backed by the
   configured Doctrine `resultsCache` PSR-6 pool. Accepts an optional `$dbGroup`
   for multi-database setups.
 - `Daycry\Doctrine\Doctrine::getEm()` returns the underlying `EntityManager`
@@ -45,9 +78,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Daycry\Doctrine\DataTables\Builder::withMaxFilterValues(int)` to cap
   `[IN]` and `[OR]` value lists. Default `500`; throws on `< 1`. Use
   `PHP_INT_MAX` to disable.
-- `Daycry\Doctrine\Debug\Toolbar\Collectors\DoctrineCollector::setMaxQueries(int)`
+- `Daycry\Doctrine\CodeIgniter4\Debug\Toolbar\Collectors\DoctrineCollector::setMaxQueries(int)`
   with FIFO discard. Default `1000`; `0` disables the cap.
-- `Daycry\Doctrine\Libraries\InitializesNativeClient` trait shared between
+- `Daycry\Doctrine\CodeIgniter4\Libraries\InitializesNativeClient` trait shared between
   the `Memcached` and `Redis` cache wrappers.
 - `tests/ServicesTest.php` — covers `Services::doctrine()` shared/unshared and
   `Services::resetDoctrine()`.
@@ -68,7 +101,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The Debug Toolbar query middleware/collector is only wired when query
   instrumentation is enabled (`CI_DEBUG`), removing per-statement overhead in
   production. Overridable via the protected `shouldInstrumentQueries()` seam.
-- `composer.json` — pin `doctrine/dbal ^4` explicitly (the code uses DBAL-4-only
+- `composer.json` — require `doctrine/dbal ^4.5` explicitly (the code uses DBAL-4-only
   APIs), remove the unused `jms/serializer-bundle`, and add `suggest` entries for
   `ext-redis`, `ext-memcached` and `doctrine/migrations`.
 - `cli-config.php` requires `vendor/autoload.php` via `__DIR__` so it is
@@ -87,22 +120,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   matching search value is non-empty**. The flag is tolerated alongside an
   empty value so existing payloads that include `regex` for every column
   keep working. Use bracket-prefix operators for any actual filtering.
-- `Daycry\Doctrine\Debug\Filters\DoctrineSlcReset::before()` now actually
+- `Daycry\Doctrine\CodeIgniter4\Debug\Filters\DoctrineSlcReset::before()` now actually
   resets SLC statistics by calling
-  `Services::doctrine()->resetSecondLevelCacheStatistics()`. Previously it
+  `Services::peekDoctrine()?->resetSecondLevelCacheStatistics()`. Previously it
   was a no-op despite being documented as functional.
-- `Daycry\Doctrine\Debug\Toolbar\Collectors\DoctrineCollector` memoises both
+- `Daycry\Doctrine\CodeIgniter4\Debug\Toolbar\Collectors\DoctrineCollector` memoises both
   the SLC logger lookup and the `getData()` payload, removing duplicate
   service look-ups during a single toolbar render.
-- `Daycry\Doctrine\Commands\DoctrinePublish` now exits with status `1` on
+- `Daycry\Doctrine\CodeIgniter4\Commands\DoctrinePublish` now exits with status `1` on
   error paths (read failure, missing autoload, prompted cancellation).
-- `Daycry\Doctrine\Libraries\Memcached::getInstance()` and
-  `Daycry\Doctrine\Libraries\Redis::getInstance()` now return precise types
+- `Daycry\Doctrine\CodeIgniter4\Libraries\Memcached::getInstance()` and
+  `Daycry\Doctrine\CodeIgniter4\Libraries\Redis::getInstance()` now return precise types
   (`?\Memcached`, `?\Redis`) instead of `mixed`.
-- `rector.php` now targets PHP 8.2 (was 7.4); applies `match` expressions,
-  constructor promotion and other 8.x refactors via `LevelSetList::UP_TO_PHP_82`.
+- `rector.php` targets PHP 8.5 via `LevelSetList::UP_TO_PHP_85`.
 - `phpunit.xml.dist` no longer excludes `src/Config/`, `src/Commands/`,
-  `src/Cache/` from coverage; only `src/cli-config.php` remains excluded.
+  `src/Cache/` from coverage; only the adapter CLI bootstrap remains excluded.
 - `.php-cs-fixer.dist.php` now also formats `tests/`.
 - `tests/_support/Database/Seeds/TestSeeder.php` is idempotent
   (`truncate()` → `insertBatch()`).
@@ -110,9 +142,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - Documented operator `[*%]` (it was never implemented in the code; with the
   current regex it silently fell back to `[%]`).
-- PHP 8.5 from the `phpunit.yml` matrix until the language reaches GA.
 - `Daycry\Doctrine\Doctrine::convertDbConfigPdo()` — no callers, dead code.
-- `Daycry\Doctrine\Debug\Toolbar\Collectors\DoctrineCollector::debugToolbarDisplayPublic()`
+- `Daycry\Doctrine\CodeIgniter4\Debug\Toolbar\Collectors\DoctrineCollector::debugToolbarDisplayPublic()`
   — test-only escape hatch; tests now exercise the highlighter via
   `display()`.
 - Broken doc links to `docs/DATATABLES_FIX.md` and `docs/TEST_COVERAGE.md`.
@@ -143,5 +174,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New "Multi-Database Groups" section in [`docs/usage.md`](docs/usage.md).
 - New "Memory Management" and "Resetting Stats per Request" sections in
   [`docs/debug_toolbar.md`](docs/debug_toolbar.md).
-- `customTypeMappings`, `proxyFactory` and `secondLevelCacheTtl` documented
+- `customTypeMappings`, native lazy objects and `secondLevelCacheTtl` documented
   in detail in [`docs/configuration.md`](docs/configuration.md).

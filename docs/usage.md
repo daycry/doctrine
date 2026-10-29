@@ -1,173 +1,165 @@
-# Usage
+# CodeIgniter 4 usage
 
-## Key Concepts
+This page requires `daycry/doctrine-codeigniter4`. For PHP without CI4, use
+the [standalone guide](standalone.md) and [shared configuration reference](configuration.md).
 
-- **Service:** `\Config\Services::doctrine($getShared = true, ?string $dbGroup = null)` returns a shared `Daycry\Doctrine\Doctrine` keyed by the (lower-cased) DB group name.
-- **Helper:** `doctrine_instance(?string $dbGroup = null)` is a convenience wrapper around the service for use with the `doctrine_helper`.
-- **EntityManager access:** `$doctrine->em` (direct property) or `$doctrine->getEm()` (throws if not initialised).
-- **Multi-DB:** every `Config\Database` group resolves to its own cached Doctrine instance — see [Multi-Database Groups](#multi-database-groups).
-
-## Loading the Library
+## Resolve the adapter
 
 ```php
-$doctrine = new \Daycry\Doctrine\Doctrine();
-$user     = $doctrine->em->getRepository(\App\Models\Entity\User::class)->find(1);
+$doctrine = service('doctrine');
+$em = $doctrine->getEm();
 ```
 
-## As a Service
+The explicit service class is useful for named groups and resets:
 
 ```php
-$doctrine = \Config\Services::doctrine();
-$user     = $doctrine->em->getRepository(\App\Models\Entity\User::class)->find(1);
+use Daycry\Doctrine\CodeIgniter4\Config\Services;
+
+$doctrine = Services::doctrine();
+$reporting = Services::doctrine(true, 'reporting');
 ```
 
-## As a Helper
+Both forms return `Daycry\Doctrine\CodeIgniter4\Doctrine`, which extends the core
+wrapper. To construct an unshared adapter directly:
 
-In your `BaseController` `$helpers`:
+```php
+$doctrine = new \Daycry\Doctrine\CodeIgniter4\Doctrine();
+```
+
+It still obtains ORM/cache/database configuration from CI4. The core constructor
+instead requires an explicit `Daycry\Doctrine\Configuration`.
+
+## Framework helper
+
+Add the helper to the controller's existing helpers list:
 
 ```php
 protected $helpers = ['doctrine_helper'];
 ```
 
-Then in any method:
+Then:
 
 ```php
-$doctrine = doctrine_instance();              // default DB group
-$reporting = doctrine_instance('reporting');  // alternate DB group
-```
-
-## Accessing the EntityManager
-
-The Doctrine wrapper exposes the underlying `EntityManagerInterface` two ways:
-
-```php
-$em = $doctrine->em;       // public property — nullable until the constructor finishes
-$em = $doctrine->getEm();  // throws RuntimeException if the EM is not initialised
-```
-
-Prefer `getEm()` in code paths where a `null` EntityManager would be a bug
-(eg. controllers / jobs); use the property for lightweight access in places
-where the constructor has clearly already run.
-
-## Reopening the Connection
-
-Long-running CLI workers and queue consumers occasionally end up with a
-closed `EntityManager` after a swallowed exception. Use:
-
-```php
-$doctrine->reOpen();
-```
-
-`reOpen()` rebuilds the `EntityManager` from the existing DBAL connection and
-re-applies every entry in `customTypeMappings`. It throws if `getEm()` is
-`null`.
-
-## Multi-Database Groups
-
-`Config\Database` may declare several database groups (`default`, `reporting`,
-`legacy`, …). Each group resolves to its own cached Doctrine instance:
-
-```php
-$default   = \Config\Services::doctrine();                 // 'default'
-$reporting = \Config\Services::doctrine(true, 'reporting');
-
-// Helper form:
+$doctrine = doctrine_instance();
 $reporting = doctrine_instance('reporting');
 ```
 
-Group names are case-insensitive and stored in the singleton cache as
-`doctrine_<lowercase_group>`. Pass `false` for `$getShared` to force a fresh
-instance:
+`doctrine_instance()` is a global CI4 helper. It is separate from the namespaced,
+Composer-autoloaded cache-aside function.
+
+## Access mapped entities
+
+Configure existing mapping directories in `app/Config/Doctrine.php` first.
+Use your application's mapped entity class:
 
 ```php
-$fresh = \Config\Services::doctrine(false, 'reporting'); // new every time
+$em = $doctrine->getEm();
+$repository = $em->getRepository(\App\Models\Entity\Product::class);
+$product = $repository->find(1);
 ```
 
-To drop a cached instance (eg. between tests):
+`getEm()` returns the EntityManager and raises RuntimeException if the wrapper
+does not currently contain one. The public `em` property is also available.
+
+## Multi-database groups
+
+Declare connection groups in `Config\Database`:
 
 ```php
-\Config\Services::resetDoctrine();             // drops 'doctrine_default'
-\Config\Services::resetDoctrine('reporting');  // drops 'doctrine_reporting'
+use Daycry\Doctrine\CodeIgniter4\Config\Services;
+
+$default = Services::doctrine();
+$reporting = Services::doctrine(true, 'reporting');
+$freshReporting = Services::doctrine(false, 'reporting');
 ```
 
-## Manual Result Caching
+Names are case-sensitive and must identify a configured group. Implicit calls use
+`tests` in CI4's testing environment, otherwise `Config\Database::$defaultGroup`.
+Implicit and explicit requests for the same effective group share one instance.
+Passing `false` creates a fresh instance.
 
-The library autoloads a global cache-aside helper backed by Doctrine's
-`resultsCache` PSR-6 pool:
+The adapter uses the same ORM options for each group and constructs separate
+cache pools with group-specific namespaces. Unknown groups raise ConfigException.
+
+To remove a shared service entry:
 
 ```php
-use function Daycry\Doctrine\Helpers\getFromCacheOrQuery;
+Services::resetDoctrine();
+Services::resetDoctrine('reporting');
+```
 
-$rows = getFromCacheOrQuery(
-    cacheKey: 'reports_daily',
-    ttl: 600,
-    queryFn: fn () => $em->createQuery(/* DQL */)->getArrayResult(),
+The next request creates a new adapter. Do not confuse this with reopening a
+manager or with the standalone registry's `reset()`, which explicitly closes its
+managed EntityManager and connection.
+
+## Manual result caching
+
+The adapter autoloads this namespaced helper through Composer:
+
+```php
+use Daycry\Doctrine\CodeIgniter4\Config\Services;
+use function Daycry\Doctrine\CodeIgniter4\Helpers\getFromCacheOrQuery;
+
+$reporting = Services::doctrine(true, 'reporting');
+$repository = $reporting->getEm()->getRepository(\App\Models\Entity\Product::class);
+$total = getFromCacheOrQuery(
+    cacheKey: 'products:total:v1',
+    ttl: 300,
+    queryFn: fn () => $repository->count([]),
+    dbGroup: 'reporting',
 );
 ```
 
-Signature:
+Use the same database group for the query and cache lookup. The group argument
+selects the pool; it does not change the EntityManager captured by the callback.
+
+| Condition | Behaviour |
+|---|---|
+| Cache hit | Return the stored value |
+| Cache miss | Execute the callback, save and return its value |
+| Positive TTL | Explicit expiry in seconds |
+| TTL zero | Uses the adapter result pool's zero default lifetime |
+| Negative TTL | InvalidArgumentException |
+| `resultsCache = false` | Execute the callback without caching |
+
+The helper normalizes PSR-6 reserved key characters and appends a short hash when
+normalization is needed. Invalidate or version keys according to application data
+changes. In standalone code, use `Daycry\Doctrine\Cache\CacheAside` with an explicit
+pool; see [standalone caching](standalone.md#caches-and-logging).
+
+## Reopening the connection
+
+For recovery after a closed EntityManager or stale server connection:
 
 ```php
-function getFromCacheOrQuery(
-    string $cacheKey,
-    int $ttl,
-    callable $queryFn,
-    ?string $dbGroup = null,
-): mixed
+$doctrine->reOpen();
+$em = $doctrine->getEm();
 ```
 
-- Looks up `$cacheKey` in `Config\Doctrine` `resultsCache` pool (`Config\Cache`
-  backend by default).
-- Cache miss → runs the closure, stores the value with `$ttl` seconds expiry
-  (`0` = no expiration), returns it.
-- Cache disabled (`Config\Doctrine::$resultsCache = false`) → always runs the
-  closure, returns its value, stores nothing.
-- `$dbGroup` selects the underlying Doctrine instance. Useful for
-  multi-tenant or read-replica setups:
+The wrapper closes the DBAL connection and constructs a replacement EntityManager
+over that connection with the existing ORM configuration. It reapplies constructor
+event listeners/subscribers, types, platform mappings and enabled filters.
+The configured cache pools and DBAL middlewares remain in place.
 
-  ```php
-  $rows = getFromCacheOrQuery(
-      cacheKey: 'reports_daily',
-      ttl: 600,
-      queryFn: fn () => $em->createQuery(/* DQL */)->getArrayResult(),
-      dbGroup: 'reporting',
-  );
-  ```
+Reapply runtime filter parameters, and reload entities through the replacement.
+Objects loaded through the previous manager are not managed by the replacement.
+Closing an in-memory SQLite connection discards its database.
 
-PSR-6 reserved characters (`{}()/\@:`) in the key are normalised automatically
-(sanitised and disambiguated with a short hash of the original), so any key
-string is accepted.
+## SLC statistics and debugging
 
-## Second-Level Cache Statistics
-
-When `Config\Doctrine::$secondLevelCacheStatistics = true`, the wrapper
-exposes Doctrine's `StatisticsCacheLogger`:
+Enable `secondLevelCache` and `secondLevelCacheStatistics` in ORM configuration:
 
 ```php
-$logger = \Config\Services::doctrine()->getSecondLevelCacheLogger();
-// ?Doctrine\ORM\Cache\Logging\StatisticsCacheLogger
-
+$logger = $doctrine->getSecondLevelCacheLogger();
 if ($logger !== null) {
-    $hits   = $logger->getHitCount();
+    $hits = $logger->getHitCount();
     $misses = $logger->getMissCount();
-    $puts   = $logger->getPutCount();
+    $puts = $logger->getPutCount();
 }
+$doctrine->resetSecondLevelCacheStatistics();
 ```
 
-Reset the counters at the start of a request (eg. to read per-request hit
-ratios in the toolbar):
-
-```php
-\Config\Services::doctrine()->resetSecondLevelCacheStatistics();
-```
-
-The package also ships a filter that performs this reset automatically — see
-[`debug_toolbar.md`](debug_toolbar.md#resetting-stats-per-request) and
-[`second_level_cache_stats.md`](second_level_cache_stats.md).
-
-## Notes
-
-- If a cache adapter is misconfigured (missing extension, unreachable Redis
-  server, etc.) the Doctrine service raises `CacheException` at construction
-  with a descriptive message and the underlying error chained as `previous`.
-- See `src/Doctrine.php` for runtime checks, cache wiring, and SLC setup.
+The [SLC guide](second_level_cache.md) covers mappings and invalidation.
+The [toolbar guide](debug_toolbar.md) explains debug query capture and the
+optional per-request statistics filter. Query logging through CI4's PSR-3 logger
+is separately configurable and does not require the toolbar.
