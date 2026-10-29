@@ -20,6 +20,7 @@ use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\AbstractLogger;
 use ReflectionClass;
+use RuntimeException;
 use Stringable;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
 use Symfony\Component\Console\Tester\ApplicationTester;
@@ -180,6 +181,61 @@ final class CoreTest extends TestCase
         $registry = new ManagerRegistry(['default' => fn (): Doctrine => new Doctrine($this->options())]);
         $this->expectException(InvalidArgumentException::class);
         $registry->get('missing');
+    }
+
+    public function testRegistryRequiresAFactoryForItsDefaultManager(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('The default manager must have a factory.');
+        new ManagerRegistry([], 'primary');
+    }
+
+    public function testConsoleProviderResolvesTheRequestedManager(): void
+    {
+        $primary   = new Doctrine($this->options());
+        $reporting = new Doctrine($this->options());
+        $registry  = new ManagerRegistry([
+            'primary' => static fn (): Doctrine => $primary,
+            'reports' => static fn (): Doctrine => $reporting,
+        ], 'primary');
+
+        $this->assertSame($primary->getEm(), $registry->getDefaultManager());
+        $this->assertSame($reporting->getEm(), $registry->getManager('reports'));
+    }
+
+    public function testCacheAsideRejectsNegativeTtlBeforeExecutingTheQuery(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        new CacheAside(new ArrayAdapter())->get('key', -1, static function (): never {
+            self::fail('A rejected cache request must not execute its query.');
+        });
+    }
+
+    public function testTextDoctorReportsAnUnhealthyClosedManager(): void
+    {
+        $doctrine = new Doctrine($this->options());
+        $doctrine->getEm()->close();
+        $application = ApplicationFactory::create($doctrine);
+        $application->setAutoExit(false);
+        $tester = new ApplicationTester($application);
+
+        $this->assertSame(1, $tester->run(['command' => 'doctrine:doctor']));
+        $this->assertStringContainsString('entity_manager: error', $tester->getDisplay());
+        $this->assertStringContainsString('database: ok', $tester->getDisplay());
+    }
+
+    public function testWarmupFailureReturnsNonzeroAndRedactsInitializationSecrets(): void
+    {
+        $registry = new ManagerRegistry([
+            'default' => static fn (): Doctrine => throw new RuntimeException('password=private-value'),
+        ]);
+        $application = ApplicationFactory::create($registry);
+        $application->setAutoExit(false);
+        $tester = new ApplicationTester($application);
+
+        $this->assertSame(1, $tester->run(['command' => 'doctrine:cache:warmup']));
+        $this->assertStringContainsString('Warmup failed (RuntimeException)', $tester->getDisplay());
+        $this->assertStringNotContainsString('private-value', $tester->getDisplay());
     }
 
     public function testQueryLoggingUsesInjectedPsrLogger(): void
