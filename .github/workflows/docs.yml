@@ -2,13 +2,17 @@ name: Docs
 
 on:
   push:
-    # Publish only from the development branch (the github-pages environment's
-    # allowed branch).
-    branches: [development]
+    branches: [master]
     paths:
       - 'docs/**'
       - 'mkdocs.yml'
       - 'docs/requirements.txt'
+      - '.github/workflows/docs.yml'
+  pull_request:
+    branches: [master]
+    paths:
+      - 'docs/**'
+      - 'mkdocs.yml'
       - '.github/workflows/docs.yml'
   workflow_dispatch:
 
@@ -50,8 +54,8 @@ jobs:
     name: Deploy to GitHub Pages
     needs: build
     runs-on: ubuntu-latest
-    # Publish only from the development branch; never from forks/PRs.
-    if: github.ref == 'refs/heads/development'
+    # Pull requests build the site; only master publishes it.
+    if: github.ref == 'refs/heads/master' && github.event_name != 'pull_request'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

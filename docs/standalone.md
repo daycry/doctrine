@@ -1,6 +1,6 @@
 # Standalone core and CodeIgniter adapter
 
-The next major version (6.x) provides two Composer packages in one repository:
+Version 6.0 provides two Composer packages maintained in one source repository:
 
 | Package | Responsibility |
 |---|---|
@@ -13,8 +13,8 @@ Consumers do not inherit those development requirements.
 
 ## Installation
 
-These packages have not yet been published as a 6.x release. The
-[installation guide](installation.md) covers package selection and deployment.
+The [installation guide](installation.md) covers tagged releases, VCS installation,
+package selection and deployment.
 For local use, configure Composer path repositories for the checkout and adapter:
 
 ```json
@@ -175,8 +175,7 @@ the standalone CI workflow runs its tests with current and minimum dependencies.
 The adapter consumer verifies installation, framework boot, SQLite and Spark discovery.
 
 The root Composer archive excludes `packages/`, `build/` and `tests/`. The adapter has
-its own composer.json, README and license. Publishing it through Packagist requires
-a separate VCS distribution produced from `packages/codeigniter4` (for example,
-`git subtree split --prefix=packages/codeigniter4`). Push that split to the chosen
-adapter repository and register it before publishing the coordinated 6.x releases.
-This change does not create a repository or publish either release.
+its own composer.json, README and license. Its VCS distribution is
+[daycry/doctrine-codeigniter4](https://github.com/daycry/doctrine-codeigniter4),
+produced from `packages/codeigniter4` using `git subtree split`. See the
+[release procedure](releasing.md) for coordinated tags and Packagist registration.

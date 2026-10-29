@@ -7,8 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [6.0.0] - 2026-10-29
+
 ### Breaking changes
-- Split the standalone core from the independently installable `daycry/doctrine-codeigniter4` adapter for the next 6.x release.
+- Split the standalone core from the independently installable `daycry/doctrine-codeigniter4` adapter for version 6.0.
 - Move CI4 configuration, services, helpers, toolbar and Spark classes under `Daycry\Doctrine\CodeIgniter4`; use explicit DBAL/PSR configuration in the core.
 - Use SPL InvalidArgumentException for framework-independent validation.
 - Require PHP ^8.5, ORM ^3.7, DBAL ^4.5, Symfony Cache/Console ^8, and doctrineextensions ^1.5; the CI4 adapter also requires CodeIgniter ^4.7.
@@ -67,8 +69,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   scalar/single-entity SELECTs.
 - `Daycry\Doctrine\DataTables\Builder::withRecordsTotal(int|Closure)` — inject or
   cache the unfiltered total so the COUNT query is skipped across draws.
-- `Daycry\Doctrine\Helpers\getFromCacheOrQuery()` cache-aside helper, autoloaded
-  as a global function via `composer.json` `autoload.files`. Backed by the
+- `Daycry\Doctrine\CodeIgniter4\Helpers\getFromCacheOrQuery()` cache-aside helper, autoloaded
+  as a namespaced function via the adapter `composer.json` `autoload.files`. Backed by the
   configured Doctrine `resultsCache` PSR-6 pool. Accepts an optional `$dbGroup`
   for multi-database setups.
 - `Daycry\Doctrine\Doctrine::getEm()` returns the underlying `EntityManager`
@@ -76,9 +78,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Daycry\Doctrine\DataTables\Builder::withMaxFilterValues(int)` to cap
   `[IN]` and `[OR]` value lists. Default `500`; throws on `< 1`. Use
   `PHP_INT_MAX` to disable.
-- `Daycry\Doctrine\Debug\Toolbar\Collectors\DoctrineCollector::setMaxQueries(int)`
+- `Daycry\Doctrine\CodeIgniter4\Debug\Toolbar\Collectors\DoctrineCollector::setMaxQueries(int)`
   with FIFO discard. Default `1000`; `0` disables the cap.
-- `Daycry\Doctrine\Libraries\InitializesNativeClient` trait shared between
+- `Daycry\Doctrine\CodeIgniter4\Libraries\InitializesNativeClient` trait shared between
   the `Memcached` and `Redis` cache wrappers.
 - `tests/ServicesTest.php` — covers `Services::doctrine()` shared/unshared and
   `Services::resetDoctrine()`.
@@ -118,21 +120,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   matching search value is non-empty**. The flag is tolerated alongside an
   empty value so existing payloads that include `regex` for every column
   keep working. Use bracket-prefix operators for any actual filtering.
-- `Daycry\Doctrine\Debug\Filters\DoctrineSlcReset::before()` now actually
+- `Daycry\Doctrine\CodeIgniter4\Debug\Filters\DoctrineSlcReset::before()` now actually
   resets SLC statistics by calling
   `Services::peekDoctrine()?->resetSecondLevelCacheStatistics()`. Previously it
   was a no-op despite being documented as functional.
-- `Daycry\Doctrine\Debug\Toolbar\Collectors\DoctrineCollector` memoises both
+- `Daycry\Doctrine\CodeIgniter4\Debug\Toolbar\Collectors\DoctrineCollector` memoises both
   the SLC logger lookup and the `getData()` payload, removing duplicate
   service look-ups during a single toolbar render.
-- `Daycry\Doctrine\Commands\DoctrinePublish` now exits with status `1` on
+- `Daycry\Doctrine\CodeIgniter4\Commands\DoctrinePublish` now exits with status `1` on
   error paths (read failure, missing autoload, prompted cancellation).
-- `Daycry\Doctrine\Libraries\Memcached::getInstance()` and
-  `Daycry\Doctrine\Libraries\Redis::getInstance()` now return precise types
+- `Daycry\Doctrine\CodeIgniter4\Libraries\Memcached::getInstance()` and
+  `Daycry\Doctrine\CodeIgniter4\Libraries\Redis::getInstance()` now return precise types
   (`?\Memcached`, `?\Redis`) instead of `mixed`.
 - `rector.php` targets PHP 8.5 via `LevelSetList::UP_TO_PHP_85`.
 - `phpunit.xml.dist` no longer excludes `src/Config/`, `src/Commands/`,
-  `src/Cache/` from coverage; only `src/cli-config.php` remains excluded.
+  `src/Cache/` from coverage; only the adapter CLI bootstrap remains excluded.
 - `.php-cs-fixer.dist.php` now also formats `tests/`.
 - `tests/_support/Database/Seeds/TestSeeder.php` is idempotent
   (`truncate()` → `insertBatch()`).
@@ -141,7 +143,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Documented operator `[*%]` (it was never implemented in the code; with the
   current regex it silently fell back to `[%]`).
 - `Daycry\Doctrine\Doctrine::convertDbConfigPdo()` — no callers, dead code.
-- `Daycry\Doctrine\Debug\Toolbar\Collectors\DoctrineCollector::debugToolbarDisplayPublic()`
+- `Daycry\Doctrine\CodeIgniter4\Debug\Toolbar\Collectors\DoctrineCollector::debugToolbarDisplayPublic()`
   — test-only escape hatch; tests now exercise the highlighter via
   `display()`.
 - Broken doc links to `docs/DATATABLES_FIX.md` and `docs/TEST_COVERAGE.md`.

@@ -1,0 +1,14 @@
+/.github export-ignore
+/.claude export-ignore
+/.codex export-ignore
+/.agents export-ignore
+/build export-ignore
+/packages export-ignore
+/scripts export-ignore
+/tests export-ignore
+/.php-cs-fixer.dist.php export-ignore
+/phpstan.neon export-ignore
+/phpunit.xml.dist export-ignore
+/phpunit.standalone.xml.dist export-ignore
+/psalm.xml export-ignore
+/rector.php export-ignore

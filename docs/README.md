@@ -1,10 +1,10 @@
 # Daycry Doctrine documentation
 
-This documentation describes the unreleased 6.x major: a standalone PHP 8.5
+This documentation describes version 6.0: a standalone PHP 8.5
 toolkit and an optional CodeIgniter 4 adapter.
 
 The [documentation site](https://daycry.github.io/doctrine/) is built from this
-folder. Until this branch is published, the site can describe an earlier release.
+folder and published from `master`.
 
 ## Choose your entry point
 
@@ -31,4 +31,4 @@ translation, helpers, Spark commands and the [debug toolbar](debug_toolbar.md).
 Install it when the application uses CI4; standalone consumers need only the core.
 
 See [maintenance and validation](maintenance.md) for implementation evidence.
-The repository's CHANGELOG records changes pending the coordinated 6.x release.
+See the [release procedure](releasing.md) for package distribution and validation.

@@ -21,7 +21,7 @@ Standalone Doctrine ORM toolkit for PHP 8.5, with an optional CodeIgniter 4 adap
 
 ## Packages and release status
 
-This branch describes the **unreleased 6.x major**, with breaking API and namespace
+This documentation describes **version 6.0**, with breaking API and namespace
 changes. See the [migration guide](docs/migration-major.md) before upgrading.
 Published package badges can refer to an earlier release.
 
@@ -36,8 +36,8 @@ DoctrineExtensions **^1.5**. The adapter also requires CI4 **^4.7**.
 
 ## Installation
 
-Until the coordinated 6.x release is published, add the local path repositories
-described in [Installation](docs/installation.md). Then choose one package:
+Choose one package. If the adapter is not yet indexed by Packagist, add its GitHub
+VCS repository as described in [Installation](docs/installation.md).
 
 ```bash
 # Standalone core
@@ -47,7 +47,7 @@ composer require daycry/doctrine:^6.0
 composer require daycry/doctrine-codeigniter4:^6.0
 ```
 
-After publication, the same commands work without the local repositories.
+Local path repositories are also available for development.
 
 ## Standalone quick start
 

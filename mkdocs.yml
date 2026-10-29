@@ -6,7 +6,7 @@ copyright: Copyright &copy; 2025 Daycry
 
 repo_url: https://github.com/daycry/doctrine
 repo_name: daycry/doctrine
-edit_uri: edit/development/docs/
+edit_uri: edit/master/docs/
 
 docs_dir: docs
 
@@ -136,3 +136,4 @@ nav:
       - CLI Commands: cli_commands.md
       - CodeIgniter Toolbar: debug_toolbar.md
       - Maintenance: maintenance.md
+      - Releasing: releasing.md

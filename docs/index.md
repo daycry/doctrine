@@ -18,10 +18,10 @@ services, database groups, toolbar and Spark.
 
 </div>
 
-!!! info "Unreleased 6.x documentation"
-    This branch describes the next major version. Use the local Composer path
-    repositories in [Installation](installation.md) until both packages are published.
-    Existing application imports and constructors require migration.
+!!! info "Version 6.0: breaking changes"
+    Existing application imports and constructors require migration. See
+    [Installation](installation.md) for tagged releases, the adapter's VCS repository
+    and local development installations.
 
 ## Choose a package
 

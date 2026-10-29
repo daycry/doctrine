@@ -1,4 +1,4 @@
-# Migrating to the next major version
+# Migrating to version 6.0
 
 ## Runtime requirements
 
@@ -17,8 +17,8 @@ minimal subclass of the package config, containing only application overrides.
 
 The core `daycry/doctrine` no longer installs or boots CodeIgniter. CI4 applications
 must require `daycry/doctrine-codeigniter4:^6.0`, which also installs the core.
-The 6.x release is not yet published; [standalone usage](standalone.md) describes
-local path repositories.
+The [installation guide](installation.md) describes tagged VCS releases and local
+path repositories, including installation before the adapter is indexed by Packagist.
 
 | Previous CI4 API | Adapter API |
 |---|---|

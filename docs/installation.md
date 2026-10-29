@@ -1,8 +1,8 @@
 # Installation
 
 The 6.x major separates the standalone core from the CodeIgniter integration.
-These instructions describe the unreleased branch. The version overrides below
-are local Composer aliases for testing, not published releases.
+These instructions cover version 6.0. Local path version overrides below are
+Composer aliases for testing.
 
 ## Choose a package
 
@@ -15,6 +15,25 @@ Composer installs the remaining dependencies, including DoctrineExtensions and
 JSON DQL functions. The core does not require or boot CodeIgniter at runtime.
 Redis and Memcached extensions are needed only when using their native backends.
 Enable the PHP extension for the selected DBAL driver.
+
+## Install tagged releases
+
+For the standalone core:
+
+```bash
+composer require daycry/doctrine:^6.0
+```
+
+If the adapter has not yet been indexed by Packagist, add its GitHub repository
+before requiring it:
+
+```bash
+composer config repositories.doctrine-codeigniter4 vcs https://github.com/daycry/doctrine-codeigniter4
+composer require daycry/doctrine-codeigniter4:^6.0
+```
+
+The adapter's `v6.0.0` tag must exist and the core release must be available.
+Once Packagist indexes the adapter, the repository override can be removed.
 
 ## Install from this checkout
 
@@ -50,8 +69,7 @@ For CI4, keep both repositories and install the adapter:
 composer require daycry/doctrine-codeigniter4:^6.0
 ```
 
-The adapter installs the core and framework itself. After coordinated publication
-of the 6.x packages, the same require commands work without these local repositories.
+The adapter installs the core and framework itself.
 Path installations depend on the checkout remaining available; use released
 packages or prepared distributions for deployment.
 
