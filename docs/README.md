@@ -1,4 +1,4 @@
-# Daycry Doctrine documentation
+# Doctrine ORM Toolkit for PHP and CodeIgniter 4 — Documentation
 
 This documentation describes version 6.0: a standalone PHP 8.5
 toolkit and an optional CodeIgniter 4 adapter.

@@ -6,7 +6,7 @@ hide:
 
 <div class="hero" markdown>
 
-# Daycry Doctrine
+# Doctrine ORM Toolkit for PHP and CodeIgniter 4
 
 **Standalone Doctrine ORM toolkit for PHP 8.5**, with an optional **CodeIgniter 4**
 adapter. Configure ORM, caching and logging explicitly, or integrate with CI4's
