@@ -100,7 +100,10 @@ jobs:
 
       - name: Run PHPUnit with coverage
         if: matrix.php-versions == '8.5' && matrix.mysql-versions == '8.0' && matrix.dependencies == 'highest'
-        run: composer test -- --color=always --coverage-clover=build/logs/clover.xml
+        run: |
+          composer test -- --color=always --coverage-php=build/coverage/integration.cov
+          php vendor/bin/phpunit -c phpunit.standalone.xml.dist --coverage-php=build/coverage/standalone.cov
+          php vendor/bin/phpcov merge build/coverage --clover build/logs/clover.xml
 
       - name: Upload coverage to Coveralls
         if: matrix.php-versions == '8.5' && matrix.mysql-versions == '8.0' && matrix.dependencies == 'highest'
