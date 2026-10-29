@@ -13,7 +13,7 @@ Consumers do not inherit those development requirements.
 
 ## Installation
 
-The [installation guide](installation.md) covers tagged releases, VCS installation,
+The [installation guide](installation.md) covers Packagist releases, local installation,
 package selection and deployment.
 For local use, configure Composer path repositories for the checkout and adapter:
 

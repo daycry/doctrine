@@ -36,8 +36,7 @@ DoctrineExtensions **^1.5**. The adapter also requires CI4 **^4.7**.
 
 ## Installation
 
-Choose one package. If the adapter is not yet indexed by Packagist, add its GitHub
-VCS repository as described in [Installation](docs/installation.md).
+Choose one package from Packagist:
 
 ```bash
 # Standalone core

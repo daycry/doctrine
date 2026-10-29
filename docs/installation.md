@@ -24,16 +24,14 @@ For the standalone core:
 composer require daycry/doctrine:^6.0
 ```
 
-If the adapter has not yet been indexed by Packagist, add its GitHub repository
-before requiring it:
+For CodeIgniter 4, install the adapter from Packagist:
 
 ```bash
-composer config repositories.doctrine-codeigniter4 vcs https://github.com/daycry/doctrine-codeigniter4
 composer require daycry/doctrine-codeigniter4:^6.0
 ```
 
-The adapter's `v6.0.0` tag must exist and the core release must be available.
-Once Packagist indexes the adapter, the repository override can be removed.
+The adapter also installs the compatible core and framework. No custom Composer
+repository is required for tagged releases indexed by Packagist.
 
 ## Install from this checkout
 

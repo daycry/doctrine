@@ -20,8 +20,8 @@ services, database groups, toolbar and Spark.
 
 !!! info "Version 6.0: breaking changes"
     Existing application imports and constructors require migration. See
-    [Installation](installation.md) for tagged releases, the adapter's VCS repository
-    and local development installations.
+    [Installation](installation.md) for Packagist releases and local development
+    installations.
 
 ## Choose a package
 

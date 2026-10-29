@@ -4,22 +4,15 @@ CodeIgniter 4 adapter for the standalone `daycry/doctrine` core.
 
 Requires PHP 8.5, CI4 4.7+ and daycry/doctrine 6.x.
 
-If this adapter has not yet been indexed by Packagist, add its tagged VCS
-distribution first:
-
-```bash
-composer config repositories.doctrine-codeigniter4 vcs https://github.com/daycry/doctrine-codeigniter4
-```
-
-Then install:
+Install from [Packagist](https://packagist.org/packages/daycry/doctrine-codeigniter4):
 
 ```bash
 composer require daycry/doctrine-codeigniter4:^6.0
 php spark doctrine:publish
 ```
 
-The core `6.0` release and adapter `v6.0.0` tag must be available. For local
-development, use the [installation guide](https://daycry.github.io/doctrine/installation/).
+For local development, use the
+[installation guide](https://daycry.github.io/doctrine/installation/).
 
 The adapter provides framework configuration/services, group-specific database and
 cache factories, Redis/Memcached integration, toolbar collectors, SLC reset filters,

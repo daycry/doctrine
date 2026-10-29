@@ -57,15 +57,14 @@ after a release rather than replacing its contents.
 
 ## Packagist and installation verification
 
-The existing core package must index `v6.0.0`. Register the adapter's public GitHub
-repository on [Packagist](https://packagist.org/packages/submit) using an account
-authorized for the package, then enable its GitHub update integration.
-Creating a GitHub repository or release does not register a Packagist package.
+Both packages are registered on Packagist. Confirm that each has indexed `v6.0.0`
+and that its GitHub update integration is enabled. Creating a GitHub release does
+not itself guarantee that Packagist has updated its index.
 
-Until the adapter is indexed, consumers can install its tagged VCS distribution:
+Consumers install the stable packages directly:
 
 ```bash
-composer config repositories.doctrine-codeigniter4 vcs https://github.com/daycry/doctrine-codeigniter4
+composer require daycry/doctrine:^6.0
 composer require daycry/doctrine-codeigniter4:^6.0
 ```
 
